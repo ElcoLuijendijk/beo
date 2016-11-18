@@ -35,6 +35,22 @@ def interpolate_data(xyz_array, Ti, dx, dy):
     return xg, yg, zg
 
 
+def simpleaxis(ax, removeh=True):
+    """
+    remove top and right axis from panel
+    :param ax:
+    :return:
+    """
+
+    ax.spines['top'].set_visible(False)
+    if removeh == True:
+        ax.spines['right'].set_visible(False)
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+
+    return
+
+
 degree_symbol = unichr(176)
 day = 24.0 * 60.0 * 60.0
 year = 365.25 * day
@@ -197,7 +213,7 @@ for p in panels:
     p.set_xticks(p.get_xticks()[:-1])
     if add_zoom_panel is False:
         p.set_xlabel('Distance (m)')
-    useful_functions.simpleaxis(p)
+    simpleaxis(p)
 
 if add_zoom_panel is True:
     for zp in zpanels:
@@ -208,7 +224,7 @@ if add_zoom_panel is True:
         zp.set_xlim(xlim[0], xlim[1])
         zp.set_ylim(ylim[0], ylim[1])
         zp.set_xlabel('Distance (m)')
-        useful_functions.simpleaxis(p)
+        simpleaxis(p)
 
 for p, tp, zp in zip(panels[1:], tpanels[1:], zpanels[1:]):
     p.set_yticklabels([])

@@ -18,7 +18,21 @@ import numpy as np
 import matplotlib.pyplot as pl
 import matplotlib.mlab
 
-import useful_functions
+
+def simpleaxis(ax, removeh=True):
+    """
+    remove top and right axis from panel
+    :param ax:
+    :return:
+    """
+
+    ax.spines['top'].set_visible(False)
+    if removeh == True:
+        ax.spines['right'].set_visible(False)
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+
+    return
 
 
 def interpolate_data(xyz_array, Ti, dx, dy):
@@ -178,8 +192,6 @@ for fn in files:
             p.set_ylim(ylim[0], ylim[1])
             p.set_xticks(p.get_xticks()[:-1])
             p.set_xlabel('Distance (m)')
-
-            useful_functions.simpleaxis(p)
 
         for p, tp in zip(panels[1:], tpanels[1:]):
             p.set_yticklabels([])

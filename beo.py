@@ -28,7 +28,7 @@ import esys.pycad.gmsh as gmsh
 from esys.weipa import saveVTK
 
 # helium diffusion algortihm by Meesters and Dunai (2003)
-import helium_diffusion_models as he
+import lib.helium_diffusion_models as he
 
 
 
@@ -536,7 +536,8 @@ def model_run(mp):
 
     z_surface = 0
     z_base = -mp.total_depth
-    mesh = setup_mesh(mp.width, mp.fault_xs[0], mp.fault_widths[0], mp.fault_angles[0], mp.air_height,
+    mesh = setup_mesh(mp.width, mp.fault_xs[0], mp.fault_widths[0],
+                      mp.fault_angles[0], mp.air_height,
                       z_surface, mp.z_fine, z_base, mp.cellsize,
                       mp.cellsize_air, mp.cellsize_fault,
                       mp.cellsize_fine, mp.cellsize_base)

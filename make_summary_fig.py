@@ -9,7 +9,22 @@ import pandas as pd
 import matplotlib.pyplot as pl
 import matplotlib.cm
 
-import useful_functions
+
+def simpleaxis(ax, removeh=True):
+    """
+    remove top and right axis from panel
+    :param ax:
+    :return:
+    """
+
+    ax.spines['top'].set_visible(False)
+    if removeh == True:
+        ax.spines['right'].set_visible(False)
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+
+    return
+
 
 __author__ = 'elco'
 
@@ -45,7 +60,7 @@ panel.yaxis.grid(True)
 panel.xaxis.grid(False)
 panel.set_xlim(x.min() * 0.9, x.max() * 1.1)
 
-useful_functions.simpleaxis(panel)
+simpleaxis(panel)
 
 fnf = fn[:-4] + '_fig.png'
 
