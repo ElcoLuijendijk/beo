@@ -10,6 +10,7 @@ Elco Luijendijk, McGill university, 2013
 
 import time
 import os
+import sys
 import pickle
 import pdb
 
@@ -651,7 +652,7 @@ def model_run(mp):
         #T_array = np.vstack((T_array_heating, T_array_recovery))
         #T_array = np.concatenate(T_arrays)
 
-        print 'T after thermal recovery ', Ts
+        print 'T after thermal recovery ', Ts[-1]
         print 'done modeling'
 
         # convert modeled T field and vectors to arrays
@@ -787,6 +788,8 @@ if __name__ == "__main__":
     # import model parameters file
     import model_parameters.model_parameters as mp
 
+    scriptdir = os.path.realpath(sys.path[0])
+
     # run a single model scenario
     output = model_run(mp)
 
@@ -794,7 +797,12 @@ if __name__ == "__main__":
           fault_fluxes, durations, xzs, Tzs, AHe_data = output
 
     #output_folder = os.path.join(folder, 'model_output')
-    output_folder = mp.output_folder
+    output_folder = os.path.join(scriptdir, mp.output_folder)
+
+    if os.path.exists(output_folder) is False:
+        print 'creating directory %s' % output_folder
+        os.mkdir(output_folder)
+
     fn = 'T_field_q_%s_duration_%i_yr.pck' \
          % (str(np.array(fault_fluxes) * mp.year),
             int(np.sum(np.array(durations) / mp.year)))

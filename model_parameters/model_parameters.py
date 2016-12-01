@@ -13,16 +13,16 @@ My = year * 1e6
 Kelvin = 273.15
 
 # directory to store model output
-output_folder = '/home/elco/python_scripts/hydrotherm_escript/model_output'
+output_folder = 'model_output'
 
 # steady state or transient model
 # note that initial condition of transient model =
 # steady-state solution without any advection
-steady_state = True
+steady_state = False
 
 # model dimensions
 width = 10000.0
-total_depth = 9000.0
+total_depth = 6000.0
 air_height = 100.0
 
 # depth to fine discretization at surface:
@@ -68,18 +68,18 @@ c_s = 900.
 
 # timesteps
 # number of output steps
-N_outputs = [101]
+N_outputs = [11]
 # size of timestep
-dt = 100 * year
+dt = 1000 * year
 
 # duration of each timestep
-durations_all = [[1e6 * year]]
+durations_all = [[2e5 * year]]
 
 # target depth slices for calculating temperature and U-Th/He
 target_zs = [0, -200]
 
 # U-Th/He params
-calculate_he_ages = False
+calculate_he_ages = True
 
 T0 = 10.0
 T_surface = 10.0
@@ -101,7 +101,7 @@ fault_widths = [20.0]
 fault_angles = [65.0]
 
 # elevation of bottom of fault
-fault_bottoms = [-4800.0]
+fault_bottoms = [-5000.0]
 
 # fluid advection rates in faults:
 # nested list,
