@@ -18,6 +18,8 @@ import numpy as np
 import matplotlib.pyplot as pl
 import matplotlib.mlab
 
+import model_parameters.figure_params as fp
+
 
 def simpleaxis(ax, removeh=True):
     """
@@ -43,7 +45,9 @@ def interpolate_data(xyz_array, Ti, dx, dy):
     xgf, ygf = xg.flatten(), yg.flatten()
     #zgf = scipy.interpolate.griddata(xyz_array, Ti, np.vstack((xgf, ygf)).T,
     #                                 method='linear')
-    zg = matplotlib.mlab.griddata(xyz_array[:, 0], xyz_array[:, 1], Ti, xi, yi, interp='linear')
+    zg = matplotlib.mlab.griddata(xyz_array[:, 0], xyz_array[:, 1], Ti,
+                                  xi, yi,
+                                  interp='linear')
 
     return xg, yg, zg
 
@@ -55,11 +59,11 @@ My = year * 1e6
 
 # timesteps to select for output
 #timeslices = [2, 20, 100]
-timeslices = [0]
+
 
 #
-xlim = [1500, 3500]
-ylim = [-2000, 0]
+#xlim = [1500, 3500]
+#ylim = [-2000, 0]
 
 # read model output files
 #model_output_folder = '/home/elco/model_files/hydrotherm_escript/'
@@ -77,17 +81,21 @@ for fn in files:
 
     go = True
     try:
-        [runtimes, xyz_array, T_array, xyz_element_array, qh_array, qv_array,
+        #[runtimes, xyz_array, T_array, xyz_element_array, qh_array, qv_array,
+        # fault_fluxes, durations, xzs, Tzs, AHe_data] = output_data
+        [runtimes, xyz_array, T_init_array, T_array, xyz_element_array,
+         qh_array, qv_array,
          fault_fluxes, durations, xzs, Tzs, AHe_data] = output_data
     except ValueError:
         print 'error, could not read file ', fn
         go = False
-    # T_array, t_array, dx, dy, fault_mid, xi, yi, nt_heating, subsurface_height, q_advective, duration_heating
+    # T_array, t_array, dx, dy, fault_mid, xi, yi, nt_heating,
+    # subsurface_height, q_advective, duration_heating
 
     if go is True:
 
         print 'making a figure of model run %s' % fn
-        print 'at timeslices ', timeslices
+        print 'at timeslices ', fp.timeslices
         print 'total number of saved timeslices = %i' % len(T_array)
 
         xmin, xmax = xyz_array[:, 0].min(), xyz_array[:, 0].max()
@@ -98,19 +106,19 @@ for fn in files:
         vmax = T_array.max()
 
         # temperature field contours and values:
-        dx = 10.0
-        dy = 10.0
+        #fp.dx = 10.0
+        #fp.dy = 10.0
 
-        Tas = [T_array[ti] for ti in timeslices]
+        Tas = [T_array[ti] for ti in fp.timeslices]
 
         #fig, panels = pl.subplots(1, 3, figsize=(8, 6), sharey=True)
-        fig = pl.figure(figsize=(8, 4))
+        fig = pl.figure(figsize=(fp.xsize, fp.ysize))
 
         #fig.subplots_adjust(wspace=0.05, hspace=0.05)
 
         import matplotlib.gridspec as gridspec
         nrows = 4
-        ncols = len(timeslices)
+        ncols = len(fp.timeslices)
         gs = gridspec.GridSpec(nrows, ncols, height_ratios=[25, 75, 17, 3])
         #ax = fig.add_subplot(gs[0, 0])
 
@@ -132,20 +140,22 @@ for fn in files:
         cnts = np.arange(vmin, vmax+cnt_int, cnt_int)
 
         for p, Ta in zip(panels, Tas):
-            xg, yg, zg = interpolate_data(xyz_array, Ta, dx, dy)
+            xg, yg, zg = interpolate_data(xyz_array, Ta, fp.dx, fp.dy)
             leg_cn = p.contourf(xg, yg, zg, cnts)
             #p.scatter(xyz_array[:, 0], xyz_array[:, 1], s=0.1, color='gray')
             #c=Ta, **kwargs)
 
         for p, qhi, qvi in zip(panels, qh_array, qv_array):
             print 'adding arrows'
-            xq, yq, qhg = interpolate_data(xyz_element_array, qhi * year, dx, dy)
-            xq, yq, qvg = interpolate_data(xyz_element_array, qvi * year, dx, dy)
+            xq, yq, qhg = interpolate_data(xyz_element_array, qhi * year,
+                                           fp.dx, fp.dy)
+            xq, yq, qvg = interpolate_data(xyz_element_array, qvi * year,
+                                           fp.dx, fp.dy)
             thin = 40
 
             # set arrow scale
             va = (qhg ** 2 + qvg ** 2) ** 0.5
-            scale = np.abs(va).max() * 5.0
+            scale = np.abs(va).max() * fp.scale_multiplier
             print 'quiver scale = %0.2e' % scale
 
             # select only nodes with non-zero q
@@ -163,7 +173,7 @@ for fn in files:
         n_depths = len(Tzs)
 
         for i in range(n_depths):
-            for tp, timeslice in zip(tpanels, timeslices):
+            for tp, timeslice in zip(tpanels, fp.timeslices):
                 leg_st, = tp.plot(xzs[i], Tzs[i][timeslice],
                                   color='black', ls=lss[i])
 
@@ -171,7 +181,7 @@ for fn in files:
         if AHe_data is not None:
             Ahe_ages_all, xs_Ahe_all = AHe_data
             for i in range(n_depths):
-                for rp, timeslice in zip(rpanels, timeslices):
+                for rp, timeslice in zip(rpanels, fp.timeslices):
                     leg_ahe, = rp.plot(xs_Ahe_all[i],
                                        Ahe_ages_all[i][timeslice] / My,
                                        color='blue', ls=lss[i])
@@ -188,8 +198,8 @@ for fn in files:
             p.yaxis.grid(True)
 
             #p.set_xlim(0, xyz_array[:, 0].max())
-            p.set_xlim(xlim[0], xlim[1])
-            p.set_ylim(ylim[0], ylim[1])
+            p.set_xlim(fp.xlim[0], fp.xlim[1])
+            p.set_ylim(fp.ylim[0], fp.ylim[1])
             p.set_xticks(p.get_xticks()[:-1])
             p.set_xlabel('Distance (m)')
 
@@ -201,7 +211,7 @@ for fn in files:
             tp.set_xticklabels([])
             tp.set_ylim(0, Tzs[-1].max() * 1.1)
             tp.yaxis.grid(True)
-            tp.set_xlim(xlim[0], xlim[1])
+            tp.set_xlim(fp.xlim[0], fp.xlim[1])
 
         for tp in tpanels[:]:
             tp.spines['top'].set_visible(False)
@@ -212,7 +222,7 @@ for fn in files:
             rp.set_yticklabels([])
 
         for rp in rpanels:
-            rp.set_xlim(xlim)
+            rp.set_xlim(fp.xlim)
             if AHe_data is not None:
                 rp.set_ylim(0, Ahe_ages_all[-1].max() / My * 1.1)
             rp.spines['top'].set_visible(False)
@@ -220,7 +230,7 @@ for fn in files:
 
             #useful_functions.simpleaxis(rp, removeh=False)
 
-        for tp, dt in zip(tpanels, runtimes[timeslices]):
+        for tp, dt in zip(tpanels, runtimes[fp.timeslices]):
             dti = dt
             #dti = dt - runtimes[10]
             title = '%0.0f years' % (dti / year)
