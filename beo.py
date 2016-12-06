@@ -703,7 +703,7 @@ def model_run(mp):
             AHe_data = None
 
         else:
-            import helium_diffusion_models as he
+            import lib.helium_diffusion_models as he
 
             # convert escript vars to arrays
 
