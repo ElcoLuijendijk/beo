@@ -21,7 +21,7 @@ output_folder = 'model_output'
 steady_state = False
 
 # model dimensions
-width = 10000.0
+width = 6000.0
 total_depth = 6000.0
 air_height = 100.0
 
@@ -68,7 +68,7 @@ c_s = 900.
 
 # timesteps
 # number of output steps
-N_outputs = [11]
+N_outputs = [3]
 # size of timestep
 dt = 1000 * year
 
@@ -106,7 +106,7 @@ fault_bottoms = [-5000.0]
 # fluid advection rates in faults:
 # nested list,
 # [[fault1_t1, fault2_t1], [fault1_t2, fault2_t2], etc...]
-fault_fluxes_all = [[[9.0 / year]]]
+fault_fluxes_all = [[[5.0 / year]]]
 
 aquifer_bottoms = [None]
 aquifer_tops = [None]

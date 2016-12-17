@@ -13,11 +13,10 @@ import os
 import sys
 import pickle
 import pdb
+import datetime
 
-import scipy
 import numpy as np
 import matplotlib
-import matplotlib.pyplot as pl
 
 # escript/Finley modules:
 import esys.escript as es
@@ -30,7 +29,6 @@ from esys.weipa import saveVTK
 
 # helium diffusion algortihm by Meesters and Dunai (2003)
 import lib.helium_diffusion_models as he
-
 
 
 def convert_to_array(u, no_coords=False):
@@ -774,7 +772,8 @@ def model_run(mp):
 
         print 'surface T: ', T * surface
 
-        output = [runtimes, xyz_array, T_init_array, T_array, xyz_element_array, qh_array, qv_array,
+        output = [runtimes, xyz_array, T_init_array, T_array, xyz_element_array,
+                  qh_array, qv_array,
                   fault_fluxes, durations, xzs, Tzs, AHe_data]
 
         return output
@@ -803,9 +802,18 @@ if __name__ == "__main__":
         print 'creating directory %s' % output_folder
         os.mkdir(output_folder)
 
-    fn = 'T_field_q_%s_duration_%i_yr.pck' \
+    today = datetime.datetime.now()
+    today_str = '%i-%i-%i' % (today.day, today.month,
+                          today.year)
+
+    fn = 'results_q_%s_%i_yr_grad_%0.0f_%s.pck' \
          % (str(np.array(fault_fluxes) * mp.year),
-            int(np.sum(np.array(durations) / mp.year)))
+            int(np.sum(np.array(durations) / mp.year)),
+            mp.thermal_gradient * 1000.0,
+            today_str)
+
+    fn = fn.replace(' ', '')
+
     fn_path = os.path.join(output_folder, fn)
 
     print 'saving model results as %s' % fn_path

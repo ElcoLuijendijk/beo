@@ -72,6 +72,18 @@ files = os.listdir(result_dir)
 
 files = [os.path.join(result_dir, f) for f in files if f[-4:] == '.pck']
 
+
+for i, file in enumerate(files):
+    print i, file
+
+print 'enter a number to select a file, ' \
+      'or press enter to make a figure of all files'
+
+a = raw_input()
+if a != '':
+    files = [files[int(a)]]
+
+
 for fn in files:
 
     #fn = 'model_output/T_field_duration_500.pck'
