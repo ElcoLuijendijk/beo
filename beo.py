@@ -69,6 +69,13 @@ def interpolate_data(xyz_array, Ti, dx, dy):
     return xg, yg, zg
 
 
+def calculate_fault_x(z_flt, fault_angle, x_flt_surface):
+
+    x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
+
+    return x_flt
+
+
 def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
                z_surface, z_fine, z_base, cellsize,
                cellsize_air, cellsize_fault, cellsize_fine, cellsize_base):
@@ -521,11 +528,6 @@ def model_run(mp):
     year = 365.25 * 24 * 60 * 60
     Myr = year * 1e6
 
-    # calculate bulk material parameters
-    K_b = mp.K_solid ** (1 - mp.porosity) * mp.K_water ** mp.porosity
-    rho_b = mp.porosity * mp.rho_f + (1 - mp.porosity) * mp.rho_s
-    c_b = mp.porosity * mp.c_f + (1 - mp.porosity) * mp.c_s
-    C1 = (mp.rho_f * mp.c_f) / (rho_b * c_b)
 
     ############################
     # construct rectangular mesh
@@ -591,6 +593,37 @@ def model_run(mp):
 
         #pdb.set_trace()
 
+    # populate porosity and K_solid values
+    fault_x = calculate_fault_x(xyz[1], mp.fault_angles[0], mp.fault_xs[0])
+    #K_solid = es.Scalar(0, es.FunctionOnBoundary(mesh))
+
+    K_solid = xyz[0] * 0.0
+    porosity = xyz[0] * 0.0
+
+    for i, layer_bottom_i in enumerate(mp.layer_bottom):
+        indl = es.whereNonPositive(xyz[0] - fault_x)
+        indr = es.wherePositive(xyz[0] - fault_x)
+        ind_layer_l = es.wherePositive(xyz[1] - layer_bottom_i[0])
+        ind_layer_r = es.wherePositive(xyz[1] - layer_bottom_i[1])
+        K_solid = K_solid * es.whereNonPositive(ind_layer_l * indl) \
+                  + es.wherePositive(ind_layer_l * indl) * mp.K_solids[i]
+        K_solid = K_solid * es.whereNonPositive(ind_layer_r * indr) \
+                  + es.wherePositive(ind_layer_r * indr) * mp.K_solids[i]
+        porosity = porosity * es.whereNonPositive(ind_layer_l * indl) \
+                  + es.wherePositive(ind_layer_l * indl) * mp.porosities[i]
+        porosity = porosity * es.whereNonPositive(ind_layer_r * indr) \
+                  + es.wherePositive(ind_layer_r * indr) * mp.porosities[i]
+
+
+    print 'matrix thermal conductivity: ', K_solid
+    print 'porosity: ', porosity
+
+    # calculate bulk material parameters
+    K_b = K_solid ** (1 - porosity) * mp.K_water ** porosity
+    rho_b = porosity * mp.rho_f + (1 - porosity) * mp.rho_s
+    c_b = porosity * mp.c_f + (1 - porosity) * mp.c_s
+    C1 = (mp.rho_f * mp.c_f) / (rho_b * c_b)
+
     # populate K, c and rho scalar fields
     K_var = subsurface * K_b + air * mp.K_air
     c_var = subsurface * c_b + air * mp.c_air
@@ -603,7 +636,8 @@ def model_run(mp):
     fault_zones = []
 
     for fault_x, fault_angle, fault_width, fault_bottom \
-            in zip(mp.fault_xs, mp.fault_angles, mp.fault_widths, mp.fault_bottoms):
+            in zip(mp.fault_xs, mp.fault_angles,
+                   mp.fault_widths, mp.fault_bottoms):
 
         depth = xyz[1]
         #x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface

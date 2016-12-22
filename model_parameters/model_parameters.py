@@ -46,15 +46,33 @@ thermal_gradient = 0.03
 basal_heat_flux = None
 #basal_heat_flux = 65e-3
 
-porosity = 0.15
+# elvation of layers either side of the fault
+# structured like this:
+# [[depth layer 1 left, depth layer 1 right],
+#  [depth layer 2 left, depth layer 2 right],
+#  [depth layer 3 left, depth layer 3 right],
+#  etc...
+# ]
+# layers are counted from bottom to top
+# leave depth of first layer at arbitrarily high value to make sure the entire
+# model domain is covered
+# note that currently only 1 fault is taken into account...
+layer_bottom = [[-20000, -20000],
+                [-500.0, - 450.0],
+                [-200.0, -150.0]]
+
+# porosity for each layer
+porosities = [0.25, 0.15, 0.1]
 
 # thermal parameters
+# note that only the thermal conductivity is varied between layers, the rest
+# is constant
+K_solids = [3.0, 4.5, 5.0]
 
 # wikipedia: thermal properties air
 # heat transfer coefficient = 10- 100 W / (m2 K))
 # heat capacity = 1000 J kg-1 K-1
 # density = 1.29 kg m-3
-K_solid = 3.5
 K_air = 50.0
 K_water = 0.58
 
