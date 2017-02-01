@@ -278,6 +278,10 @@ for fn in files:
         rpanels[-1].yaxis.label.set_color('blue')
         rpanels[-1].tick_params(axis='y', colors='blue')
 
+        for p in panels:
+            p.set_xlim(xmin, xmax)
+            p.set_ylim(ymin, ymax)
+
         cb = fig.colorbar(leg_cn, cax=cpanel, orientation='horizontal')
         cb.set_label('Temperature (%s C)' % degree_symbol)
 
