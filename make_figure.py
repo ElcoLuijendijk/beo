@@ -13,6 +13,7 @@ Elco Luijendijk, Goettingen University, 2015
 
 import os
 import pickle
+import pdb
 
 import numpy as np
 import matplotlib.pyplot as pl
@@ -45,6 +46,7 @@ def interpolate_data(xyz_array, Ti, dx, dy):
     xgf, ygf = xg.flatten(), yg.flatten()
     #zgf = scipy.interpolate.griddata(xyz_array, Ti, np.vstack((xgf, ygf)).T,
     #                                 method='linear')
+
     zg = matplotlib.mlab.griddata(xyz_array[:, 0], xyz_array[:, 1], Ti,
                                   xi, yi,
                                   interp='linear')
@@ -95,11 +97,13 @@ for fn in files:
     try:
         #[runtimes, xyz_array, T_array, xyz_element_array, qh_array, qv_array,
         # fault_fluxes, durations, xzs, Tzs, AHe_data] = output_data
-        [runtimes, xyz_array, T_init_array, T_array, xyz_element_array,
+        [runtimes_all, runtimes, xyz_array, T_init_array, T_array, xyz_element_array,
          qh_array, qv_array,
-         fault_fluxes, durations, xzs, Tzs, AHe_data] = output_data
+         fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all] = output_data
+
     except ValueError:
         print 'error, could not read file ', fn
+        print 'probably the versions of beo.py and make_figure.py do not match'
         go = False
     # T_array, t_array, dx, dy, fault_mid, xi, yi, nt_heating,
     # subsurface_height, q_advective, duration_heating
@@ -190,8 +194,8 @@ for fn in files:
                                   color='black', ls=lss[i])
 
         #
-        if AHe_data is not None:
-            Ahe_ages_all, xs_Ahe_all = AHe_data
+        if Ahe_ages_all is not None:
+            #Ahe_ages_all, xs_Ahe_all = AHe_data
             for i in range(n_depths):
                 for rp, timeslice in zip(rpanels, fp.timeslices):
                     leg_ahe, = rp.plot(xs_Ahe_all[i],
@@ -210,8 +214,18 @@ for fn in files:
             p.yaxis.grid(True)
 
             #p.set_xlim(0, xyz_array[:, 0].max())
-            p.set_xlim(fp.xlim[0], fp.xlim[1])
-            p.set_ylim(fp.ylim[0], fp.ylim[1])
+
+            if fp.xlim[0] > xmin:
+                xmin = fp.xlim[0]
+            if fp.xlim[1]  < xmax:
+                xmax = fp.xlim[1]
+            if fp.ylim[0] > ymin:
+                ymin = fp.ylim[0]
+            if fp.ylim[1] < ymax:
+                ymax = fp.ylim[1]
+
+            p.set_xlim(xmin, xmax)
+            p.set_ylim(ymin, ymax)
             p.set_xticks(p.get_xticks()[:-1])
             p.set_xlabel('Distance (m)')
 
@@ -223,7 +237,7 @@ for fn in files:
             tp.set_xticklabels([])
             tp.set_ylim(0, Tzs[-1].max() * 1.1)
             tp.yaxis.grid(True)
-            tp.set_xlim(fp.xlim[0], fp.xlim[1])
+            tp.set_xlim(xmin, xmax)
 
         for tp in tpanels[:]:
             tp.spines['top'].set_visible(False)
@@ -234,8 +248,8 @@ for fn in files:
             rp.set_yticklabels([])
 
         for rp in rpanels:
-            rp.set_xlim(fp.xlim)
-            if AHe_data is not None:
+            rp.set_xlim(xmin, xmax)
+            if Ahe_ages_all is not None:
                 rp.set_ylim(0, Ahe_ages_all[-1].max() / My * 1.1)
             rp.spines['top'].set_visible(False)
             rp.get_xaxis().tick_bottom()
@@ -260,7 +274,7 @@ for fn in files:
             tpanel.set_xticks(tpanel.get_xticks()[::2])
 
         tpanels[0].set_ylabel('Temperature (%s C)' % degree_symbol)
-        rpanels[-1].set_ylabel('U-Th/He age (My)')
+        rpanels[-1].set_ylabel('AHe age (My)')
         rpanels[-1].yaxis.label.set_color('blue')
         rpanels[-1].tick_params(axis='y', colors='blue')
 

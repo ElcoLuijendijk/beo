@@ -341,7 +341,7 @@ def interpolate_var_to_2d_grid(model_var):
 def model_hydrothermal_temperatures(mesh, hf_pde,
                                     fault_zones, fault_angles,
                                     specified_T_loc, specified_flux_loc,
-                                    durations, fault_fluxes, N_outputs,
+                                    durations, fault_fluxes,
                                     K_var, rho_var, c_var,
                                     rho_f, c_f,
                                     specified_temperature, specified_flux,
@@ -349,7 +349,6 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     solve_as_steady_state=True):
 
     """
-
 
     """
     
@@ -389,13 +388,12 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
     print 'modeled steady state temperatures ', T_steady
 
     print 'starting transient heat flow calculations'
-    T_arrays = []
     runtimes = []
     t_total = 0
     q_vectors = []
     Ts = []
 
-    for fault_flux, duration, N_output in zip(fault_fluxes, durations, N_outputs):
+    for fault_flux, duration in zip(fault_fluxes, durations):
 
         print 'duration of %i' % duration
         print 'fluxes in faults: ', fault_flux
@@ -479,8 +477,6 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
         start = time.time()
 
-        output_steps = list(np.linspace(0, nt-1, N_output).astype(int))
-
         if solve_as_steady_state is True:
             nt = 1
 
@@ -501,33 +497,37 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
             t_total += dt
 
-            if t in output_steps:
+            #if t in output_steps:
 
-                # store output
-                Ts.append(T)
-                q_vectors.append(q_vector)
+            # store output
+            Ts.append(T)
+            q_vectors.append(q_vector)
 
-                ti = output_steps.index(t)
-                print 'step %i of %i' % (t, nt)
-                print 'temperature: ', T
-                #print 'surface T: ', T * surface
+            #ti = output_steps.index(t)
+            print 'step %i of %i' % (t, nt)
+            print 'temperature: ', T
+            #print 'surface T: ', T * surface
 
-                runtimes.append(t_total)
-                print 'continue iterations'
-
+            runtimes.append(t_total)
+            print 'continue iterations'
 
         print 'T after convective heating ', T
-
 
     return np.array(runtimes), T_steady, Ts, q_vectors
 
 
 def model_run(mp):
 
+    """
+    setup and run a single model
+
+    :param mp:
+    :return:
+    """
+
     #
     year = 365.25 * 24 * 60 * 60
     Myr = year * 1e6
-
 
     ############################
     # construct rectangular mesh
@@ -665,152 +665,147 @@ def model_run(mp):
 
             aquifer_locs.append(aquifer_loc)
 
-    #
-    for durations, fault_fluxes in zip(mp.durations_all, mp.fault_fluxes_all):
+    # model hydrothermal heating
+    runtimes, T_steady, Ts, q_vectors = \
+        model_hydrothermal_temperatures(
+            mesh, hf_pde,
+            fault_zones, mp.fault_angles, specified_T_loc, specified_flux_loc,
+            mp.durations, mp.fault_fluxes,
+            K_var, rho_var, c_var,
+            mp.rho_f, mp.c_f,
+            specified_T, specified_flux,
+            mp.dt,
+            solve_as_steady_state=mp.steady_state)
 
-        # model hydrothermal heating
-        runtimes, T_steady, Ts, q_vectors = \
-            model_hydrothermal_temperatures(
-                mesh, hf_pde,
-                fault_zones, mp.fault_angles, specified_T_loc, specified_flux_loc,
-                durations, fault_fluxes, mp.N_outputs,
-                K_var, rho_var, c_var,
-                mp.rho_f, mp.c_f,
-                specified_T, specified_flux,
-                mp.dt,
-                solve_as_steady_state=mp.steady_state)
+    print 'T after thermal recovery ', Ts[-1]
+    print 'done modeling'
 
-        # merge temperature arrays
-        #T_array = np.vstack((T_array_heating, T_array_recovery))
-        #T_array = np.concatenate(T_arrays)
 
-        print 'T after thermal recovery ', Ts[-1]
-        print 'done modeling'
+    # convert modeled T field and vectors to arrays
+    xyz_array, T0 = convert_to_array(Ts[0])
+    T_list = [convert_to_array(T, no_coords=True) for T in Ts]
+    T_array = np.array(T_list)
+    T_init_array = convert_to_array(T_steady, no_coords=True)
 
-        # convert modeled T field and vectors to arrays
-        xyz_array, T0 = convert_to_array(Ts[0])
-        T_list = [convert_to_array(T, no_coords=True) for T in Ts]
-        T_array = np.array(T_list)
-        T_init_array = convert_to_array(T_steady, no_coords=True)
+    xyz_element_array, qh0 = convert_to_array(q_vectors[0][0])
+    qh_list = [convert_to_array(q_vector[0], no_coords=True)
+               for q_vector in q_vectors]
+    qv_list = [convert_to_array(q_vector[1], no_coords=True)
+               for q_vector in q_vectors]
+    qh_array = np.array(qh_list)
+    qv_array = np.array(qv_list)
 
-        xyz_element_array, qh0 = convert_to_array(q_vectors[0][0])
-        qh_list = [convert_to_array(q_vector[0], no_coords=True) for q_vector in q_vectors]
-        qv_list = [convert_to_array(q_vector[1], no_coords=True) for q_vector in q_vectors]
-        qh_array = np.array(qh_list)
-        qv_array = np.array(qv_list)
+    ##############################################################
+    # calculate temperature at depth slices (surface or otherwise)
+    ##############################################################
+    xzs = []
+    Tzs = []
+    nt, a = T_array.shape
 
-        ##############################################################
-        # calculate temperature at depth slices (surface or otherwise)
-        ##############################################################
-        xzs = []
-        Tzs = []
-        nt, a = T_array.shape
+    for target_z in mp.target_zs:
 
-        for target_z in mp.target_zs:
+        ind = xyz_array[:, 1] == target_z
+        xz = xyz_array[:, 0][ind]
 
-            ind = xyz_array[:, 1] == target_z
-            xz = xyz_array[:, 0][ind]
+        # new array for temperatures at depth
+        Tzs_array = np.zeros((nt, len(xz)))
 
-            # new array for temperatures at depth
-            Tzs_array = np.zeros((nt, len(xz)))
+        # sort nodes in order of increasing x
+        a = np.argsort(xz)
+        xz = xz[a]
 
-            # sort nodes in order of increasing x
-            a = np.argsort(xz)
-            xz = xz[a]
+        # find temperature at target depth for each timestep:
+        for i in range(nt):
+            Tz = T_array[i, :][ind]
+            Tzs_array[i, :] = Tz[a]
 
-            # find temperature at target depth for each timestep:
-            for i in range(nt):
-                Tz = T_array[i, :][ind]
-                Tzs_array[i, :] = Tz[a]
+        xzs.append(xz)
+        Tzs.append(Tzs_array)
 
-            xzs.append(xz)
-            Tzs.append(Tzs_array)
+    ##########################################
+    # calculate helium ages at surface outcrop
+    ##########################################
+    #calculate_he_ages = True
 
-        ##########################################
-        # calculate helium ages at surface outcrop
-        ##########################################
-        #calculate_he_ages = True
+    if mp.calculate_he_ages is False:
+        AHe_data = None
 
-        if mp.calculate_he_ages is False:
-            AHe_data = None
+    else:
 
-        else:
-            import lib.helium_diffusion_models as he
+        # convert escript vars to arrays
 
-            # convert escript vars to arrays
+        # calculate U-Th/He age for entire model domain.
+        # assume no T change after K-Ar determined crystallization age
+        # of 16.5 Ma
+        ind_surface = np.where(xyz_array[:, 1] == 0)[0]
+        nx = len(ind_surface)
 
-            # calculate U-Th/He age for entire model domain.
-            # assume no T change after K-Ar determined crystallization age
-            # of 16.5 Ma
-            ind_surface = np.where(xyz_array[:, 1] == 0)[0]
+        t_prov = np.linspace(0, mp.t0, 31)
+        T_prov = np.linspace(mp.T0, mp.T_surface, 31)
+
+        print 'calculating helium ages'
+        xs_Ahe_all = []
+        Ahe_ages_all = []
+        T_surf_mod_all = []
+
+        for target_depth in mp.target_zs:
+            #target_depth = 0
+            nt = len(Ts)
+
+            ind_surface1 = xyz_array[:, 1] == target_depth
+            ind_surface = np.where(xyz_array[:, 1] == target_depth)[0]
             nx = len(ind_surface)
 
-            t_prov = np.linspace(0, mp.t0, 31)
-            T_prov = np.linspace(mp.T0, mp.T_surface, 31)
+            he_ages_surface = np.zeros((nt, nx))
+            T_surf_mod = np.zeros((nt, nx))
 
-            print 'calculating helium ages'
-            xs_Ahe_all = []
-            Ahe_ages_all = []
-            T_surf_mod_all = []
+            for xii in range(nx):
 
-            for target_depth in mp.target_zs:
-                #target_depth = 0
-                nt = len(Ts)
+                t_he = np.concatenate((t_prov[:], t_prov[-1] + runtimes))
+                T_he = np.concatenate((T_prov[:], T_array[:, ind_surface[xii]]))
 
-                ind_surface1 = xyz_array[:, 1] == target_depth
-                ind_surface = np.where(xyz_array[:, 1] == target_depth)[0]
-                nx = len(ind_surface)
+                nt_prov = len(t_prov)
+                #T_he *= 2
 
-                he_ages_surface = np.zeros((nt, nx))
-                T_surf_mod = np.zeros((nt, nx))
+                T_he += mp.Kelvin
 
-                for xii in range(nx):
+                he_age_i = he.calculate_he_age_meesters_dunai_2002(t_he,
+                                                                   T_he,
+                                                                   mp.radius,
+                                                                   mp.U238,
+                                                                   mp.Th232)
 
-                    t_he = np.concatenate((t_prov[:], t_prov[-1] + runtimes))
-                    T_he = np.concatenate((T_prov[:], T_array[:, ind_surface[xii]]))
-
-                    nt_prov = len(t_prov)
-                    #T_he *= 2
-
-                    T_he += mp.Kelvin
-
-                    he_age_i = he.calculate_he_age_meesters_dunai_2002(t_he,
-                                                                       T_he,
-                                                                       mp.radius,
-                                                                       mp.U238,
-                                                                       mp.Th232)
-
-                    # copy only He ages after provenance:
-                    for i in xrange(nt):
-                        he_ages_surface[:, xii] = he_age_i[nt_prov:]
-
-                # get surface locs and T
-                xs = xyz_array[:, 0][ind_surface1]
-                sort_order = np.argsort(xs)
-                xs = xs[sort_order]
-
-                #
-                ind_surface2 = ind_surface[sort_order]
-
+                # copy only He ages after provenance:
                 for i in xrange(nt):
-                    T_surf_mod[i, :] = T_array[i][ind_surface2]
-                    he_ages_surface[i] = he_ages_surface[i][sort_order]
+                    he_ages_surface[:, xii] = he_age_i[nt_prov:]
 
-                Ahe_ages_all.append(he_ages_surface)
-                xs_Ahe_all.append(xs)
-                T_surf_mod_all.append(T_surf_mod)
+            # get surface locs and T
+            xs = xyz_array[:, 0][ind_surface1]
+            sort_order = np.argsort(xs)
+            xs = xs[sort_order]
 
-            AHe_data = [Ahe_ages_all, xs_Ahe_all]
+            # sort the data in order of increasing x
+            ind_surface2 = ind_surface[sort_order]
 
-            print 'done calculating helium ages'
+            for i in xrange(nt):
+                T_surf_mod[i, :] = T_array[i][ind_surface2]
+                he_ages_surface[i] = he_ages_surface[i][sort_order]
 
-        print 'surface T: ', T * surface
+            Ahe_ages_all.append(he_ages_surface)
+            xs_Ahe_all.append(xs)
+            T_surf_mod_all.append(T_surf_mod)
 
-        output = [runtimes, xyz_array, T_init_array, T_array, xyz_element_array,
-                  qh_array, qv_array,
-                  fault_fluxes, durations, xzs, Tzs, AHe_data]
+        AHe_data = [Ahe_ages_all, xs_Ahe_all]
 
-        return output
+        print 'done calculating helium ages'
+
+    print 'surface T: ', T * surface
+
+    output = [runtimes, xyz_array, T_init_array, T_array, xyz_element_array,
+              qh_array, qv_array,
+              mp.fault_fluxes, mp.durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all]
+
+    return output
 
 
 if __name__ == "__main__":
@@ -827,7 +822,27 @@ if __name__ == "__main__":
     output = model_run(mp)
 
     runtimes, xyz_array, T_init_array, T_array, xyz_element_array, qh_array, qv_array, \
-          fault_fluxes, durations, xzs, Tzs, AHe_data = output
+          fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all = output
+
+    # crop output to only the output timesteps, to limit filesize
+    output_steps = []
+    for duration, N_output in zip(mp.durations, mp.N_outputs):
+        nt = int(duration / mp.dt)
+
+        output_steps_i = list(np.linspace(0, nt-1, N_output).astype(int))
+        output_steps += output_steps_i
+
+    # select data for output steps only
+    output_steps = np.array(output_steps)
+
+    Tzs_cropped = [Tzi[output_steps] for Tzi in Tzs]
+    AHe_ages_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_all]
+    output_selected = \
+        [runtimes, runtimes[output_steps], xyz_array, T_init_array,
+         T_array[output_steps], xyz_element_array,
+         qh_array[output_steps], qv_array[output_steps],
+         fault_fluxes, durations, xzs, Tzs_cropped,
+         AHe_ages_cropped, xs_Ahe_all]
 
     #output_folder = os.path.join(folder, 'model_output')
     output_folder = os.path.join(scriptdir, mp.output_folder)
@@ -838,7 +853,7 @@ if __name__ == "__main__":
 
     today = datetime.datetime.now()
     today_str = '%i-%i-%i' % (today.day, today.month,
-                          today.year)
+                              today.year)
 
     fn = 'results_q_%s_%i_yr_grad_%0.0f_%s.pck' \
          % (str(np.array(fault_fluxes) * mp.year),
@@ -853,7 +868,7 @@ if __name__ == "__main__":
     print 'saving model results as %s' % fn_path
 
     fout = open(fn_path, 'w')
-    pickle.dump(output, fout)
+    pickle.dump(output_selected, fout)
     fout.close()
 
     print 'done with model scenario'

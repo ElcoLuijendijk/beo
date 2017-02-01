@@ -65,7 +65,7 @@ layer_bottom = [[-20000, -20000],
 porosities = [0.25, 0.15, 0.1]
 
 # thermal parameters
-# note that only the thermal conductivity is varied between layers, the rest
+# note that only thermal conductivity is varied between layers, the rest
 # is constant
 K_solids = [3.0, 4.5, 5.0]
 
@@ -90,8 +90,8 @@ N_outputs = [3]
 # size of timestep
 dt = 1000 * year
 
-# duration of each timestep
-durations_all = [[2e5 * year]]
+# duration of each timestep_slice
+durations = [2e5 * year]
 
 # target depth slices for calculating temperature and U-Th/He
 target_zs = [0, -200]
@@ -124,7 +124,7 @@ fault_bottoms = [-5000.0]
 # fluid advection rates in faults:
 # nested list,
 # [[fault1_t1, fault2_t1], [fault1_t2, fault2_t2], etc...]
-fault_fluxes_all = [[[5.0 / year]]]
+fault_fluxes = [[5.0 / year]]
 
 aquifer_bottoms = [None]
 aquifer_tops = [None]
