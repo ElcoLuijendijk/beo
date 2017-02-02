@@ -484,7 +484,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         for t in range(nt):
 
             if t / 10 == t / 10.0:
-                print t, '/', nt
+                print 'step %i of %i' % (t, nt)
+                print 'temperature: ', T
             # solve PDE for temperature
             T = hf_pde.getSolution()
 
@@ -504,8 +505,6 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             q_vectors.append(q_vector)
 
             #ti = output_steps.index(t)
-            print 'step %i of %i' % (t, nt)
-            print 'temperature: ', T
             #print 'surface T: ', T * surface
 
             runtimes.append(t_total)
@@ -740,6 +739,8 @@ def model_run(mp):
         ind_surface = np.where(xyz_array[:, 1] == 0)[0]
         nx = len(ind_surface)
 
+        start_age = mp.t0 - runtimes[-1]
+
         t_prov = np.linspace(0, mp.t0, 31)
         T_prov = np.linspace(mp.T0, mp.T_surface, 31)
 
@@ -769,15 +770,21 @@ def model_run(mp):
 
                 T_he += mp.Kelvin
 
-                he_age_i = he.calculate_he_age_meesters_dunai_2002(t_he,
-                                                                   T_he,
-                                                                   mp.radius,
-                                                                   mp.U238,
-                                                                   mp.Th232)
+                he_age_i = he.calculate_he_age_meesters_dunai_2002(
+                    t_he, T_he,
+                    mp.radius, mp.U238, mp.Th232,
+                    alpha_ejection=mp.alpha_ejection,
+                    stopping_distance=mp.stopping_distance,
+                    method=mp.AHe_method,
+                    n_eigenmodes=50)
 
                 # copy only He ages after provenance:
                 for i in xrange(nt):
                     he_ages_surface[:, xii] = he_age_i[nt_prov:]
+
+                #My = 1e6 * 365.25 * 24 * 60 * 60
+                #print zip(t_he/My, T_he - mp.Kelvin, he_age_i / My)
+                #pdb.set_trace()
 
             # get surface locs and T
             xs = xyz_array[:, 0][ind_surface1]
@@ -798,6 +805,16 @@ def model_run(mp):
         AHe_data = [Ahe_ages_all, xs_Ahe_all]
 
         print 'done calculating helium ages'
+
+        My = 1e6 * 365 * 24 * 60 * 60.
+
+        print 'AHe ages: '
+        for i, Ahe_ages in enumerate(Ahe_ages_all):
+            print 'layer %i, min = %0.2f, mean = %0.2f, max = %0.2f My' \
+                  % (i, Ahe_ages.min() / My,
+                     Ahe_ages.mean() / My,
+                     Ahe_ages.max() / My)
+
 
     print 'surface T: ', T * surface
 

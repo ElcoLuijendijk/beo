@@ -99,12 +99,19 @@ target_zs = [0, -200]
 # U-Th/He params
 calculate_he_ages = True
 
+# method to calculate helium diffusivity, use Wolf1996, Farley2000 or RDAAM
+AHe_method = 'RDAAM'
 T0 = 10.0
 T_surface = 10.0
-t0 = 100.0 * My
-radius = 60.0 * 1e-6
+t0 = 15.2 * My
+radius = 65.0 * 1e-6
 U238 = 8.98e-6
 Th232 = 161.3e-6
+
+# alpha ejection parameters:
+alpha_ejection = True
+stopping_distance = 20e-6
+
 
 ## fault data for multiple faults:
 

@@ -17,6 +17,9 @@ import model_parameters.model_parameters as mp
 import model_parameters.parameter_ranges as pr
 import hydrotherm_escript
 
+day = 24.0 * 60.0 * 60.0
+year = 365.25 * day
+My = year * 1e6
 
 # create list with param values for each model run
 param_list = \
@@ -68,7 +71,21 @@ for model_run, param_set in enumerate(param_list):
     output = hydrotherm_escript.model_run(mp)
 
     runtimes, xyz_array, T_init_array, T_array, xyz_element_array, qh_array, qv_array, \
-          fault_fluxes, durations, xzs, Tzs, AHe_data = output
+          fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all = output
+
+#    runtimes, xyz_array, T_init_array, T_array, xyz_element_array, qh_array, qv_array, \
+#          fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all = output
+
+    # calculate partial resetting and full resetting distance in the AHe data
+    if Ahe_ages_all is not None:
+
+        n_depths = len(Ahe_ages_all)
+        nt_output = Ahe_ages_all[0].shape[0]
+
+        for i in range(n_depths):
+            for j in range(nt_output):
+                ages = Ahe_ages_all[i][j] / My
+                dev_age = ages / ages.max()
 
     # store model results in dataframe
     df.loc[model_run, 'max_surface_temperature'] = Tzs[0].max()

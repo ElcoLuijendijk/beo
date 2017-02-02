@@ -7,7 +7,7 @@ ysize = 6.0
 
 # limits of x and y axis of figure
 xlim = [00, 10000]
-ylim = [-5000, 100]
+ylim = [-10000, 100]
 
 # grid size for interpolating model results
 dx = 10.0
