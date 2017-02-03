@@ -86,12 +86,12 @@ c_s = 900.
 
 # timesteps
 # number of output steps
-N_outputs = [3]
+N_outputs = [10]
 # size of timestep
 dt = 1000 * year
 
 # duration of each timestep_slice
-durations = [2e5 * year]
+durations = [3e5 * year]
 
 # target depth slices for calculating temperature and U-Th/He
 target_zs = [0, -200]
@@ -110,8 +110,8 @@ Th232 = 161.3e-6
 
 # alpha ejection parameters:
 alpha_ejection = True
-stopping_distance = 20e-6
-
+# alpha ejection stopping distance, see Ketcham (2011) for estimates
+stopping_distance = 21e-6
 
 ## fault data for multiple faults:
 
@@ -131,7 +131,7 @@ fault_bottoms = [-5000.0]
 # fluid advection rates in faults:
 # nested list,
 # [[fault1_t1, fault2_t1], [fault1_t2, fault2_t2], etc...]
-fault_fluxes = [[5.0 / year]]
+fault_fluxes = [[10.0 / year]]
 
 aquifer_bottoms = [None]
 aquifer_tops = [None]
@@ -140,3 +140,11 @@ aquifer_fluxes = [None]
 ############################################
 # variable params, for sensitivity analysis
 ###########################################
+
+# realtive limit to consider a sample partial reset or not, ie if 0.95
+# a sample will be considered partially reset if the modeled uncorrected
+# AHe age is less than 0.95 x the maximum age in the system.
+partial_reset_limit = 0.95
+
+# absolute limit below which samples are considered reset (ie. AHe age ~0 My)
+reset_limit = 0.01

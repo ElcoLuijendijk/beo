@@ -508,7 +508,6 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             #print 'surface T: ', T * surface
 
             runtimes.append(t_total)
-            print 'continue iterations'
 
         print 'T after convective heating ', T
 
