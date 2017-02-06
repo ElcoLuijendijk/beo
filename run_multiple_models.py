@@ -71,48 +71,6 @@ attribute_names = [attribute[0] for attribute in attributes
                    if not (attribute[0].startswith('__') and
                            attribute[0].endswith('__'))]
 
-'''
-
-# get names of scenario parameters
-# import model parameter ranges
-from model_scenario_parameters import ModelScenarioParameters
-
-scenario_param_names_raw = dir(ModelScenarioParameters)
-scenario_param_names = [m for m in scenario_param_names_raw
-                        if '__' not in m]
-
-# get all scenario parameter values
-scenario_parameter_list = [getattr(ModelScenarioParameters, p)
-                           for p in scenario_param_names]
-
-# construct list with all parameter combinations
-if ModelOptions.model_scenario_list is 'combinations':
-    scenario_parameter_combinations = \
-        list(itertools.product(*scenario_parameter_list))
-else:
-    nscens = np.sum(np.array([len(sp) for sp in scenario_parameter_list
-                              if sp is not None]))
-    nparams = len(scenario_parameter_list)
-    scenario_parameter_combinations = []
-
-    if ModelOptions.initial_base_run is True:
-        # add initial base run with unchanged model parameters
-        scenario_parameter_combinations.append([None] * nparams)
-
-    for j, sl in enumerate(scenario_parameter_list):
-        if sl[0] is not None:
-            sc = [None] * nparams
-            for sli in sl:
-                sci = list(sc)
-                sci[j] = sli
-                scenario_parameter_combinations.append(sci)
-
-runs = np.arange(len(scenario_parameter_combinations))
-model_scenario_names = ['S%i' % run for run in runs]
-
-
-'''
-
 # set up pandas dataframe to store model input params
 n_model_runs = len(param_list)
 n_ts = np.sum(np.array(mp.N_outputs))
@@ -148,12 +106,6 @@ for model_run, param_set in enumerate(param_list):
             # update model parameter
             setattr(Parameters, model_param_name, scenario_parameter)
 
-    #print bla
-
-    # update parameters in param file
-    #mp.fault_bottoms[0] = fault_bottom
-    #mp.thermal_gradient = thermal_gradient
-
     # store input parameters in dataframe
     attributes = inspect.getmembers(
         Parameters, lambda attribute: not (inspect.isroutine(attribute)))
@@ -170,11 +122,9 @@ for model_run, param_set in enumerate(param_list):
     print 'running single model'
     output = beo.model_run(mp)
 
-    runtimes, xyz_array, T_init_array, T_array, xyz_element_array, qh_array, qv_array, \
-          fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all = output
-
-#    runtimes, xyz_array, T_init_array, T_array, xyz_element_array, qh_array, qv_array, \
-#          fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all = output
+    (runtimes, xyz_array, T_init_array, T_array, xyz_element_array,
+     qh_array, qv_array,
+     fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all) = output
 
     # crop output to only the output timesteps, to limit filesize
     output_steps = []
@@ -282,6 +232,7 @@ fn = 'model_params_and_results_%i_runs.csv' \
      % len(param_list)
 fn_path = os.path.join(output_folder, fn)
 
+print '-' * 30
 print 'saving summary of parameters and model results as %s' % fn_path
 
 df.to_csv(fn_path, index_label='model_run', encoding='utf-8')
