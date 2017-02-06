@@ -21,13 +21,11 @@ import matplotlib
 # escript/Finley modules:
 import esys.escript as es
 import esys.finley as fl
-import esys.escript.linearPDEs
-#from esys.escript.unitsSI import *
 import esys.pycad as pc
 import esys.pycad.gmsh as gmsh
-from esys.weipa import saveVTK
+import esys.escript.linearPDEs as linearPDEs
 
-# helium diffusion algortihm by Meesters and Dunai (2003)
+# helium diffusion algorithm by Meesters and Dunai (2003)
 import lib.helium_diffusion_models as he
 
 
@@ -553,7 +551,7 @@ def model_run(mp):
     # set up PDE solver
     #######################################
     print 'setting up PDE and boundary conditions'
-    hf_pde = es.linearPDEs.LinearPDE(mesh)
+    hf_pde = linearPDEs.LinearPDE(mesh)
 
     # find which nodes are on top & bottom boundaries
     surface = es.whereZero(xyz[1])
@@ -837,8 +835,9 @@ if __name__ == "__main__":
     # run a single model scenario
     output = model_run(mp)
 
-    runtimes, xyz_array, T_init_array, T_array, xyz_element_array, qh_array, qv_array, \
-          fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all = output
+    runtimes, xyz_array, T_init_array, T_array, xyz_element_array, \
+        qh_array, qv_array, \
+        fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all = output
 
     # crop output to only the output timesteps, to limit filesize
     output_steps = []

@@ -10,6 +10,7 @@ import os
 import pickle
 import itertools
 import inspect
+import pdb
 
 import numpy as np
 import pandas as pd
@@ -26,9 +27,39 @@ scriptdir = os.path.realpath(sys.path[0])
 output_folder = os.path.join(scriptdir, mp.output_folder)
 
 # create list with param values for each model run
-param_list = \
-    list(itertools.product(pr.fault_bottoms,
-                           pr.thermal_gradients))
+scenario_param_names_raw = dir(pr)
+scenario_param_names = [m for m in scenario_param_names_raw
+                        if '__' not in m and '_s' in m]
+
+scenario_parameter_list = [getattr(pr, p)
+                           for p in scenario_param_names]
+
+# construct list with all parameter combinations
+if pr.parameter_combinations is True:
+    scenario_parameter_combinations = \
+        list(itertools.product(*scenario_parameter_list))
+else:
+    nscens = np.sum(np.array([len(sp) for sp in scenario_parameter_list
+                              if sp is not None]))
+    nparams = len(scenario_parameter_list)
+    scenario_parameter_combinations = []
+
+    if pr.initial_base_run is True:
+        scenario_parameter_combinations.append([None] * nparams)
+
+    for j, sl in enumerate(scenario_parameter_list):
+        if sl[0] is not None:
+            sc = [None] * nparams
+            for sli in sl:
+                sci = list(sc)
+                sci[j] = sli
+                scenario_parameter_combinations.append(sci)
+
+#param_list = \
+#    list(itertools.product(pr.fault_bottoms,
+#                           pr.thermal_gradients))
+
+param_list = scenario_parameter_combinations
 
 # read default model parameter file
 Parameters = mp
@@ -39,6 +70,48 @@ attributes = inspect.getmembers(
 attribute_names = [attribute[0] for attribute in attributes
                    if not (attribute[0].startswith('__') and
                            attribute[0].endswith('__'))]
+
+'''
+
+# get names of scenario parameters
+# import model parameter ranges
+from model_scenario_parameters import ModelScenarioParameters
+
+scenario_param_names_raw = dir(ModelScenarioParameters)
+scenario_param_names = [m for m in scenario_param_names_raw
+                        if '__' not in m]
+
+# get all scenario parameter values
+scenario_parameter_list = [getattr(ModelScenarioParameters, p)
+                           for p in scenario_param_names]
+
+# construct list with all parameter combinations
+if ModelOptions.model_scenario_list is 'combinations':
+    scenario_parameter_combinations = \
+        list(itertools.product(*scenario_parameter_list))
+else:
+    nscens = np.sum(np.array([len(sp) for sp in scenario_parameter_list
+                              if sp is not None]))
+    nparams = len(scenario_parameter_list)
+    scenario_parameter_combinations = []
+
+    if ModelOptions.initial_base_run is True:
+        # add initial base run with unchanged model parameters
+        scenario_parameter_combinations.append([None] * nparams)
+
+    for j, sl in enumerate(scenario_parameter_list):
+        if sl[0] is not None:
+            sc = [None] * nparams
+            for sli in sl:
+                sci = list(sc)
+                sci[j] = sli
+                scenario_parameter_combinations.append(sci)
+
+runs = np.arange(len(scenario_parameter_combinations))
+model_scenario_names = ['S%i' % run for run in runs]
+
+
+'''
 
 # set up pandas dataframe to store model input params
 n_model_runs = len(param_list)
@@ -54,15 +127,34 @@ df = pd.DataFrame(index=ind, columns=columns)
 
 for model_run, param_set in enumerate(param_list):
 
-    fault_bottom, thermal_gradient = param_set
-    print 'updated parameters ', param_set
+    #fault_bottom, thermal_gradient = param_set
+    #print 'updated parameters ', param_set
+
+    Parameters = mp
+
+    # update default parameters in Parameter class
+    for scenario_param_name, scenario_parameter in \
+            zip(scenario_param_names, param_set):
+
+        if scenario_parameter is not None:
+            # find model parameter name to adjust
+            model_param_name = scenario_param_name[:-2]
+
+            print 'updating parameter %s from %s to %s' \
+                  % (model_param_name,
+                     str(getattr(Parameters, model_param_name)),
+                     str(scenario_parameter))
+
+            # update model parameter
+            setattr(Parameters, model_param_name, scenario_parameter)
+
+    #print bla
 
     # update parameters in param file
-    mp.fault_bottoms[0] = fault_bottom
-    mp.thermal_gradient = thermal_gradient
+    #mp.fault_bottoms[0] = fault_bottom
+    #mp.thermal_gradient = thermal_gradient
 
     # store input parameters in dataframe
-    Parameters = mp
     attributes = inspect.getmembers(
         Parameters, lambda attribute: not (inspect.isroutine(attribute)))
     attribute_dict = [attribute for attribute in attributes

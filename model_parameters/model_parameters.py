@@ -12,6 +12,8 @@ year = 365.25 * day
 My = year * 1e6
 Kelvin = 273.15
 
+
+
 # directory to store model output
 output_folder = 'model_output'
 
@@ -122,7 +124,6 @@ fault_xs = [2000]
 fault_widths = [20.0]
 
 # angle of the fault zone (degrees), dip of normal faults ~60-70 degrees
-# but start with vertical fault to keep things simple
 fault_angles = [65.0]
 
 # elevation of bottom of fault
@@ -141,10 +142,10 @@ aquifer_fluxes = [None]
 # variable params, for sensitivity analysis
 ###########################################
 
-# realtive limit to consider a sample partial reset or not, ie if 0.95
+# relative limit to consider a sample partial reset or not, ie if 0.95
 # a sample will be considered partially reset if the modeled uncorrected
 # AHe age is less than 0.95 x the maximum age in the system.
-partial_reset_limit = 0.95
+partial_reset_limit = 0.75
 
 # absolute limit below which samples are considered reset (ie. AHe age ~0 My)
 reset_limit = 0.01
