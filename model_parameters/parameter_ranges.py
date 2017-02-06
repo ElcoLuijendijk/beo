@@ -23,6 +23,10 @@ parameter_combinations = False
 # runs
 initial_base_run = False
 
+###################################################################
+# parameters that will be changes in the sensitivity analysis runs:
+###################################################################
+
 fault_bottoms_s = [[-5000], [-4000]]
 
 thermal_gradient_s = [0.04]
