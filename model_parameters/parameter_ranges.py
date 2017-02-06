@@ -13,6 +13,9 @@ import numpy as np
 
 __author__ = 'elcopone'
 
+
+year = 365.25 * 24 * 60 * 60.0
+
 # option whether to vary one model parameter at a time
 # (ie for a sensitivtiy analysis)
 # or to run all parameter combinations, using the parameter ranges specified
@@ -27,6 +30,10 @@ initial_base_run = False
 # parameters that will be changes in the sensitivity analysis runs:
 ###################################################################
 
-fault_bottoms_s = [[-5000], [-4000]]
+#fault_bottoms_s = [[-5000], [-4000]]
 
-thermal_gradient_s = [0.04]
+#thermal_gradient_s = [0.04]
+
+#exhumation_rate_s = [1.0e-5, 1.0e-4]
+
+fault_fluxes_s = [[[10.0 / year]], [[15.0 / year]]]

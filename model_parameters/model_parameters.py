@@ -12,8 +12,6 @@ year = 365.25 * day
 My = year * 1e6
 Kelvin = 273.15
 
-
-
 # directory to store model output
 output_folder = 'model_output'
 
@@ -28,21 +26,37 @@ total_depth = 6000.0
 air_height = 100.0
 
 # depth to fine discretization at surface:
-z_fine = -200
+z_fine = -100
 
 # grid size
 cellsize = 500.0
 cellsize_air = 10.0
 cellsize_fault = 5.0
-cellsize_fine = 25.0
+cellsize_fine = 20.0
 cellsize_base = 1000.0
+
+# exhumation parameters
+# exhumation rate in m/yr
+# assuming the AHe was not reset, the max exhumation is ~1500 m in 15 My = 1e-4 m/yr
+# look up regional AFT, AHe and cosmogenic nuclide work for realistic range of exhumation rates
+exhumation_rate = 1e-4
+
+# number of grid layers between initial and final surface level
+# the more layers, the more smooth and accurate the exhumation history,
+# but this also slows the model down somehwat
+exhumation_steps = 10
+
+# number of timesteps after which the surface level is recalculated
+# ideally this should be 1 (ie recalculate at each timestep)
+# higher number means faster model
+exhumation_interval = 10
 
 # temperature bnd conditions
 air_temperature = 10.0
 #bottom_temperature = total_depth * 0.03 + air_temperature
 #bottom_temperature = total_depth * 0.03
 # new version: calculate bottom T using a fixed geothermal gradient./r
-thermal_gradient = 0.03
+thermal_gradient = 0.05
 
 # bottom flux bnd condition, set to None if T bnd is used
 basal_heat_flux = None
@@ -64,12 +78,12 @@ layer_bottom = [[-20000, -20000],
                 [-200.0, -150.0]]
 
 # porosity for each layer
-porosities = [0.25, 0.15, 0.1]
+porosities = [0.1, 0.15, 0.25]
 
 # thermal parameters
 # note that only thermal conductivity is varied between layers, the rest
 # is constant
-K_solids = [3.0, 4.5, 5.0]
+K_solids = [2.5, 2.5, 2.5]
 
 # wikipedia: thermal properties air
 # heat transfer coefficient = 10- 100 W / (m2 K))
@@ -96,7 +110,7 @@ dt = 1000 * year
 durations = [3e5 * year]
 
 # target depth slices for calculating temperature and U-Th/He
-target_zs = [0, -200]
+target_zs = [25.0, 20.0, 10.0, 5.0, 0.0]
 
 # U-Th/He params
 calculate_he_ages = True
@@ -106,7 +120,7 @@ AHe_method = 'RDAAM'
 T0 = 10.0
 T_surface = 10.0
 t0 = 15.2 * My
-radius = 65.0 * 1e-6
+radius = 100.0 * 1e-6
 U238 = 8.98e-6
 Th232 = 161.3e-6
 
@@ -132,7 +146,7 @@ fault_bottoms = [-5000.0]
 # fluid advection rates in faults:
 # nested list,
 # [[fault1_t1, fault2_t1], [fault1_t2, fault2_t2], etc...]
-fault_fluxes = [[10.0 / year]]
+fault_fluxes = [[15.0 / year]]
 
 aquifer_bottoms = [None]
 aquifer_tops = [None]

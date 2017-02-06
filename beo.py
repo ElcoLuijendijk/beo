@@ -1,8 +1,10 @@
 """
-simple 2D model of advective heat flow
+2D model of advective and conductive heat flow in hydrothermal systems
 
-Elco Luijendijk, McGill university, 2013
+Elco Luijendijk, McGill university & Goettingen Unviersity, 2013-2017
 """
+
+__author__ = 'Elco Luijendijk'
 
 ###############
 # load modules
@@ -78,14 +80,10 @@ def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
                z_surface, z_fine, z_base, cellsize,
                cellsize_air, cellsize_fault, cellsize_fine, cellsize_base):
 
-    #mp.fault_xs[0], mp.fault_widths[0], mp.fault_angles[0], mp.air_height,
-    #              z_surface, mp.z_fine, z_base, mp.cellsize,
-    #              mp.cellsize_air, mp.cellsize_fault,
-    #              mp.cellsize_fine, mp.cellsize_base
-
-
     """
+
     create a mesh for the model of the bewowawe hydrothermal system
+
     """
 
     ###############################
@@ -188,6 +186,101 @@ def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
     d.addItems(surface_air, surface_flt_fine,
                surface_fine_left, surface_fine_right,
                ps1, ps2, ps3)
+
+    mesh = fl.MakeDomain(d, optimizeLabeling=True)
+
+    mesh.write('mesh.fly')
+
+    return mesh
+
+
+def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle, z_air,
+               z_surface_initial, z_surface_final, z_surface_steps,
+               z_fine, z_base, cellsize,
+               cellsize_air, cellsize_fault, cellsize_fine, cellsize_base):
+
+    """
+
+    create a mesh for the model of the bewowawe hydrothermal system
+
+    """
+
+    ###############################
+    # use gmsh to construct domain
+    ##############################
+
+    # calculate fault positions
+    # TODO: enable multiple faults, right now only one fault in model domain
+    zs_surface = np.linspace(z_surface_initial, z_surface_final, z_surface_steps)
+    z_flt = np.concatenate((zs_surface, np.array([z_fine, z_base])))
+    #z_flt = np.array([z_surface, z_fine, z_base])
+    x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
+
+    print 'fault locations in mesh:'
+    for x, z in zip(x_flt, z_flt):
+        print x, z
+
+    #xys = [[0, z_air], [width, z_air],
+    #       [0, z_surface], [x_flt[0], z_surface], [x_flt[0] + fault_width, z_surface], [width, z_surface],
+    #       [0, z_fine], [x_flt[1], z_fine], [x_flt[1] + fault_width, z_fine], [width, z_fine],
+    #       [0, z_base], [x_flt[2], z_base], [x_flt[2] + fault_width, z_base], [width, z_base]]
+
+    xys = [[[0, z_air], [width, z_air]]]
+
+    for xf, zf in zip(x_flt, z_flt):
+        xys.append([[0, zf], [xf, zf], [xf + fault_width, zf], [width, zf]])
+
+    points = []
+    for xyi in xys:
+        points_local = [pc.Point(x, z) for x, z in xyi]
+        points.append(points_local)
+
+    # fine cellsize in air layer:
+    for point in points[0]:
+        point.setLocalScale(cellsize_air / cellsize)
+
+    # small cellsize in fault:
+    for point in points[1:]:
+        point[1].setLocalScale(cellsize_fault / cellsize)
+        point[2].setLocalScale(cellsize_fault / cellsize)
+
+    points[-1][0].setLocalScale(cellsize_base / cellsize)
+    points[-1][-1].setLocalScale(cellsize_base / cellsize)
+
+    # horizontal lines:
+    hlines = [[pc.Line(points[0][0], points[0][1])]]
+    for point in points[1:]:
+        hline_local = [pc.Line(point[0], point[1]),
+                       pc.Line(point[1], point[2]),
+                       pc.Line(point[2], point[3])]
+        hlines.append(hline_local)
+
+    # vertical lines:
+    vlines = [[pc.Line(points[0][0], points[1][0]), pc.Line(points[0][1], points[1][3])]]
+    for point, point_below in zip(points[1:], points[2:]):
+        vline_local = [pc.Line(point[0], point_below[0]),
+                       pc.Line(point[1], point_below[1]),
+                       pc.Line(point[2], point_below[2]),
+                       pc.Line(point[3], point_below[3])]
+        vlines.append(vline_local)
+
+    curves = [pc.CurveLoop(hlines[0][0], vlines[0][1],
+                           -hlines[1][2], -hlines[1][1], -hlines[1][0],
+                           -vlines[0][0])]
+    for hline, hline_below, vline in zip(hlines[1:-1], hlines[2:], vlines[1:]):
+        curve_local_left = pc.CurveLoop(hline[0], vline[1], -hline_below[0], -vline[0])
+        curve_local_fault = pc.CurveLoop(hline[1], vline[2], -hline_below[1], -vline[1])
+        curve_local_right = pc.CurveLoop(hline[2], vline[3], -hline_below[2], -vline[2])
+
+        curves += [curve_local_left, curve_local_fault, curve_local_right]
+
+    surfaces = [pc.PlaneSurface(curve) for curve in curves]
+
+    d = gmsh.Design(dim=2, element_size=cellsize)
+
+    d.setMeshFileName('beowawe_mesh')
+
+    d.addItems(*surfaces)
 
     mesh = fl.MakeDomain(d, optimizeLabeling=True)
 
@@ -344,7 +437,11 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     rho_f, c_f,
                                     specified_temperature, specified_flux,
                                     dt,
-                                    solve_as_steady_state=True):
+                                    solve_as_steady_state=True,
+                                    surface_level_init=0, exhumation_rate=0,
+                                    exhumation_interval=10,
+                                    K_b=None, c_b=None, rho_b=None,
+                                    K_air=None, c_air=None, rho_air=None):
 
     """
 
@@ -353,7 +450,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
     day = 24.0 * 60.0 * 60.0
     year = 365.25 * day
 
-    #C1 = (rho_f * c_f) / (rho_var * c_var)
+    xyz = mesh.getX()
 
     ######################################
     # model steady-state temperature field
@@ -484,6 +581,42 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             if t / 10 == t / 10.0:
                 print 'step %i of %i' % (t, nt)
                 print 'temperature: ', T
+
+            if exhumation_rate != 0 and t / exhumation_interval == t / float(exhumation_interval):
+
+                surface_level = surface_level_init - t_total / year * exhumation_rate
+
+                print 'exhumation, new surface level at %0.2f' % surface_level
+                subsurface = es.whereNonPositive(xyz[1] - surface_level)
+                air = es.wherePositive(xyz[1] - surface_level)
+
+                # populate K, c and rho scalar fields
+                K_var = subsurface * K_b + air * K_air
+                c_var = subsurface * c_b + air * c_air
+                rho_var = subsurface * rho_b + air * rho_air
+
+                # reset heatflow PDE coefficients
+                A = dt * K_var * es.kronecker(mesh)
+                C = dt * rho_f * c_f * q_vector
+                D = rho_var * c_var
+                Y = rho_var * c_var * T
+
+                # update bnd cond if spec flux bnd
+                if specified_flux is not None:
+
+                    print 'adding specified flux bnd'
+                    specified_heat_flux = specified_flux * specified_flux_loc * dt
+
+                    #
+                    hf_pde.setValue(A=A, C=C, D=D, Y=Y,
+                                    r=specified_temperature,
+                                    q=specified_T_loc,
+                                    y=specified_heat_flux)
+                else:
+                    hf_pde.setValue(A=A, C=C, D=D, Y=Y,
+                                    r=specified_temperature,
+                                    q=specified_T_loc)
+
             # solve PDE for temperature
             T = hf_pde.getSolution()
 
@@ -495,6 +628,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                 q=specified_T_loc)
 
             t_total += dt
+
 
             #if t in output_steps:
 
@@ -533,11 +667,21 @@ def model_run(mp):
 
     z_surface = 0
     z_base = -mp.total_depth
-    mesh = setup_mesh(mp.width, mp.fault_xs[0], mp.fault_widths[0],
-                      mp.fault_angles[0], mp.air_height,
-                      z_surface, mp.z_fine, z_base, mp.cellsize,
-                      mp.cellsize_air, mp.cellsize_fault,
-                      mp.cellsize_fine, mp.cellsize_base)
+    #mesh = setup_mesh(mp.width, mp.fault_xs[0], mp.fault_widths[0],
+    #                  mp.fault_angles[0], mp.air_height,
+    #                  z_surface, mp.z_fine, z_base, mp.cellsize,
+   #                   mp.cellsize_air, mp.cellsize_fault,
+    #                  mp.cellsize_fine, mp.cellsize_base)
+
+    exhumed_thickness = mp.exhumation_rate * (np.sum(np.array(mp.durations)) / mp.year)
+    exhumation_steps = mp.exhumation_steps
+
+    mesh = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0], mp.fault_widths[0],
+                                      mp.fault_angles[0], mp.air_height,
+                                      z_surface + exhumed_thickness, z_surface, exhumation_steps,
+                                      mp.z_fine, z_base, mp.cellsize,
+                                      mp.cellsize_air, mp.cellsize_fault,
+                                      mp.cellsize_fine, mp.cellsize_base)
 
     ###############################################################
     # convert input params to escript variables
@@ -559,8 +703,9 @@ def model_run(mp):
     bottom_bnd = es.whereZero(xyz[1] - es.inf(xyz[1]))
 
     # find which nodes are in the subsurface
-    subsurface = es.whereNonPositive(xyz[1])
-    air = es.wherePositive(xyz[1])
+    surface_level = exhumed_thickness
+    subsurface = es.whereNonPositive(xyz[1] - surface_level)
+    air = es.wherePositive(xyz[1] - surface_level)
 
     # set boundary conditions
     if mp.thermal_gradient is not None:
@@ -586,8 +731,6 @@ def model_run(mp):
         specified_flux.setTaggedValue("bottomleft", mp.basal_heat_flux)
         specified_flux.setTaggedValue("bottommid", mp.basal_heat_flux)
         specified_flux.setTaggedValue("bottomright", mp.basal_heat_flux)
-
-        #pdb.set_trace()
 
     # populate porosity and K_solid values
     fault_x = calculate_fault_x(xyz[1], mp.fault_angles[0], mp.fault_xs[0])
@@ -671,11 +814,14 @@ def model_run(mp):
             mp.rho_f, mp.c_f,
             specified_T, specified_flux,
             mp.dt,
-            solve_as_steady_state=mp.steady_state)
+            solve_as_steady_state=mp.steady_state,
+            surface_level_init=surface_level, exhumation_rate=mp.exhumation_rate,
+            exhumation_interval=mp.exhumation_interval,
+            K_b=K_b, c_b=c_b, rho_b=rho_b,
+            K_air=mp.K_air, c_air=mp.c_air, rho_air=mp.rho_air)
 
     print 'T after thermal recovery ', Ts[-1]
     print 'done modeling'
-
 
     # convert modeled T field and vectors to arrays
     xyz_array, T0 = convert_to_array(Ts[0])
@@ -781,7 +927,6 @@ def model_run(mp):
 
                 #My = 1e6 * 365.25 * 24 * 60 * 60
                 #print zip(t_he/My, T_he - mp.Kelvin, he_age_i / My)
-                #pdb.set_trace()
 
             # get surface locs and T
             xs = xyz_array[:, 0][ind_surface1]

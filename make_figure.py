@@ -74,7 +74,11 @@ files = os.listdir(result_dir)
 
 files = [os.path.join(result_dir, f) for f in files if f[-4:] == '.pck']
 
+files.sort(key=os.path.getmtime)
 
+files = files[::-1]
+
+print 'output files, from newest to oldest:'
 for i, file in enumerate(files):
     print i, file
 
@@ -183,7 +187,7 @@ for fn in files:
                              qhg[ind][a][::thin], qvg[ind][a][::thin],
                              angles='xy', scale=scale, headwidth=5)
 
-        lss = [':', '-']
+        lss = ['-', ':']
         #colors = ['darkblue', 'green']
         # surface temperatures
         n_depths = len(Tzs)

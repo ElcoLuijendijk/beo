@@ -1,9 +1,9 @@
 """
-run multiple model sequentially with different parameter values
+run multiple models sequentially with different parameter values
 
 """
 
-__author__ = 'elcopone'
+__author__ = 'Elco Luijendijk'
 
 import sys
 import os
@@ -55,10 +55,6 @@ else:
                 sci[j] = sli
                 scenario_parameter_combinations.append(sci)
 
-#param_list = \
-#    list(itertools.product(pr.fault_bottoms,
-#                           pr.thermal_gradients))
-
 param_list = scenario_parameter_combinations
 
 # read default model parameter file
@@ -82,11 +78,7 @@ columns += ['max_surface_temperature', 'T_change_avg']
 
 df = pd.DataFrame(index=ind, columns=columns)
 
-
 for model_run, param_set in enumerate(param_list):
-
-    #fault_bottom, thermal_gradient = param_set
-    #print 'updated parameters ', param_set
 
     Parameters = mp
 
@@ -182,11 +174,14 @@ for model_run, param_set in enumerate(param_list):
                 dev_age = ages / ages.max()
 
                 min_age = np.min(ages)
+                max_age = np.max(ages)
                 ind_min_age = np.argmin(ages)
 
                 x_min_age = xzs[i][ind_min_age]
                 col_name = 'lowest_age_layer%i' % i
                 df.loc[output_number, col_name] = min_age
+                col_name = 'highest_age_layer%i' % i
+                df.loc[output_number, col_name] = max_age
                 col_name = 'x_lowest_age_layer%i' % i
                 df.loc[output_number, col_name] = x_min_age
 
