@@ -11,6 +11,7 @@ import pickle
 import itertools
 import inspect
 import pdb
+import datetime
 
 import numpy as np
 import pandas as pd
@@ -233,8 +234,12 @@ for model_run, param_set in enumerate(param_list):
     pickle.dump(output_selected, fout)
     fout.close()
 
-fn = 'model_params_and_results_%i_runs.csv' \
-     % len(param_list)
+today = datetime.datetime.now()
+today_str = '%i-%i-%i' % (today.day, today.month,
+                          today.year)
+
+fn = 'model_params_and_results_%i_runs_%s.csv' \
+     % (len(param_list), today_str)
 fn_path = os.path.join(output_folder, fn)
 
 print '-' * 30

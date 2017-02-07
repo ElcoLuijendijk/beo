@@ -107,7 +107,7 @@ N_outputs = [10]
 dt = 1000 * year
 
 # duration of each timestep_slice
-durations = [1e5 * year]
+durations = [3e5 * year]
 
 # target depth slices for calculating temperature and U-Th/He
 # in case of exhumation, this values is overridden and
