@@ -107,10 +107,14 @@ N_outputs = [10]
 dt = 1000 * year
 
 # duration of each timestep_slice
-durations = [3e5 * year]
+durations = [1e5 * year]
 
 # target depth slices for calculating temperature and U-Th/He
-target_zs = [25.0, 20.0, 10.0, 5.0, 0.0]
+# in case of exhumation, this values is overridden and
+# set equal to each exhumation step layer
+# in this way one can track the AHe response to each layer that
+# comes to the surface in a longer time period
+target_zs = [10.0, 5.0, 0.0]
 
 # U-Th/He params
 calculate_he_ages = True
@@ -132,13 +136,13 @@ stopping_distance = 21e-6
 ## fault data for multiple faults:
 
 # x location of fault:
-fault_xs = [2000]
+fault_xs = [4000]
 
 # fault width
 fault_widths = [20.0]
 
 # angle of the fault zone (degrees), dip of normal faults ~60-70 degrees
-fault_angles = [65.0]
+fault_angles = [-65.0]
 
 # elevation of bottom of fault
 fault_bottoms = [-5000.0]
@@ -146,7 +150,7 @@ fault_bottoms = [-5000.0]
 # fluid advection rates in faults:
 # nested list,
 # [[fault1_t1, fault2_t1], [fault1_t2, fault2_t2], etc...]
-fault_fluxes = [[15.0 / year]]
+fault_fluxes = [[-15.0 / year]]
 
 aquifer_bottoms = [None]
 aquifer_tops = [None]

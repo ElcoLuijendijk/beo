@@ -74,7 +74,8 @@ n_rows = n_model_runs * n_ts
 
 ind = np.arange(n_rows)
 columns = ['timestep', 'runtime_yr'] + attribute_names
-columns += ['max_surface_temperature', 'T_change_avg']
+columns += ['surface_elevation',
+            'max_surface_temperature', 'T_change_avg']
 
 df = pd.DataFrame(index=ind, columns=columns)
 
@@ -106,7 +107,7 @@ for model_run, param_set in enumerate(param_list):
                               attribute[0].endswith('__'))]
     for a in attribute_dict:
         if a[0] in df.columns:
-            if type(a[1]) is list:
+            if type(a[1]) is list or type(a[1]) is np.ndarray:
                 df.loc[model_run, a[0]] = str(a[1])
             else:
                 df.loc[model_run, a[0]] = a[1]
@@ -114,9 +115,11 @@ for model_run, param_set in enumerate(param_list):
     print 'running single model'
     output = beo.model_run(mp)
 
-    (runtimes, xyz_array, T_init_array, T_array, xyz_element_array,
+    (runtimes, xyz_array, surface_levels,
+     T_init_array, T_array, xyz_element_array,
      qh_array, qv_array,
-     fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all) = output
+     fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all,
+     z_Ahe) = output
 
     # crop output to only the output timesteps, to limit filesize
     output_steps = []
@@ -132,11 +135,13 @@ for model_run, param_set in enumerate(param_list):
     Tzs_cropped = [Tzi[output_steps] for Tzi in Tzs]
     AHe_ages_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_all]
     output_selected = \
-        [runtimes, runtimes[output_steps], xyz_array, T_init_array,
+        [runtimes, runtimes[output_steps], xyz_array,
+         surface_levels[output_steps],
+         T_init_array,
          T_array[output_steps], xyz_element_array,
          qh_array[output_steps], qv_array[output_steps],
          fault_fluxes, durations, xzs, Tzs_cropped,
-         AHe_ages_cropped, xs_Ahe_all]
+         AHe_ages_cropped, xs_Ahe_all, z_Ahe]
 
     T_array = T_array[output_steps]
 
@@ -148,7 +153,7 @@ for model_run, param_set in enumerate(param_list):
 
         for a in attribute_dict:
             if a[0] in df.columns:
-                if type(a[1]) is list:
+                if type(a[1]) is list or type(a[1]) is np.ndarray:
                     df.loc[output_number, a[0]] = str(a[1])
                 else:
                     df.loc[output_number, a[0]] = a[1]
@@ -158,6 +163,8 @@ for model_run, param_set in enumerate(param_list):
         df.loc[output_number, 'timestep'] = output_steps[j]
         df.loc[output_number, 'output_timestep'] = j
         df.loc[output_number, 'runtime_yr'] = runtimes[output_steps[j]] / year
+        df.loc[output_number, 'surface_elevation'] = \
+            surface_levels[output_steps[j]]
 
         df.loc[output_number, 'max_surface_temperature'] = Tzs[0][j].max()
         T_change = T_array[j] - T_init_array
@@ -176,6 +183,9 @@ for model_run, param_set in enumerate(param_list):
                 min_age = np.min(ages)
                 max_age = np.max(ages)
                 ind_min_age = np.argmin(ages)
+
+                col_name = 'elevation_layer%i' % i
+                df.loc[output_number, col_name] = z_Ahe[i]
 
                 x_min_age = xzs[i][ind_min_age]
                 col_name = 'lowest_age_layer%i' % i

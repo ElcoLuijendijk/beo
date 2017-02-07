@@ -487,6 +487,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
     t_total = 0
     q_vectors = []
     Ts = []
+    surface_levels = []
+    surface_level = surface_level_init
 
     for fault_flux, duration in zip(fault_fluxes, durations):
 
@@ -629,6 +631,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
             t_total += dt
 
+            surface_levels.append(surface_level)
+
 
             #if t in output_steps:
 
@@ -641,9 +645,10 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
             runtimes.append(t_total)
 
-        print 'T after convective heating ', T
+        print 'T after advective heating ', T
 
-    return np.array(runtimes), T_steady, Ts, q_vectors
+    return (np.array(runtimes), T_steady, Ts, q_vectors,
+            np.array(surface_levels))
 
 
 def model_run(mp):
@@ -675,6 +680,10 @@ def model_run(mp):
 
     exhumed_thickness = mp.exhumation_rate * (np.sum(np.array(mp.durations)) / mp.year)
     exhumation_steps = mp.exhumation_steps
+
+    if exhumed_thickness != 0:
+        # track AHe and temperature in each exhumed layer in the model domain:
+        mp.target_zs = np.linspace(0, exhumed_thickness, exhumation_steps)
 
     mesh = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0], mp.fault_widths[0],
                                       mp.fault_angles[0], mp.air_height,
@@ -805,7 +814,7 @@ def model_run(mp):
             aquifer_locs.append(aquifer_loc)
 
     # model hydrothermal heating
-    runtimes, T_steady, Ts, q_vectors = \
+    runtimes, T_steady, Ts, q_vectors, surface_levels = \
         model_hydrothermal_temperatures(
             mesh, hf_pde,
             fault_zones, mp.fault_angles, specified_T_loc, specified_flux_loc,
@@ -844,9 +853,11 @@ def model_run(mp):
     Tzs = []
     nt, a = T_array.shape
 
+    z_tolerance = 0.01
+
     for target_z in mp.target_zs:
 
-        ind = xyz_array[:, 1] == target_z
+        ind = np.abs(xyz_array[:, 1] - target_z) < z_tolerance
         xz = xyz_array[:, 0][ind]
 
         # new array for temperatures at depth
@@ -870,7 +881,8 @@ def model_run(mp):
     #calculate_he_ages = True
 
     if mp.calculate_he_ages is False:
-        AHe_data = None
+        Ahe_ages_all = None
+        xs_Ahe_all = None
 
     else:
 
@@ -896,8 +908,9 @@ def model_run(mp):
             #target_depth = 0
             nt = len(Ts)
 
-            ind_surface1 = xyz_array[:, 1] == target_depth
-            ind_surface = np.where(xyz_array[:, 1] == target_depth)[0]
+            #ind_surface1 = xyz_array[:, 1] == target_depth
+            z_tolerance = 0.01
+            ind_surface = np.where(np.abs(xyz_array[:, 1] - target_depth) < z_tolerance)[0]
             nx = len(ind_surface)
 
             he_ages_surface = np.zeros((nt, nx))
@@ -929,7 +942,7 @@ def model_run(mp):
                 #print zip(t_he/My, T_he - mp.Kelvin, he_age_i / My)
 
             # get surface locs and T
-            xs = xyz_array[:, 0][ind_surface1]
+            xs = xyz_array[:, 0][ind_surface]
             sort_order = np.argsort(xs)
             xs = xs[sort_order]
 
@@ -960,9 +973,11 @@ def model_run(mp):
 
     print 'surface T: ', T * surface
 
-    output = [runtimes, xyz_array, T_init_array, T_array, xyz_element_array,
+    output = [runtimes, xyz_array, surface_levels,
+              T_init_array, T_array, xyz_element_array,
               qh_array, qv_array,
-              mp.fault_fluxes, mp.durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all]
+              mp.fault_fluxes, mp.durations, xzs, Tzs,
+              Ahe_ages_all, xs_Ahe_all, mp.target_zs]
 
     return output
 
@@ -980,9 +995,11 @@ if __name__ == "__main__":
     # run a single model scenario
     output = model_run(mp)
 
-    runtimes, xyz_array, T_init_array, T_array, xyz_element_array, \
-        qh_array, qv_array, \
-        fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all = output
+    (runtimes, xyz_array, surface_levels,
+     T_init_array, T_array, xyz_element_array,
+     qh_array, qv_array,
+     fault_fluxes, durations, xzs, Tzs,
+     Ahe_ages_all, xs_Ahe_all, Ahe_depths) = output
 
     # crop output to only the output timesteps, to limit filesize
     output_steps = []
@@ -998,11 +1015,12 @@ if __name__ == "__main__":
     Tzs_cropped = [Tzi[output_steps] for Tzi in Tzs]
     AHe_ages_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_all]
     output_selected = \
-        [runtimes, runtimes[output_steps], xyz_array, T_init_array,
+        [runtimes, runtimes[output_steps], xyz_array, surface_levels,
+         T_init_array,
          T_array[output_steps], xyz_element_array,
          qh_array[output_steps], qv_array[output_steps],
          fault_fluxes, durations, xzs, Tzs_cropped,
-         AHe_ages_cropped, xs_Ahe_all]
+         AHe_ages_cropped, xs_Ahe_all, Ahe_depths]
 
     #output_folder = os.path.join(folder, 'model_output')
     output_folder = os.path.join(scriptdir, mp.output_folder)

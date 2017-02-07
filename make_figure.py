@@ -101,9 +101,12 @@ for fn in files:
     try:
         #[runtimes, xyz_array, T_array, xyz_element_array, qh_array, qv_array,
         # fault_fluxes, durations, xzs, Tzs, AHe_data] = output_data
-        [runtimes_all, runtimes, xyz_array, T_init_array, T_array, xyz_element_array,
+        [runtimes_all, runtimes, xyz_array, surface_levels,
+         T_init_array, T_array, xyz_element_array,
          qh_array, qv_array,
-         fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all] = output_data
+         fault_fluxes, durations, xzs, Tzs,
+         Ahe_ages_all, xs_Ahe_all, Ahe_depths] \
+            = output_data
 
     except ValueError:
         print 'error, could not read file ', fn
@@ -187,7 +190,7 @@ for fn in files:
                              qhg[ind][a][::thin], qvg[ind][a][::thin],
                              angles='xy', scale=scale, headwidth=5)
 
-        lss = ['-', ':']
+        lss = ['-'] + [':'] * 50
         #colors = ['darkblue', 'green']
         # surface temperatures
         n_depths = len(Tzs)
@@ -239,7 +242,7 @@ for fn in files:
 
         for tp in tpanels[:]:
             tp.set_xticklabels([])
-            tp.set_ylim(0, Tzs[-1].max() * 1.1)
+            tp.set_ylim(0, Tzs[0].max() * 1.1)
             tp.yaxis.grid(True)
             tp.set_xlim(xmin, xmax)
 
@@ -254,7 +257,7 @@ for fn in files:
         for rp in rpanels:
             rp.set_xlim(xmin, xmax)
             if Ahe_ages_all is not None:
-                rp.set_ylim(0, Ahe_ages_all[-1].max() / My * 1.1)
+                rp.set_ylim(0, Ahe_ages_all[0].max() / My * 1.1)
             rp.spines['top'].set_visible(False)
             rp.get_xaxis().tick_bottom()
 
