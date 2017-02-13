@@ -31,6 +31,53 @@ import esys.escript.linearPDEs as linearPDEs
 import lib.helium_diffusion_models as he
 
 
+def calculate_vapour_pressure(T,
+                              c1=8e-8,
+                              c2=-7e-5,
+                              c3=0.028,
+                              c4=-3.1597):
+
+    """
+    calculate the vapour pressure curve and check whether there should be
+    vapour or not in the model domain
+
+    based on a 3rd order polyonmial fit to vapour curve data by the NIST
+    publication "Thermophysical Properties of Fluid Systems"
+    found at http://webbook.nist.gov/chemistry/fluid/
+    """
+
+    log_Pv = c1 * T**3 + c2 * T**2 + c3 * T + c4
+
+    Pv = 10**log_Pv * 1e6
+
+    return Pv
+
+
+def find_max_liquid_T(P,
+                      c1=3.866,
+                      c2=25.151,
+                      c3=103.28,
+                      c4=179.99):
+    """
+    find the maximum temperature for a given pressure at which there is one
+    liquid phase only
+
+    based on a 3rd order polyonmial fit to vapour curve data by the NIST
+    publication "Thermophysical Properties of Fluid Systems"
+    found at http://webbook.nist.gov/chemistry/fluid/
+
+    input pressure in Pa
+    returns T in degrees C
+
+    """
+
+    logP = es.log10(P / 1.0e6)
+
+    Tmax = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
+
+    return Tmax
+
+
 def convert_to_array(u, no_coords=False):
 
     """
@@ -211,7 +258,7 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle, z
 
     # calculate fault positions
     # TODO: enable multiple faults, right now only one fault in model domain
-    zs_surface = np.linspace(z_surface_initial, z_surface_final, z_surface_steps)
+    zs_surface = np.linspace(z_surface_initial, z_surface_final, z_surface_steps + 1)
     z_flt = np.concatenate((zs_surface, np.array([z_fine, z_base])))
     #z_flt = np.array([z_surface, z_fine, z_base])
     x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
@@ -437,11 +484,14 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     rho_f, c_f,
                                     specified_temperature, specified_flux,
                                     dt,
+                                    top_bnd, bottom_bnd,
+                                    air_temperature, bottom_temperature,
                                     solve_as_steady_state=True,
                                     surface_level_init=0, exhumation_rate=0,
                                     exhumation_interval=10,
                                     K_b=None, c_b=None, rho_b=None,
-                                    K_air=None, c_air=None, rho_air=None):
+                                    K_air=None, c_air=None, rho_air=None,
+                                    vapour_correction=True):
 
     """
 
@@ -449,6 +499,10 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
     
     day = 24.0 * 60.0 * 60.0
     year = 365.25 * day
+
+    fluid_density = 1000.0
+    g = 9.81
+    atmospheric_pressure = 101325
 
     xyz = mesh.getX()
 
@@ -489,6 +543,22 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
     Ts = []
     surface_levels = []
     surface_level = surface_level_init
+
+    # calculate pressure
+    depth = -(xyz[1] - surface_level)
+    P_init = fluid_density * g * depth + atmospheric_pressure
+    P = P_init * es.wherePositive(depth) + atmospheric_pressure * es.whereNonPositive(depth)
+
+    vapour_pressure = calculate_vapour_pressure(T)
+    max_liquid_T = find_max_liquid_T(P)
+    vapour = es.whereNegative(P - vapour_pressure)
+    xmin_vapour = es.inf(vapour * xyz[0])
+    xmax_vapour = es.sup(vapour * xyz[0])
+    ymin_vapour = -es.sup(-(vapour * xyz[1]))
+    ymax_vapour = es.sup(vapour * xyz[1])
+
+    if es.sup(vapour) >= 1:
+        print 'warning, vapour present at initial steady-state P-T conditions'
 
     for fault_flux, duration in zip(fault_fluxes, durations):
 
@@ -581,16 +651,30 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         for t in range(nt):
 
             if t / 10 == t / 10.0:
+                land_surface = es.whereZero(xyz[1] - surface_level)
                 print 'step %i of %i' % (t, nt)
-                print 'temperature: ', T
+                print '\ttemperature: ', T
+                if es.sup(land_surface) > 0:
+                    print '\tmax. temperature at land surface: ', es.sup(T * land_surface)
+                else:
+                    print '\tcould not find land surface nodes'
+                if es.sup(vapour) > 0:
+                    print '\tvapour present in: ', es.integrate(vapour), ' m^2'
+                    print '\t\tfrom x = ', xmin_vapour, ' to x = ', xmax_vapour
+                    print '\t\tand from y = ', ymin_vapour, ' to y = ', ymax_vapour
+                else:
+                    print '\tno vapour present'
 
             if exhumation_rate != 0 and t / exhumation_interval == t / float(exhumation_interval):
 
                 surface_level = surface_level_init - t_total / year * exhumation_rate
 
+
                 print 'exhumation, new surface level at %0.2f' % surface_level
                 subsurface = es.whereNonPositive(xyz[1] - surface_level)
                 air = es.wherePositive(xyz[1] - surface_level)
+
+                q_vector = q_vector * subsurface
 
                 # populate K, c and rho scalar fields
                 K_var = subsurface * K_b + air * K_air
@@ -619,6 +703,47 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     r=specified_temperature,
                                     q=specified_T_loc)
 
+                # recalculate fluid pressure
+                xyz = mesh.getX()
+                depth = -(xyz[1] - surface_level)
+                P_init = fluid_density * g * depth + atmospheric_pressure
+                P = P_init * es.wherePositive(depth) + atmospheric_pressure * es.whereNonPositive(depth)
+
+            # recalculate vapour pressure and max liquid temperature
+            vapour_pressure = calculate_vapour_pressure(T)
+            #max_liquid_T = find_max_liquid_T(P)
+            vapour = subsurface * es.whereNegative(P - vapour_pressure)
+            #vapour = es.whereNegative(P - vapour_pressure)
+
+            c1=3.866
+            c2=25.151
+            c3=103.28
+            c4=179.99
+
+            xmin_vapour = es.inf(vapour * xyz[0])
+            xmax_vapour = es.sup(vapour * xyz[0])
+            ymin_vapour = -es.sup(-(vapour * xyz[1]))
+            ymax_vapour = es.sup(vapour * xyz[1])
+
+            if vapour_correction is True and es.sup(es.wherePositive(T - max_liquid_T)) >= 1:
+                #print 'vapour present in system'
+                #print 'adjusting fluid temperatures to not exceed vapour-pressure curve'
+
+                # calculate max liquid temperature
+                logP = es.log10(P / 1.0e6)
+                Tmax = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
+                #Tmax = 100.0
+
+                # figure out where max T is exceeded
+                #exceed_max_liquid_T = subsurface * vapour
+                exceed_max_liquid_T = subsurface * es.wherePositive(T - Tmax)
+                T_ok = es.whereNonPositive(exceed_max_liquid_T)
+
+                specified_T_loc = es.wherePositive(top_bnd) + es.wherePositive(bottom_bnd) + exceed_max_liquid_T
+                specified_temperature = es.wherePositive(top_bnd) * air_temperature \
+                      + es.wherePositive(bottom_bnd) * bottom_temperature + exceed_max_liquid_T * Tmax
+
+
             # solve PDE for temperature
             T = hf_pde.getSolution()
 
@@ -632,9 +757,6 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             t_total += dt
 
             surface_levels.append(surface_level)
-
-
-            #if t in output_steps:
 
             # store output
             Ts.append(T)
@@ -687,7 +809,8 @@ def model_run(mp):
 
     mesh = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0], mp.fault_widths[0],
                                       mp.fault_angles[0], mp.air_height,
-                                      z_surface + exhumed_thickness, z_surface, exhumation_steps,
+                                      z_surface + exhumed_thickness, z_surface,
+                                      exhumation_steps,
                                       mp.z_fine, z_base, mp.cellsize,
                                       mp.cellsize_air, mp.cellsize_fault,
                                       mp.cellsize_fine, mp.cellsize_base)
@@ -831,11 +954,14 @@ def model_run(mp):
             mp.rho_f, mp.c_f,
             specified_T, specified_flux,
             mp.dt,
+            top_bnd, bottom_bnd,
+            mp.air_temperature, bottom_temperature,
             solve_as_steady_state=mp.steady_state,
             surface_level_init=surface_level, exhumation_rate=mp.exhumation_rate,
             exhumation_interval=mp.exhumation_interval,
             K_b=K_b, c_b=c_b, rho_b=rho_b,
-            K_air=mp.K_air, c_air=mp.c_air, rho_air=mp.rho_air)
+            K_air=mp.K_air, c_air=mp.c_air, rho_air=mp.rho_air,
+            vapour_correction=mp.vapour_correction)
 
     print 'T after thermal recovery ', Ts[-1]
     print 'done modeling'
@@ -1021,7 +1147,12 @@ if __name__ == "__main__":
     output_steps = np.array(output_steps)
 
     Tzs_cropped = [Tzi[output_steps] for Tzi in Tzs]
-    AHe_ages_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_all]
+
+    if mp.calculate_he_ages is True:
+        AHe_ages_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_all]
+    else:
+        AHe_ages_cropped = None
+
     output_selected = \
         [runtimes, runtimes[output_steps], xyz_array, surface_levels,
          T_init_array,

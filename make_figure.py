@@ -292,12 +292,7 @@ for fn in files:
         cb = fig.colorbar(leg_cn, cax=cpanel, orientation='horizontal')
         cb.set_label('Temperature (%s C)' % degree_symbol)
 
-        fn_fig = fn[:-4] + '_T_field'
-        #if steady_state is True:
-        #    fn_fig += '_ss'
-        fn_fig += '.png'
-        print 'saving %s' % fn_fig
-        fig.savefig(fn_fig, dpi=150)
+        fn_fig = fn[:-4] + '_T_field.png'
 
         fn_local1 = os.path.split(fn_fig)[-1]
         fn_local2 = os.path.join('model_output', fn_local1)

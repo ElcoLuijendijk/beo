@@ -20,6 +20,9 @@ output_folder = 'model_output'
 # steady-state solution without any advection
 steady_state = False
 
+# keep the temperature below the max T in the vapour pressure curve
+vapour_correction = True
+
 # model dimensions
 width = 6000.0
 total_depth = 6000.0
@@ -121,9 +124,15 @@ calculate_he_ages = True
 
 # method to calculate helium diffusivity, use Wolf1996, Farley2000 or RDAAM
 AHe_method = 'RDAAM'
+
+# temperature after crystallization and before hydrothermal heating
 T0 = 10.0
 T_surface = 10.0
+
+# crystallization age
 t0 = 15.2 * My
+
+# apatite params
 radius = 100.0 * 1e-6
 U238 = 8.98e-6
 Th232 = 161.3e-6
@@ -152,15 +161,11 @@ fault_bottoms = [-5000.0]
 # [[fault1_t1, fault2_t1], [fault1_t2, fault2_t2], etc...]
 # note units are m2/sec, ie the integrated flux over the entire width of the
 # fault zone
-fault_fluxes = [[-200.0 / year]]
+fault_fluxes = [[-400.0 / year]]
 
 aquifer_bottoms = [None]
 aquifer_tops = [None]
 aquifer_fluxes = [None]
-
-############################################
-# variable params, for sensitivity analysis
-###########################################
 
 # relative limit to consider a sample partial reset or not, ie if 0.95
 # a sample will be considered partially reset if the modeled uncorrected
