@@ -150,7 +150,9 @@ fault_bottoms = [-5000.0]
 # fluid advection rates in faults:
 # nested list,
 # [[fault1_t1, fault2_t1], [fault1_t2, fault2_t2], etc...]
-fault_fluxes = [[-15.0 / year]]
+# note units are m2/sec, ie the integrated flux over the entire width of the
+# fault zone
+fault_fluxes = [[-200.0 / year]]
 
 aquifer_bottoms = [None]
 aquifer_tops = [None]

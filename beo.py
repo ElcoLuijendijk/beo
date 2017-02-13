@@ -813,12 +813,20 @@ def model_run(mp):
 
             aquifer_locs.append(aquifer_loc)
 
+    # convert fault fluxes from m2/sec to m/sec
+    # by dividing by fault zone width
+    fault_fluxes_m_per_sec = []
+    for fault_width, fault_flux in zip(mp.fault_widths, mp.fault_fluxes):
+
+        fault_flux_i = [f / fault_width for f in fault_flux]
+        fault_fluxes_m_per_sec.append(fault_flux_i)
+
     # model hydrothermal heating
     runtimes, T_steady, Ts, q_vectors, surface_levels = \
         model_hydrothermal_temperatures(
             mesh, hf_pde,
             fault_zones, mp.fault_angles, specified_T_loc, specified_flux_loc,
-            mp.durations, mp.fault_fluxes,
+            mp.durations, fault_fluxes_m_per_sec,
             K_var, rho_var, c_var,
             mp.rho_f, mp.c_f,
             specified_T, specified_flux,
@@ -976,7 +984,7 @@ def model_run(mp):
     output = [runtimes, xyz_array, surface_levels,
               T_init_array, T_array, xyz_element_array,
               qh_array, qv_array,
-              mp.fault_fluxes, mp.durations, xzs, Tzs,
+              fault_fluxes_m_per_sec, mp.durations, xzs, Tzs,
               Ahe_ages_all, xs_Ahe_all, mp.target_zs]
 
     return output
@@ -1034,7 +1042,7 @@ if __name__ == "__main__":
                               today.year)
 
     fn = 'results_q_%s_%i_yr_grad_%0.0f_%s.pck' \
-         % (str(np.array(fault_fluxes) * mp.year),
+         % (str(np.array(mp.fault_fluxes) * mp.year),
             int(np.sum(np.array(durations) / mp.year)),
             mp.thermal_gradient * 1000.0,
             today_str)
