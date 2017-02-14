@@ -805,7 +805,7 @@ def model_run(mp):
 
     if exhumed_thickness != 0:
         # track AHe and temperature in each exhumed layer in the model domain:
-        mp.target_zs = np.linspace(0, exhumed_thickness, exhumation_steps)
+        mp.target_zs = np.linspace(0, exhumed_thickness, exhumation_steps + 1)
 
     mesh = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0], mp.fault_widths[0],
                                       mp.fault_angles[0], mp.air_height,
@@ -1097,13 +1097,17 @@ def model_run(mp):
 
         My = 1e6 * 365 * 24 * 60 * 60.
 
+
+
         print 'AHe ages: '
         for i, Ahe_ages in enumerate(Ahe_ages_all):
-            print 'layer %i, min = %0.2f, mean = %0.2f, max = %0.2f My' \
+            try:
+                print 'layer %i, min = %0.2f, mean = %0.2f, max = %0.2f My' \
                   % (i, Ahe_ages.min() / My,
                      Ahe_ages.mean() / My,
                      Ahe_ages.max() / My)
-
+            except:
+                print 'layer %i, no modeled AHe data availabel'
 
     print 'surface T: ', T * surface
 
