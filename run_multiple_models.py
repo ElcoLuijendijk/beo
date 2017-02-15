@@ -232,6 +232,72 @@ for model_run, param_set in enumerate(param_list):
                     col_name = 'x_max_full_reset_layer%i' % i
                     df.loc[output_number, col_name] = np.nan
 
+            # figure out which depth is currently at the surface
+            # and calculate the partial and full reset widths for these
+            surface_elev = surface_levels[output_steps[j]]
+
+            if surface_elev in z_Ahe:
+                surface_ind = np.where(z_Ahe == surface_elev)[0]
+                ages_raw = AHe_ages_cropped[surface_ind][j] / My
+                x_coords = xzs[i]
+
+            else:
+                # interpolate AHe age from nearest surfaces
+                diff = z_Ahe - surface_elev
+                ind_low = np.where(diff < 0)[0][-1]
+                ind_high = np.where(diff > 0)[0][0]
+
+                fraction = np.abs(diff[ind_low]) / (z_Ahe[ind_high] - z_Ahe[ind_low])
+
+                ages_raw = ((1.0-fraction) * AHe_ages_cropped[ind_low][j] + fraction * AHe_ages_cropped[ind_high][j]) / My
+
+                x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
+
+            x_coords_int = np.arange(x_coords.min(), x_coords.max() + x_step, x_step)
+            ages = np.interp(x_coords_int, x_coords, ages_raw)
+            dev_age = ages / ages.max()
+
+            min_age = np.min(ages)
+            max_age = np.max(ages)
+            ind_min_age = np.argmin(ages)
+
+            x_min_age = x_coords_int[ind_min_age]
+            col_name = 'lowest_age_surface'
+            df.loc[output_number, col_name] = min_age
+            col_name = 'highest_age_surface'
+            df.loc[output_number, col_name] = max_age
+            col_name = 'x_lowest_age_surface'
+            df.loc[output_number, col_name] = x_min_age
+
+            if dev_age.min() < mp.partial_reset_limit:
+                ind_partial = np.where(dev_age < mp.partial_reset_limit)[0]
+                x_partial_min = x_coords_int[ind_partial[0]]
+                x_partial_max = x_coords_int[ind_partial[-1]]
+
+                col_name = 'x_min_partial_reset_surface'
+                df.loc[output_number, col_name] = x_partial_min
+                col_name = 'x_max_partial_reset_surface'
+                df.loc[output_number, col_name] = x_partial_max
+            else:
+                col_name = 'x_min_partial_reset_surface'
+                df.loc[output_number, col_name] = np.nan
+                col_name = 'x_max_partial_reset_surface'
+                df.loc[output_number, col_name] = np.nan
+
+            if ages.min() < mp.reset_limit:
+                ind_full = np.where(ages < mp.reset_limit)[0]
+                x_full_min = x_coords_int[ind_full[0]]
+                x_full_max = x_coords_int[ind_full[-1]]
+                col_name = 'x_min_full_reset_surface'
+                df.loc[output_number, col_name] = x_full_min
+                col_name = 'x_max_full_reset_surface'
+                df.loc[output_number, col_name] = x_full_max
+            else:
+                col_name = 'x_min_full_reset_surface'
+                df.loc[output_number, col_name] = np.nan
+                col_name = 'x_max_full_reset_surface'
+                df.loc[output_number, col_name] = np.nan
+
     today = datetime.datetime.now()
     today_str = '%i-%i-%i' % (today.day, today.month,
                               today.year)
