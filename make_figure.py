@@ -102,7 +102,9 @@ for fn in files:
         #[runtimes, xyz_array, T_array, xyz_element_array, qh_array, qv_array,
         # fault_fluxes, durations, xzs, Tzs, AHe_data] = output_data
         [runtimes_all, runtimes, xyz_array, surface_levels,
-         T_init_array, T_array, xyz_element_array,
+         T_init_array, T_array, boiling_temp_array,
+         xyz_array_exc, exceed_boiling_temp_array,
+         xyz_element_array,
          qh_array, qv_array,
          fault_fluxes, durations,
          xzs, Tzs, x_surface, T_surface,
@@ -169,6 +171,16 @@ for fn in files:
             leg_cn = p.contourf(xg, yg, zg, cnts)
             #p.scatter(xyz_array[:, 0], xyz_array[:, 1], s=0.1, color='gray')
             #c=Ta, **kwargs)
+
+        if fp.show_vapour is True:
+            print 'showing location of water vapour'
+            for p, bt in zip(panels, exceed_boiling_temp_array[fp.timeslices]):
+                #ind = bt >= Ta
+                #nind = ind == False
+                ind = bt > 0.0
+                nind = ind == False
+                leg_vp = p.scatter(xyz_array_exc[:, 0][ind], xyz_array_exc[:, 1][ind], s=1, color='gray', alpha=0.3)
+                #leg_vp = panels[-1].scatter(xyz_array[:, 0][nind], xyz_array[:, 1][nind], s=1, color='gray')
 
         for p, qhi, qvi in zip(panels, qh_array, qv_array):
             print 'adding arrows'

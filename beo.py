@@ -53,7 +53,7 @@ def calculate_vapour_pressure(T,
     return Pv
 
 
-def find_max_liquid_T(P,
+def calculate_boiling_temp(P,
                       c1=3.866,
                       c2=25.151,
                       c3=103.28,
@@ -504,7 +504,14 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
     g = 9.81
     atmospheric_pressure = 101325
 
+    c1 = 3.866
+    c2 = 25.151
+    c3 = 103.28
+    c4 = 179.99
+
     xyz = mesh.getX()
+
+    exceed_max_liquid_T_old = None
 
     ######################################
     # model steady-state temperature field
@@ -543,6 +550,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
     Ts = []
     surface_levels = []
     surface_level = surface_level_init
+    surface = es.whereZero(xyz[1] - surface_level)
 
     # calculate pressure
     depth = -(xyz[1] - surface_level)
@@ -550,12 +558,16 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
     P = P_init * es.wherePositive(depth) + atmospheric_pressure * es.whereNonPositive(depth)
 
     vapour_pressure = calculate_vapour_pressure(T)
-    max_liquid_T = find_max_liquid_T(P)
+    logP = es.log10(P / 1.0e6)
+    boiling_temp = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
     vapour = es.whereNegative(P - vapour_pressure)
     xmin_vapour = es.inf(vapour * xyz[0])
     xmax_vapour = es.sup(vapour * xyz[0])
     ymin_vapour = -es.sup(-(vapour * xyz[1]))
     ymax_vapour = es.sup(vapour * xyz[1])
+
+    boiling_temps = []
+    exceed_boiling_temps = []
 
     if es.sup(vapour) >= 1:
         print 'warning, vapour present at initial steady-state P-T conditions'
@@ -662,6 +674,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                     print '\tvapour present in: ', es.integrate(vapour), ' m^2'
                     print '\t\tfrom x = ', xmin_vapour, ' to x = ', xmax_vapour
                     print '\t\tand from y = ', ymin_vapour, ' to y = ', ymax_vapour
+                    print '\tmax. liquid T at the surface = ', es.sup(boiling_temp * land_surface)
                 else:
                     print '\tno vapour present'
 
@@ -669,10 +682,10 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
                 surface_level = surface_level_init - t_total / year * exhumation_rate
 
-
                 print 'exhumation, new surface level at %0.2f' % surface_level
                 subsurface = es.whereNonPositive(xyz[1] - surface_level)
                 air = es.wherePositive(xyz[1] - surface_level)
+                surface = es.whereZero(xyz[1] - surface_level)
 
                 q_vector = q_vector * subsurface
 
@@ -711,38 +724,33 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
             # recalculate vapour pressure and max liquid temperature
             vapour_pressure = calculate_vapour_pressure(T)
-            max_liquid_T = find_max_liquid_T(P)
+            #boiling_temp = calculate_boiling_temp(P)
             P_buffer = 10.0
             vapour = subsurface * es.whereNegative(P - vapour_pressure + P_buffer)
             #vapour = es.whereNegative(P - vapour_pressure)
-
-            c1=3.866
-            c2=25.151
-            c3=103.28
-            c4=179.99
 
             xmin_vapour = es.inf(vapour * xyz[0])
             xmax_vapour = es.sup(vapour * xyz[0])
             ymin_vapour = -es.sup(-(vapour * xyz[1]))
             ymax_vapour = es.sup(vapour * xyz[1])
 
-            if vapour_correction is True and es.sup(es.wherePositive(T - max_liquid_T)) >= 1:
-                #print 'vapour present in system'
-                #print 'adjusting fluid temperatures to not exceed vapour-pressure curve'
+            logP = es.log10(P / 1.0e6)
+            boiling_temp = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
+            exceed_boiling_temp = subsurface * es.wherePositive(T - boiling_temp)
 
-                # calculate max liquid temperature
-                logP = es.log10(P / 1.0e6)
-                Tmax = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
-                #Tmax = max_liquid_T
+            if exceed_max_liquid_T_old is None:
+                exceed_boiling_temp = subsurface * es.wherePositive(T - boiling_temp)
+            else:
+                exceed_boiling_temp = \
+                    subsurface * es.whereZero(exceed_max_liquid_T_old) \
+                    * es.wherePositive(T - boiling_temp) + subsurface * exceed_max_liquid_T_old
 
-                # figure out where max T is exceeded
-                #exceed_max_liquid_T = subsurface * vapour
-                exceed_max_liquid_T = subsurface * es.wherePositive(T - Tmax)
+            exceed_max_liquid_T_old =  exceed_boiling_temp
 
-                specified_T_loc = es.wherePositive(top_bnd) + es.wherePositive(bottom_bnd) + exceed_max_liquid_T
+            if vapour_correction is True:
+                specified_T_loc = es.wherePositive(top_bnd) + es.wherePositive(bottom_bnd) + exceed_boiling_temp
                 specified_temperature = es.wherePositive(top_bnd) * air_temperature \
-                      + es.wherePositive(bottom_bnd) * bottom_temperature + exceed_max_liquid_T * Tmax
-
+                      + es.wherePositive(bottom_bnd) * bottom_temperature + exceed_boiling_temp * boiling_temp
 
             # solve PDE for temperature
             T = hf_pde.getSolution()
@@ -761,6 +769,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             # store output
             Ts.append(T)
             q_vectors.append(q_vector)
+            boiling_temps.append(boiling_temp)
+            exceed_boiling_temps.append(exceed_boiling_temp)
 
             #ti = output_steps.index(t)
             #print 'surface T: ', T * surface
@@ -770,7 +780,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         print 'T after advective heating ', T
 
     return (np.array(runtimes), T_steady, Ts, q_vectors,
-            np.array(surface_levels))
+            np.array(surface_levels), boiling_temps, exceed_boiling_temps)
 
 
 def model_run(mp):
@@ -945,7 +955,7 @@ def model_run(mp):
         fault_fluxes_m_per_sec.append(fault_flux_i)
 
     # model hydrothermal heating
-    runtimes, T_steady, Ts, q_vectors, surface_levels = \
+    runtimes, T_steady, Ts, q_vectors, surface_levels, boiling_temps, exceed_boiling_temps = \
         model_hydrothermal_temperatures(
             mesh, hf_pde,
             fault_zones, mp.fault_angles, specified_T_loc, specified_flux_loc,
@@ -979,6 +989,17 @@ def model_run(mp):
                for q_vector in q_vectors]
     qh_array = np.array(qh_list)
     qv_array = np.array(qv_list)
+
+    xyz_array_bt, b0 = convert_to_array(boiling_temps[-1])
+    boiling_temp_list = [convert_to_array(maxT, no_coords=True) for maxT in boiling_temps]
+    boiling_temp_array = np.array(boiling_temp_list)
+
+    if np.max(xyz_array_bt - xyz_array_bt) > 0:
+        print 'warning, node coords for boiling and T parameter are not the same'
+
+    xyz_array_exc, bte_last = convert_to_array(exceed_boiling_temps[-1])
+    bt_list = [convert_to_array(bt, no_coords=True) for bt in exceed_boiling_temps]
+    exceed_boiling_temp_array = np.array(bt_list)
 
     ##############################################################
     # calculate temperature at depth slices (surface or otherwise)
@@ -1112,7 +1133,9 @@ def model_run(mp):
     print 'surface T: ', T * surface
 
     output = [runtimes, xyz_array, surface_levels,
-              T_init_array, T_array, xyz_element_array,
+              T_init_array, T_array, boiling_temp_array,
+              xyz_array_exc, exceed_boiling_temp_array,
+              xyz_element_array,
               qh_array, qv_array,
               fault_fluxes_m_per_sec, mp.durations, xzs, Tzs,
               Ahe_ages_all, xs_Ahe_all, mp.target_zs]
@@ -1136,7 +1159,9 @@ if __name__ == "__main__":
     output = model_run(mp)
 
     (runtimes, xyz_array, surface_levels,
-     T_init_array, T_array, xyz_element_array,
+     T_init_array, T_array, boiling_temp_array,
+     xyz_array_exc, exceed_boiling_temp_array,
+     xyz_element_array,
      qh_array, qv_array,
      fault_fluxes, durations, xzs, Tzs,
      Ahe_ages_all, xs_Ahe_all, target_depths) = output
@@ -1226,7 +1251,9 @@ if __name__ == "__main__":
     output_selected = \
         [runtimes, runtimes[output_steps], xyz_array, surface_levels,
          T_init_array,
-         T_array[output_steps], xyz_element_array,
+         T_array[output_steps], boiling_temp_array[output_steps],
+         xyz_array_exc, exceed_boiling_temp_array[output_steps],
+         xyz_element_array,
          qh_array[output_steps], qv_array[output_steps],
          fault_fluxes, durations,
          xzs, Tzs_cropped, x_surface, T_surface,

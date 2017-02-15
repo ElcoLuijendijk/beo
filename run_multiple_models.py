@@ -121,9 +121,12 @@ for model_run, param_set in enumerate(param_list):
     output = beo.model_run(Parameters)
 
     (runtimes, xyz_array, surface_levels,
-     T_init_array, T_array, xyz_element_array,
-     qh_array, qv_array,
-     fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all,
+     T_init_array, T_array, boiling_temp_array,
+     xyz_array_exc, exceed_boiling_temp_array,
+     xyz_element_array, qh_array, qv_array,
+     fault_fluxes, durations,
+     xzs, Tzs,
+     Ahe_ages_all, xs_Ahe_all,
      target_depths) = output
 
     # crop output to only the output timesteps, to limit filesize
@@ -333,7 +336,9 @@ for model_run, param_set in enumerate(param_list):
         [runtimes, runtimes[output_steps], xyz_array,
          surface_levels[output_steps],
          T_init_array,
-         T_array, xyz_element_array,
+         T_array, boiling_temp_array[output_steps],
+         xyz_array_exc, exceed_boiling_temp_array[output_steps],
+         xyz_element_array,
          qh_array[output_steps], qv_array[output_steps],
          fault_fluxes, durations,
          xzs, Tzs_cropped, x_surface, T_surface,
