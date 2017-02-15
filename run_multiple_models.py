@@ -229,8 +229,12 @@ for model_run, param_set in enumerate(param_list):
                     col_name = 'x_max_full_reset_layer%i' % i
                     df.loc[output_number, col_name] = np.nan
 
-    fn = 'T_field_model_run_%i_%s.pck' \
-         % (model_run, str(param_set))
+    today = datetime.datetime.now()
+    today_str = '%i-%i-%i' % (today.day, today.month,
+                              today.year)
+
+    fn = 'results_model_run_%i_%s_%s.pck' \
+         % (model_run, str(param_set), today_str)
     fn_path = os.path.join(output_folder, fn)
 
     print 'saving model results as %s' % fn_path
@@ -249,6 +253,6 @@ fn_path = os.path.join(output_folder, fn)
 print '-' * 30
 print 'saving summary of parameters and model results as %s' % fn_path
 
-df.to_csv(fn_path, index_label='model_run', encoding='utf-8')
+df.to_csv(fn_path, index_label='row', encoding='utf-8')
 
 print 'done with all model runs'
