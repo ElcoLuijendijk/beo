@@ -1126,7 +1126,9 @@ if __name__ == "__main__":
     print 'running a single model scenario:'
 
     # import model parameters file
-    import model_parameters.model_parameters as mp
+    from model_parameters.model_parameters import ModelParams
+
+    mp = ModelParams
 
     scriptdir = os.path.realpath(sys.path[0])
 

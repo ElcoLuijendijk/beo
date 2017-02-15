@@ -16,9 +16,11 @@ import datetime
 import numpy as np
 import pandas as pd
 
-import model_parameters.model_parameters as mp
+from model_parameters.model_parameters import ModelParams
 import model_parameters.parameter_ranges as pr
 import beo
+
+mp = ModelParams
 
 day = 24.0 * 60.0 * 60.0
 year = 365.25 * day
@@ -59,7 +61,8 @@ else:
 param_list = scenario_parameter_combinations
 
 # read default model parameter file
-Parameters = mp
+Parameters = mp()
+
 
 # get attributes
 attributes = inspect.getmembers(
@@ -74,7 +77,7 @@ n_ts = np.sum(np.array(mp.N_outputs))
 n_rows = n_model_runs * n_ts
 
 ind = np.arange(n_rows)
-columns = ['timestep', 'runtime_yr'] + attribute_names
+columns = ['model_run', 'timestep', 'runtime_yr'] + attribute_names
 columns += ['surface_elevation',
             'max_surface_temperature', 'T_change_avg']
 
@@ -82,7 +85,8 @@ df = pd.DataFrame(index=ind, columns=columns)
 
 for model_run, param_set in enumerate(param_list):
 
-    Parameters = mp
+    # reload default params
+    Parameters = mp()
 
     # update default parameters in Parameter class
     for scenario_param_name, scenario_parameter in \
@@ -106,15 +110,15 @@ for model_run, param_set in enumerate(param_list):
     attribute_dict = [attribute for attribute in attributes
                       if not (attribute[0].startswith('__') and
                               attribute[0].endswith('__'))]
-    for a in attribute_dict:
-        if a[0] in df.columns:
-            if type(a[1]) is list or type(a[1]) is np.ndarray:
-                df.loc[model_run, a[0]] = str(a[1])
-            else:
-                df.loc[model_run, a[0]] = a[1]
+    #for a in attribute_dict:
+    #    if a[0] in df.columns:
+    #        if type(a[1]) is list or type(a[1]) is np.ndarray:
+    #            df.loc[model_run, a[0]] = str(a[1])
+    #        else:
+    #            df.loc[model_run, a[0]] = a[1]
 
     print 'running single model'
-    output = beo.model_run(mp)
+    output = beo.model_run(Parameters)
 
     (runtimes, xyz_array, surface_levels,
      T_init_array, T_array, xyz_element_array,

@@ -11,7 +11,7 @@ in model_parameters.py with each item in the list consecutively
 
 import numpy as np
 
-__author__ = 'elcopone'
+__author__ = 'Elco Luijendijk'
 
 
 year = 365.25 * 24 * 60 * 60.0
@@ -38,4 +38,4 @@ initial_base_run = False
 
 fault_fluxes_s = [[[-100.0 / year]], [[-150.0 / year]]]
 
-fault_widths_s = [20.0, 30.0]
+fault_widths_s = [[20.0], [30.0]]
