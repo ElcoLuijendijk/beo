@@ -105,7 +105,8 @@ for fn in files:
          T_init_array, T_array, xyz_element_array,
          qh_array, qv_array,
          fault_fluxes, durations, xzs, Tzs,
-         Ahe_ages_all, xs_Ahe_all, Ahe_depths] \
+         Ahe_ages_all, xs_Ahe_all, Ahe_depths,
+         AHe_ages_surface, AHe_xcoords_surface] \
             = output_data
 
     except ValueError:
@@ -190,7 +191,7 @@ for fn in files:
                              qhg[ind][a][::thin], qvg[ind][a][::thin],
                              angles='xy', scale=scale, headwidth=5)
 
-        lss = ['-'] + [':'] * 50
+        lss = ['-'] * 50
         #colors = ['darkblue', 'green']
         # surface temperatures
         n_depths = len(Tzs)
@@ -203,11 +204,12 @@ for fn in files:
         #
         if Ahe_ages_all is not None:
             #Ahe_ages_all, xs_Ahe_all = AHe_data
-            for i in range(n_depths):
-                for rp, timeslice in zip(rpanels, fp.timeslices):
-                    leg_ahe, = rp.plot(xs_Ahe_all[i],
-                                       Ahe_ages_all[i][timeslice] / My,
-                                       color='blue', ls=lss[i])
+            #for i in range(n_depths):
+            for rp, timeslice in zip(rpanels, fp.timeslices):
+
+                leg_ahe, = rp.plot(AHe_xcoords_surface[timeslice],
+                                   AHe_ages_surface[timeslice] / My,
+                                   color='blue', ls=lss[i])
 
         #for p in panels[:]:
         panels[0].set_ylabel('Elevation (m)')

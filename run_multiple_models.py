@@ -139,16 +139,12 @@ for model_run, param_set in enumerate(param_list):
 
     Tzs_cropped = [Tzi[output_steps] for Tzi in Tzs]
     AHe_ages_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_all]
-    output_selected = \
-        [runtimes, runtimes[output_steps], xyz_array,
-         surface_levels[output_steps],
-         T_init_array,
-         T_array[output_steps], xyz_element_array,
-         qh_array[output_steps], qv_array[output_steps],
-         fault_fluxes, durations, xzs, Tzs_cropped,
-         AHe_ages_cropped, xs_Ahe_all, z_Ahe]
 
     T_array = T_array[output_steps]
+
+    # add surface AHe data to output
+    AHe_ages_surface = []
+    AHe_xcoords_surface = []
 
     for j in range(n_ts):
 
@@ -253,6 +249,10 @@ for model_run, param_set in enumerate(param_list):
 
                 x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
 
+            # add surface AHe data to output
+            AHe_ages_surface.append(ages_raw * My)
+            AHe_xcoords_surface.append(x_coords)
+
             x_coords_int = np.arange(x_coords.min(), x_coords.max() + x_step, x_step)
             ages = np.interp(x_coords_int, x_coords, ages_raw)
             dev_age = ages / ages.max()
@@ -297,6 +297,16 @@ for model_run, param_set in enumerate(param_list):
                 df.loc[output_number, col_name] = np.nan
                 col_name = 'x_max_full_reset_surface'
                 df.loc[output_number, col_name] = np.nan
+
+    output_selected = \
+        [runtimes, runtimes[output_steps], xyz_array,
+         surface_levels[output_steps],
+         T_init_array,
+         T_array[output_steps], xyz_element_array,
+         qh_array[output_steps], qv_array[output_steps],
+         fault_fluxes, durations, xzs, Tzs_cropped,
+         AHe_ages_cropped, xs_Ahe_all, z_Ahe,
+         AHe_ages_surface, AHe_xcoords_surface]
 
     today = datetime.datetime.now()
     today_str = '%i-%i-%i' % (today.day, today.month,

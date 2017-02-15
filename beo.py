@@ -1159,13 +1159,51 @@ if __name__ == "__main__":
     else:
         AHe_ages_cropped = None
 
+    # find AHe ages at surface
+
+    N_output_steps = len(output_steps)
+
+    if mp.calculate_he_ages is True:
+
+        # add surface AHe data to output
+        AHe_ages_surface = []
+        AHe_xcoords_surface = []
+
+        for i in range(N_output_steps):
+            surface_elev = surface_levels[i]
+
+            if surface_elev in Ahe_depths:
+                surface_ind = np.where(Ahe_depths == surface_elev)[0]
+                ages_raw = AHe_ages_cropped[surface_ind][i]
+                x_coords = xzs[surface_ind]
+
+            else:
+                # interpolate AHe age from nearest surfaces
+                diff = Ahe_depths - surface_elev
+                ind_low = np.where(diff < 0)[0][-1]
+                ind_high = np.where(diff > 0)[0][0]
+
+                fraction = np.abs(diff[ind_low]) / (Ahe_depths[ind_high] - Ahe_depths[ind_low])
+
+                ages_raw = ((1.0-fraction) * AHe_ages_cropped[ind_low][i] + fraction * AHe_ages_cropped[ind_high][i])
+
+                x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
+            # add surface AHe data to output
+            AHe_ages_surface.append(ages_raw)
+            AHe_xcoords_surface.append(x_coords)
+    else:
+        AHe_ages_surface = None
+        AHe_xcoords_surface = None
+
+
     output_selected = \
         [runtimes, runtimes[output_steps], xyz_array, surface_levels,
          T_init_array,
          T_array[output_steps], xyz_element_array,
          qh_array[output_steps], qv_array[output_steps],
          fault_fluxes, durations, xzs, Tzs_cropped,
-         AHe_ages_cropped, xs_Ahe_all, Ahe_depths]
+         AHe_ages_cropped, xs_Ahe_all, Ahe_depths,
+         AHe_ages_surface, AHe_xcoords_surface]
 
     #output_folder = os.path.join(folder, 'model_output')
     output_folder = os.path.join(scriptdir, mp.output_folder)
