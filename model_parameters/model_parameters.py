@@ -68,7 +68,7 @@ class ModelParams:
     basal_heat_flux = None
     #basal_heat_flux = 65e-3
 
-    # elvation of layers either side of the fault
+    # elevation of layers either side of the fault
     # structured like this:
     # [[depth layer 1 left, depth layer 1 right],
     #  [depth layer 2 left, depth layer 2 right],
@@ -109,11 +109,12 @@ class ModelParams:
     # timesteps
     # number of output steps
     N_outputs = [10]
+
     # size of timestep
     dt = 1000 * year
 
     # duration of each timestep_slice
-    durations = [3e4 * year]
+    durations = [1e5 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and

@@ -182,7 +182,10 @@ for model_run, param_set in enumerate(param_list):
             nt_output = AHe_ages_cropped[0].shape[0]
 
             for i in range(n_depths):
-                ages = AHe_ages_cropped[i][j] / My
+                ages_raw = AHe_ages_cropped[i][j] / My
+                x_step = 1.0
+                x_coords_int = np.arange(xzs[i].min(), xzs[i].max() + x_step, x_step)
+                ages = np.interp(x_coords_int, xzs[i], ages_raw)
                 dev_age = ages / ages.max()
 
                 min_age = np.min(ages)
@@ -192,7 +195,7 @@ for model_run, param_set in enumerate(param_list):
                 col_name = 'elevation_layer%i' % i
                 df.loc[output_number, col_name] = z_Ahe[i]
 
-                x_min_age = xzs[i][ind_min_age]
+                x_min_age = x_coords_int[ind_min_age]
                 col_name = 'lowest_age_layer%i' % i
                 df.loc[output_number, col_name] = min_age
                 col_name = 'highest_age_layer%i' % i
@@ -202,8 +205,8 @@ for model_run, param_set in enumerate(param_list):
 
                 if dev_age.min() < mp.partial_reset_limit:
                     ind_partial = np.where(dev_age < mp.partial_reset_limit)[0]
-                    x_partial_min = xzs[i][ind_partial[0]]
-                    x_partial_max = xzs[i][ind_partial[-1]]
+                    x_partial_min = x_coords_int[ind_partial[0]]
+                    x_partial_max = x_coords_int[ind_partial[-1]]
 
                     col_name = 'x_min_partial_reset_layer%i' % i
                     df.loc[output_number, col_name] = x_partial_min
@@ -217,8 +220,8 @@ for model_run, param_set in enumerate(param_list):
 
                 if ages.min() < mp.reset_limit:
                     ind_full = np.where(ages < mp.reset_limit)[0]
-                    x_full_min = xzs[i][ind_full[0]]
-                    x_full_max = xzs[i][ind_full[-1]]
+                    x_full_min = x_coords_int[ind_full[0]]
+                    x_full_max = x_coords_int[ind_full[-1]]
                     col_name = 'x_min_full_reset_layer%i' % i
                     df.loc[output_number, col_name] = x_full_min
                     col_name = 'x_max_full_reset_layer%i' % i

@@ -36,6 +36,6 @@ initial_base_run = False
 
 #exhumation_rate_s = [1.0e-5, 1.0e-4]
 
-fault_fluxes_s = [[[-100.0 / year]], [[-150.0 / year]]]
+#fault_fluxes_s = [[[-100.0 / year]], [[-150.0 / year]]]
 
 fault_widths_s = [[20.0], [30.0]]
