@@ -104,15 +104,16 @@ for fn in files:
         [runtimes_all, runtimes, xyz_array, surface_levels,
          T_init_array, T_array, xyz_element_array,
          qh_array, qv_array,
-         fault_fluxes, durations, xzs, Tzs,
+         fault_fluxes, durations,
+         xzs, Tzs, x_surface, T_surface,
          Ahe_ages_all, xs_Ahe_all, Ahe_depths,
          AHe_ages_surface, AHe_xcoords_surface] \
             = output_data
 
     except ValueError:
-        print 'error, could not read file ', fn
-        print 'probably the versions of beo.py and make_figure.py do not match'
-        go = False
+        msg = 'error, could not read file %s' % fn
+        msg += 'probably the versions of beo.py and make_figure.py do not match'
+        raise ValueError(msg)
     # T_array, t_array, dx, dy, fault_mid, xi, yi, nt_heating,
     # subsurface_height, q_advective, duration_heating
 
@@ -196,10 +197,14 @@ for fn in files:
         # surface temperatures
         n_depths = len(Tzs)
 
-        for i in range(n_depths):
-            for tp, timeslice in zip(tpanels, fp.timeslices):
-                leg_st, = tp.plot(xzs[i], Tzs[i][timeslice],
-                                  color='black', ls=lss[i])
+        #for i in range(n_depths):
+        for tp, timeslice in zip(tpanels, fp.timeslices):
+            leg_st, = tp.plot(x_surface[timeslice],
+                              T_surface[timeslice],
+                              color='black', ls=lss[i])
+
+        for p, timeslice in zip(panels, fp.timeslices):
+            p.axhline(y=surface_levels[timeslice], color='black')
 
         #
         if Ahe_ages_all is not None:
@@ -218,7 +223,7 @@ for fn in files:
         for p in panels:
 
             # horizontal line at surface
-            p.axhline(y=0, color='black')
+            #p.axhline(y=0, color='black')
 
             p.yaxis.grid(True)
 
@@ -226,7 +231,7 @@ for fn in files:
 
             if fp.xlim[0] > xmin:
                 xmin = fp.xlim[0]
-            if fp.xlim[1]  < xmax:
+            if fp.xlim[1] < xmax:
                 xmax = fp.xlim[1]
             if fp.ylim[0] > ymin:
                 ymin = fp.ylim[0]
@@ -244,7 +249,7 @@ for fn in files:
 
         for tp in tpanels[:]:
             tp.set_xticklabels([])
-            tp.set_ylim(0, Tzs[0].max() * 1.1)
+            tp.set_ylim(0, T_surface[-1].max() * 1.1)
             tp.yaxis.grid(True)
             tp.set_xlim(xmin, xmax)
 

@@ -124,7 +124,7 @@ for model_run, param_set in enumerate(param_list):
      T_init_array, T_array, xyz_element_array,
      qh_array, qv_array,
      fault_fluxes, durations, xzs, Tzs, Ahe_ages_all, xs_Ahe_all,
-     z_Ahe) = output
+     target_depths) = output
 
     # crop output to only the output timesteps, to limit filesize
     output_steps = []
@@ -141,6 +141,10 @@ for model_run, param_set in enumerate(param_list):
     AHe_ages_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_all]
 
     T_array = T_array[output_steps]
+
+    #
+    T_surface = []
+    x_surface = []
 
     # add surface AHe data to output
     AHe_ages_surface = []
@@ -167,9 +171,38 @@ for model_run, param_set in enumerate(param_list):
         df.loc[output_number, 'surface_elevation'] = \
             surface_levels[output_steps[j]]
 
-        df.loc[output_number, 'max_surface_temperature'] = Tzs[0][j].max()
         T_change = T_array[j] - T_init_array
         df.loc[output_number, 'T_change_avg'] = T_change.mean()
+
+        n_depths = len(target_depths)
+
+        for i in range(n_depths):
+            df.loc[output_number, 'max_temperature_layer_%i' % i] = Tzs_cropped[i][j].max()
+
+        # add output T at surface
+        surface_elev = surface_levels[output_steps[j]]
+
+        if surface_elev in target_depths:
+            surface_ind = np.where(target_depths == surface_elev)[0][0]
+            T_surface_i = Tzs_cropped[surface_ind][j]
+            x_coords_i = xzs[surface_ind]
+
+        else:
+            # interpolate AHe age from nearest surfaces
+            diff = target_depths - surface_elev
+            ind_low = np.where(diff < 0)[0][-1]
+            ind_high = np.where(diff > 0)[0][0]
+
+            fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
+
+            T_surface_i = ((1.0-fraction) * Tzs_cropped[ind_low][j] + fraction * Tzs_cropped[ind_high][j])
+
+            x_coords_i = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
+
+        T_surface.append(T_surface_i)
+        x_surface.append(x_coords_i)
+
+        df.loc[output_number, 'max_surface_temperature'] = T_surface_i.max()
 
         # calculate partial resetting and full resetting distance in the AHe data
         if Ahe_ages_all is not None:
@@ -189,7 +222,7 @@ for model_run, param_set in enumerate(param_list):
                 ind_min_age = np.argmin(ages)
 
                 col_name = 'elevation_layer%i' % i
-                df.loc[output_number, col_name] = z_Ahe[i]
+                df.loc[output_number, col_name] = target_depths[i]
 
                 x_min_age = x_coords_int[ind_min_age]
                 col_name = 'lowest_age_layer%i' % i
@@ -230,20 +263,18 @@ for model_run, param_set in enumerate(param_list):
 
             # figure out which depth is currently at the surface
             # and calculate the partial and full reset widths for these
-            surface_elev = surface_levels[output_steps[j]]
-
-            if surface_elev in z_Ahe:
-                surface_ind = np.where(z_Ahe == surface_elev)[0]
+            if surface_elev in target_depths:
+                surface_ind = np.where(target_depths == surface_elev)[0]
                 ages_raw = AHe_ages_cropped[surface_ind][j] / My
                 x_coords = xzs[i]
 
             else:
                 # interpolate AHe age from nearest surfaces
-                diff = z_Ahe - surface_elev
+                diff = target_depths - surface_elev
                 ind_low = np.where(diff < 0)[0][-1]
                 ind_high = np.where(diff > 0)[0][0]
 
-                fraction = np.abs(diff[ind_low]) / (z_Ahe[ind_high] - z_Ahe[ind_low])
+                fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
 
                 ages_raw = ((1.0-fraction) * AHe_ages_cropped[ind_low][j] + fraction * AHe_ages_cropped[ind_high][j]) / My
 
@@ -302,10 +333,11 @@ for model_run, param_set in enumerate(param_list):
         [runtimes, runtimes[output_steps], xyz_array,
          surface_levels[output_steps],
          T_init_array,
-         T_array[output_steps], xyz_element_array,
+         T_array, xyz_element_array,
          qh_array[output_steps], qv_array[output_steps],
-         fault_fluxes, durations, xzs, Tzs_cropped,
-         AHe_ages_cropped, xs_Ahe_all, z_Ahe,
+         fault_fluxes, durations,
+         xzs, Tzs_cropped, x_surface, T_surface,
+         AHe_ages_cropped, xs_Ahe_all, target_depths,
          AHe_ages_surface, AHe_xcoords_surface]
 
     today = datetime.datetime.now()

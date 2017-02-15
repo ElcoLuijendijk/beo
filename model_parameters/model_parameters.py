@@ -50,7 +50,7 @@ class ModelParams:
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
     # but this also slows the model down somehwat
-    exhumation_steps = 3
+    exhumation_steps = 10
 
     # number of timesteps after which the surface level is recalculated
     # ideally this should be 1 (ie recalculate at each timestep)
@@ -114,7 +114,7 @@ class ModelParams:
     dt = 1000 * year
 
     # duration of each timestep_slice
-    durations = [1e4 * year]
+    durations = [1e5 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and

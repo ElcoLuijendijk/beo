@@ -711,8 +711,9 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
             # recalculate vapour pressure and max liquid temperature
             vapour_pressure = calculate_vapour_pressure(T)
-            #max_liquid_T = find_max_liquid_T(P)
-            vapour = subsurface * es.whereNegative(P - vapour_pressure)
+            max_liquid_T = find_max_liquid_T(P)
+            P_buffer = 10.0
+            vapour = subsurface * es.whereNegative(P - vapour_pressure + P_buffer)
             #vapour = es.whereNegative(P - vapour_pressure)
 
             c1=3.866
@@ -732,12 +733,11 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 # calculate max liquid temperature
                 logP = es.log10(P / 1.0e6)
                 Tmax = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
-                #Tmax = 100.0
+                #Tmax = max_liquid_T
 
                 # figure out where max T is exceeded
                 #exceed_max_liquid_T = subsurface * vapour
                 exceed_max_liquid_T = subsurface * es.wherePositive(T - Tmax)
-                T_ok = es.whereNonPositive(exceed_max_liquid_T)
 
                 specified_T_loc = es.wherePositive(top_bnd) + es.wherePositive(bottom_bnd) + exceed_max_liquid_T
                 specified_temperature = es.wherePositive(top_bnd) * air_temperature \
@@ -1139,7 +1139,7 @@ if __name__ == "__main__":
      T_init_array, T_array, xyz_element_array,
      qh_array, qv_array,
      fault_fluxes, durations, xzs, Tzs,
-     Ahe_ages_all, xs_Ahe_all, Ahe_depths) = output
+     Ahe_ages_all, xs_Ahe_all, target_depths) = output
 
     # crop output to only the output timesteps, to limit filesize
     output_steps = []
@@ -1159,10 +1159,38 @@ if __name__ == "__main__":
     else:
         AHe_ages_cropped = None
 
-    # find AHe ages at surface
-
     N_output_steps = len(output_steps)
 
+    # find surface temperatures
+    T_surface = []
+    x_surface = []
+
+    for j in range(N_output_steps):
+
+            # add output T at surface
+        surface_elev = surface_levels[output_steps[j]]
+
+        if surface_elev in target_depths:
+            surface_ind = np.where(target_depths == surface_elev)[0]
+            T_surface_i = Tzs[surface_ind][j]
+            x_coords_i = xzs[surface_ind]
+
+        else:
+            # interpolate AHe age from nearest surfaces
+            diff = target_depths - surface_elev
+            ind_low = np.where(diff < 0)[0][-1]
+            ind_high = np.where(diff > 0)[0][0]
+
+            fraction = np.abs(diff[ind_low]) / (surface_levels[ind_high] - surface_levels[ind_low])
+
+            T_surface_i = ((1.0-fraction) * Tzs[ind_low][j] + fraction * Tzs[ind_high][j])
+
+            x_coords_i = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
+
+        T_surface.append(T_surface_i)
+        x_surface.append(x_coords_i)
+
+    # find AHe ages at surface
     if mp.calculate_he_ages is True:
 
         # add surface AHe data to output
@@ -1172,18 +1200,18 @@ if __name__ == "__main__":
         for i in range(N_output_steps):
             surface_elev = surface_levels[i]
 
-            if surface_elev in Ahe_depths:
-                surface_ind = np.where(Ahe_depths == surface_elev)[0]
+            if surface_elev in target_depths:
+                surface_ind = np.where(target_depths == surface_elev)[0]
                 ages_raw = AHe_ages_cropped[surface_ind][i]
                 x_coords = xzs[surface_ind]
 
             else:
                 # interpolate AHe age from nearest surfaces
-                diff = Ahe_depths - surface_elev
+                diff = target_depths - surface_elev
                 ind_low = np.where(diff < 0)[0][-1]
                 ind_high = np.where(diff > 0)[0][0]
 
-                fraction = np.abs(diff[ind_low]) / (Ahe_depths[ind_high] - Ahe_depths[ind_low])
+                fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
 
                 ages_raw = ((1.0-fraction) * AHe_ages_cropped[ind_low][i] + fraction * AHe_ages_cropped[ind_high][i])
 
@@ -1195,14 +1223,14 @@ if __name__ == "__main__":
         AHe_ages_surface = None
         AHe_xcoords_surface = None
 
-
     output_selected = \
         [runtimes, runtimes[output_steps], xyz_array, surface_levels,
          T_init_array,
          T_array[output_steps], xyz_element_array,
          qh_array[output_steps], qv_array[output_steps],
-         fault_fluxes, durations, xzs, Tzs_cropped,
-         AHe_ages_cropped, xs_Ahe_all, Ahe_depths,
+         fault_fluxes, durations,
+         xzs, Tzs_cropped, x_surface, T_surface,
+         AHe_ages_cropped, xs_Ahe_all, target_depths,
          AHe_ages_surface, AHe_xcoords_surface]
 
     #output_folder = os.path.join(folder, 'model_output')
