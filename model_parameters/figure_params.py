@@ -16,7 +16,7 @@ dy = 10.0
 # timeslices to show
 # timeslices = [0] make a figure of the first timestep
 # timeslices = [-1] make a figure of the last timestep
-timeslices = [-3, -2, -1]
+timeslices = [1, -5, -1]
 
 # scale for flow arrows, usually 5 is a good value
 scale_multiplier = 5.0

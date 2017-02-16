@@ -241,10 +241,13 @@ def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
     return mesh
 
 
-def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle, z_air,
-               z_surface_initial, z_surface_final, z_surface_steps,
-               z_fine, z_base, cellsize,
-               cellsize_air, cellsize_fault, cellsize_fine, cellsize_base):
+def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
+                               z_air,
+                               z_surface_initial, z_surface_final,
+                               z_surface_steps,
+                               z_fine, z_base, cellsize,
+                               cellsize_air, cellsize_fault,
+                               cellsize_fine, cellsize_base):
 
     """
 
@@ -817,8 +820,10 @@ def model_run(mp):
         # track AHe and temperature in each exhumed layer in the model domain:
         mp.target_zs = np.linspace(0, exhumed_thickness, exhumation_steps + 1)
 
+    elevation_top = z_surface + exhumed_thickness + mp.air_height
+
     mesh = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0], mp.fault_widths[0],
-                                      mp.fault_angles[0], mp.air_height,
+                                      mp.fault_angles[0], elevation_top,
                                       z_surface + exhumed_thickness, z_surface,
                                       exhumation_steps,
                                       mp.z_fine, z_base, mp.cellsize,
