@@ -114,7 +114,7 @@ class ModelParams:
     dt = 1000 * year
 
     # duration of each timestep_slice
-    durations = [1e5 * year]
+    durations = [3e4 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -124,7 +124,7 @@ class ModelParams:
     target_zs = [10.0, 5.0, 0.0]
 
     # U-Th/He params
-    calculate_he_ages = True
+    calculate_he_ages = False
 
     # method to calculate helium diffusivity, use Wolf1996, Farley2000 or RDAAM
     AHe_method = 'RDAAM'
@@ -150,6 +150,8 @@ class ModelParams:
 
     # x location of fault:
     fault_xs = [4000]
+
+    well_x = [3500.0, 4500.0]
 
     # fault width
     fault_widths = [20.0]
@@ -177,4 +179,10 @@ class ModelParams:
     partial_reset_limit = 0.75
 
     # absolute limit below which samples are considered reset (ie. AHe age ~0 My)
-    reset_limit = 0.01
+    reset_limit = 0.1
+
+    # locations of boreholes for temperature data
+    analyse_borehole_temp = True
+    temperature_file = 'model_parameters/temperature_data.csv'
+    borehole_names = ['85-18']
+    borehole_xs = [3000.0]

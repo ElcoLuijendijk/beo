@@ -40,4 +40,4 @@ initial_base_run = False
 
 #fault_widths_s = [[20.0]]
 
-exhumation_rate_s = [1e-3, 1e-4]
+exhumation_rate_s = [1e-5]

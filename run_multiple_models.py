@@ -12,6 +12,7 @@ import itertools
 import inspect
 import pdb
 import datetime
+import scipy.interpolate
 
 import numpy as np
 import pandas as pd
@@ -19,6 +20,67 @@ import pandas as pd
 from model_parameters.model_parameters import ModelParams
 import model_parameters.parameter_ranges as pr
 import beo
+
+
+def interpolate_data(xyz, data, target_x, y_steps=300):
+
+    """
+
+    """
+
+    xi = np.array([xyz[:, 0].min(), target_x, xyz[:, 0].max()])
+    yi = np.linspace(xyz[:, 1].min(), xyz[:, 1].max(), y_steps)
+    nx = len(xi)
+    ny = len(yi)
+
+    xg, yg = np.meshgrid(xi, yi)
+    xgf, ygf = xg.flatten(), yg.flatten()
+
+    # interpolate u to grid
+    zgf = scipy.interpolate.griddata(xyz, data, np.vstack((xgf, ygf)).T,
+                                     method='linear')
+
+    # make a 2d grid again
+    zg = np.resize(zgf, (ny, nx))
+
+    return yg[:, 1], zg[:, 1]
+
+
+def coefficient_of_determination(y, f):
+
+    """
+    calculate coefficient of determination
+
+    Parameters
+    ----------
+    y : numpy array
+        observed values
+    f : numpy array
+        calculated values
+
+    Returns
+    -------
+    R2 : float
+        coefficient of determination
+
+    """
+
+    ind = (np.isnan(y)==False) & (np.isnan(f)==False) & \
+        (y != -np.inf) & (y != np.inf) &\
+        (f != -np.inf) & (f != np.inf)
+
+    yc = y[ind]
+    fc = f[ind]
+
+    # residual sum of squares
+    SS_res = np.sum((yc - fc)**2)
+    # total sum of squares
+    SS_tot = np.sum((yc - np.mean(yc))**2)
+
+    R2 = 1.0 - (SS_res / SS_tot)
+
+    return R2
+
 
 mp = ModelParams
 
@@ -83,6 +145,11 @@ columns += ['surface_elevation',
 
 df = pd.DataFrame(index=ind, columns=columns)
 
+if mp.analyse_borehole_temp is True:
+    print 'loading temperature data'
+    dft = pd.read_csv(mp.temperature_file)
+
+
 for model_run, param_set in enumerate(param_list):
 
     # reload default params
@@ -141,7 +208,11 @@ for model_run, param_set in enumerate(param_list):
     output_steps = np.array(output_steps)
 
     Tzs_cropped = [Tzi[output_steps] for Tzi in Tzs]
-    AHe_ages_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_all]
+
+    if Ahe_ages_all is not None:
+        AHe_ages_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_all]
+    else:
+        AHe_ages_cropped = None
 
     T_array = T_array[output_steps]
 
@@ -152,6 +223,49 @@ for model_run, param_set in enumerate(param_list):
     # add surface AHe data to output
     AHe_ages_surface = []
     AHe_xcoords_surface = []
+
+    if mp.analyse_borehole_temp is True:
+
+        print 'extracting borehole temperature data'
+
+        for borehole, xloc in zip(mp.borehole_names, mp.borehole_xs):
+
+            ind_mod = xyz_array[:, 0] == xloc
+
+            for j in range(n_ts):
+
+                output_number = model_run * n_ts + j
+
+                ind = dft['borehole'] == borehole
+                dfti = dft.loc[ind]
+
+                z_obs = surface_levels[output_steps[j]] - dfti['depth']
+                T_obs = dft['temperature']
+                x_buffer = 200.0
+                pre_select = np.abs(xyz_array[:, 0] - xloc) < x_buffer
+
+                zi, Ti = interpolate_data(xyz_array[pre_select],
+                                          T_array[j][pre_select],
+                                          xloc, y_steps=300)
+
+                T_mod = np.interp(z_obs, zi, Ti)
+
+                col_name = 'modeled_T_%s_run_%i_timestep_%i' \
+                           % (borehole, model_run, output_steps[j])
+                dft[col_name] = T_mod
+
+                T_error = T_mod - T_obs
+                df.loc[output_number, 'ME_temperature_%s' % borehole] = \
+                    T_error.mean()
+                df.loc[output_number, 'MAE_temperature_%s' % borehole] = \
+                    np.mean(np.abs(T_error))
+
+                RMSE_T = np.sqrt(np.mean(T_error ** 2))
+                df.loc[output_number, 'RMSE_temperature_%s' % borehole] = \
+                    RMSE_T
+
+                R2_T = coefficient_of_determination(T_obs, T_mod)
+                df.loc[output_number, 'R2_temperature_%s' % borehole] = R2_T
 
     for j in range(n_ts):
 
@@ -380,5 +494,12 @@ print '-' * 30
 print 'saving summary of parameters and model results as %s' % fn_path
 
 df.to_csv(fn_path, index_label='row', encoding='utf-8')
+
+if mp.analyse_borehole_temp is True:
+    fn_new = os.path.split(mp.temperature_file)[-1].split('.')[:-1]
+    fn_new = ''.join(fn_new)
+    fn_new += '_modeled_%i_runs_%s.csv' % (len(param_list), today_str)
+    print 'saving modeled temperatures for boreholes to %s' % fn_new
+    dft.to_csv(os.path.join(output_folder, fn_new))
 
 print 'done with all model runs'
