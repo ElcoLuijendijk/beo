@@ -269,7 +269,7 @@ for model_run, param_set in enumerate(param_list):
             if surface_elev in target_depths:
                 surface_ind = np.where(target_depths == surface_elev)[0]
                 ages_raw = AHe_ages_cropped[surface_ind][j] / My
-                x_coords = xzs[i]
+                x_coords = xzs[surface_ind]
 
             else:
                 # interpolate AHe age from nearest surfaces
@@ -277,9 +277,11 @@ for model_run, param_set in enumerate(param_list):
                 ind_low = np.where(diff < 0)[0][-1]
                 ind_high = np.where(diff > 0)[0][0]
 
-                fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
+                fraction = np.abs(diff[ind_low]) \
+                           / (target_depths[ind_high] - target_depths[ind_low])
 
-                ages_raw = ((1.0-fraction) * AHe_ages_cropped[ind_low][j] + fraction * AHe_ages_cropped[ind_high][j]) / My
+                ages_raw = ((1.0-fraction) * AHe_ages_cropped[ind_low][j]
+                            + fraction * AHe_ages_cropped[ind_high][j]) / My
 
                 x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
 
@@ -288,6 +290,14 @@ for model_run, param_set in enumerate(param_list):
             AHe_xcoords_surface.append(x_coords)
 
             x_coords_int = np.arange(x_coords.min(), x_coords.max() + x_step, x_step)
+
+            if len(ages_raw) != len(x_coords):
+                print 'warning, lenght of AHe ages array and x coordinates ' \
+                      'array are not equal. Skipping calculating partial/full ' \
+                      'reset zone for surface layer at timestep %i of %i' \
+                      % (j, n_ts)
+                continue
+
             ages = np.interp(x_coords_int, x_coords, ages_raw)
             dev_age = ages / ages.max()
 
