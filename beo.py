@@ -846,7 +846,7 @@ def model_run(mp):
 
     # find which nodes are on top & bottom boundaries
     surface = es.whereZero(xyz[1])
-    top_bnd = es.whereZero(xyz[1] - mp.air_height)
+    top_bnd = es.whereZero(xyz[1] - es.sup(xyz[1]))
     bottom_bnd = es.whereZero(xyz[1] - es.inf(xyz[1]))
 
     # find which nodes are in the subsurface
