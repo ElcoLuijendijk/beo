@@ -45,17 +45,21 @@ class ModelParams:
     # exhumation rate in m/yr
     # assuming the AHe was not reset, the max exhumation is ~1500 m in 15 My = 1e-4 m/yr
     # look up regional AFT, AHe and cosmogenic nuclide work for realistic range of exhumation rates
-    exhumation_rate = 1e-4
+    exhumation_rate = 5e-5
 
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
     # but this also slows the model down somehwat
+    # note, to avoid errors this should be the same as N_outputs for now
+    # working on a more elegant fix for this.....
     exhumation_steps = 10
 
     # number of timesteps after which the surface level is recalculated
     # ideally this should be 1 (ie recalculate at each timestep)
     # higher number means faster model
-    exhumation_interval = 10
+    # note: this parameter is no longer used. Now surface level is recalculated
+    # at each timestep....
+    #exhumation_interval = 10
 
     # temperature bnd conditions
     air_temperature = 10.0
@@ -108,13 +112,16 @@ class ModelParams:
 
     # timesteps
     # number of output steps
+    # this is not used when exhumation > 0, in this case output is generated
+    # once each new surface level is reached
+    # the number of surfaces is controlled by the exhumation_steps parameter
     N_outputs = [20]
 
     # size of timestep
     dt = 1000 * year
 
     # duration of each timestep_slice
-    durations = [3e4 * year]
+    durations = [1e5 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -124,7 +131,7 @@ class ModelParams:
     target_zs = [10.0, 5.0, 0.0]
 
     # U-Th/He params
-    calculate_he_ages = False
+    calculate_he_ages = True
 
     # method to calculate helium diffusivity, use Wolf1996, Farley2000 or RDAAM
     AHe_method = 'RDAAM'
@@ -150,8 +157,6 @@ class ModelParams:
 
     # x location of fault:
     fault_xs = [4000]
-
-    well_x = [3500.0, 4500.0]
 
     # fault width
     fault_widths = [20.0]
@@ -181,8 +186,14 @@ class ModelParams:
     # absolute limit below which samples are considered reset (ie. AHe age ~0 My)
     reset_limit = 0.1
 
-    # locations of boreholes for temperature data
+    # option to calculate temperature data for one or several boreholes
+    # note that there seems to be a bug in the output timesteps for the temperature calculation
+    # avoid using this for now...
     analyse_borehole_temp = True
+
+    # file that contains temperature data
     temperature_file = 'model_parameters/temperature_data.csv'
     borehole_names = ['85-18']
+
+    # locations of boreholes for temperature data
     borehole_xs = [3000.0]

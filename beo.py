@@ -491,7 +491,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     air_temperature, bottom_temperature,
                                     solve_as_steady_state=True,
                                     surface_level_init=0, exhumation_rate=0,
-                                    exhumation_interval=10,
+                                    target_depths=None,
                                     K_b=None, c_b=None, rho_b=None,
                                     K_air=None, c_air=None, rho_air=None,
                                     vapour_correction=True):
@@ -681,9 +681,9 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 else:
                     print '\tno vapour present'
 
-            if exhumation_rate != 0 and t / exhumation_interval == t / float(exhumation_interval):
+            surface_level = surface_level_init - t_total / year * exhumation_rate
 
-                surface_level = surface_level_init - t_total / year * exhumation_rate
+            if exhumation_rate != 0 and surface_level in target_depths:
 
                 print 'exhumation, new surface level at %0.2f' % surface_level
                 subsurface = es.whereNonPositive(xyz[1] - surface_level)
@@ -815,6 +815,17 @@ def model_run(mp):
 
     exhumed_thickness = mp.exhumation_rate * (np.sum(np.array(mp.durations)) / mp.year)
     exhumation_steps = mp.exhumation_steps
+
+    min_layer_thickness = 1.0
+    if exhumed_thickness / exhumation_steps < min_layer_thickness:
+        print 'warning, exhumation levels would be smaller than %0.2f m' % min_layer_thickness
+        exhumation_steps = int(np.ceil(exhumed_thickness) / min_layer_thickness)
+        if exhumation_steps < 1:
+            exhumation_steps = 1
+
+        print 'reducing exhumation steps to %i' % exhumation_steps
+
+        mp.exhumation_steps = exhumation_steps
 
     if exhumed_thickness != 0:
         # track AHe and temperature in each exhumed layer in the model domain:
@@ -973,7 +984,7 @@ def model_run(mp):
             mp.air_temperature, bottom_temperature,
             solve_as_steady_state=mp.steady_state,
             surface_level_init=surface_level, exhumation_rate=mp.exhumation_rate,
-            exhumation_interval=mp.exhumation_interval,
+            target_depths=mp.target_zs,
             K_b=K_b, c_b=c_b, rho_b=rho_b,
             K_air=mp.K_air, c_air=mp.c_air, rho_air=mp.rho_air,
             vapour_correction=mp.vapour_correction)

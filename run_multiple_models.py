@@ -136,10 +136,12 @@ attribute_names = [attribute[0] for attribute in attributes
 # set up pandas dataframe to store model input params
 n_model_runs = len(param_list)
 n_ts = np.sum(np.array(mp.N_outputs))
+if mp.exhumation_rate > 0:
+    n_ts = mp.exhumation_steps
 n_rows = n_model_runs * n_ts
 
 ind = np.arange(n_rows)
-columns = ['model_run', 'timestep', 'runtime_yr'] + attribute_names
+columns = ['model_run', 'model_error', 'timestep', 'runtime_yr'] + attribute_names
 columns += ['surface_elevation',
             'max_surface_temperature', 'T_change_avg']
 
@@ -149,6 +151,13 @@ if mp.analyse_borehole_temp is True:
     print 'loading temperature data'
     dft = pd.read_csv(mp.temperature_file)
 
+today = datetime.datetime.now()
+today_str = '%i-%i-%i' % (today.day, today.month,
+                          today.year)
+
+fn = 'model_params_and_results_%i_runs_%s.csv' \
+     % (len(param_list), today_str)
+fn_path_csv = os.path.join(output_folder, fn)
 
 for model_run, param_set in enumerate(param_list):
 
@@ -185,8 +194,31 @@ for model_run, param_set in enumerate(param_list):
     #            df.loc[model_run, a[0]] = a[1]
 
     print 'running single model'
-    output = beo.model_run(Parameters)
+    try:
+        output = beo.model_run(Parameters)
+    except Exception, msg:
+        print '!' * 10
+        print 'error running model run %i' % model_run
+        print msg
+        print '!' * 10
 
+        for j in range(n_ts):
+
+            output_number = model_run * n_ts + j
+
+            #k = output_steps[j]
+
+            for a in attribute_dict:
+                if a[0] in df.columns:
+                    if type(a[1]) is list or type(a[1]) is np.ndarray:
+                        df.loc[output_number, a[0]] = str(a[1])
+                    else:
+                        df.loc[output_number, a[0]] = a[1]
+
+            df.loc[output_number, 'model_error'] = str(msg)
+
+        continue
+        
     (runtimes, xyz_array, surface_levels,
      T_init_array, T_array, boiling_temp_array,
      xyz_array_exc, exceed_boiling_temp_array,
@@ -206,6 +238,13 @@ for model_run, param_set in enumerate(param_list):
 
     # select data for output steps only
     output_steps = np.array(output_steps)
+
+    if mp.exhumation_rate != 0:
+        print 'exhumation, making sure output steps are equal to steps where ' \
+              'a new surface level is reached'
+        output_steps = [i for i, s in enumerate(surface_levels) if s in target_depths]
+
+    n_ts = len(output_steps)
 
     Tzs_cropped = [Tzi[output_steps] for Tzi in Tzs]
 
@@ -312,6 +351,12 @@ for model_run, param_set in enumerate(param_list):
 
             fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
 
+            T_down = Tzs_cropped[ind_low][j]
+            T_up = Tzs_cropped[ind_high][j]
+
+            if len(T_down) != len(T_up):
+                print 'warning, trying to interpolate two layers with unequal number of nodes'
+
             T_surface_i = ((1.0-fraction) * Tzs_cropped[ind_low][j] + fraction * Tzs_cropped[ind_high][j])
 
             x_coords_i = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
@@ -381,7 +426,7 @@ for model_run, param_set in enumerate(param_list):
             # figure out which depth is currently at the surface
             # and calculate the partial and full reset widths for these
             if surface_elev in target_depths:
-                surface_ind = np.where(target_depths == surface_elev)[0]
+                surface_ind = np.where(target_depths == surface_elev)[0][0]
                 ages_raw = AHe_ages_cropped[surface_ind][j] / My
                 x_coords = xzs[surface_ind]
 
@@ -482,24 +527,16 @@ for model_run, param_set in enumerate(param_list):
     pickle.dump(output_selected, fout)
     fout.close()
 
-today = datetime.datetime.now()
-today_str = '%i-%i-%i' % (today.day, today.month,
-                          today.year)
+    print '-' * 30
+    print 'saving summary of parameters and model results as %s' % fn_path_csv
+    df.to_csv(fn_path_csv, index_label='row', encoding='utf-8')
 
-fn = 'model_params_and_results_%i_runs_%s.csv' \
-     % (len(param_list), today_str)
-fn_path = os.path.join(output_folder, fn)
+    if mp.analyse_borehole_temp is True:
+        fn_new = os.path.split(mp.temperature_file)[-1].split('.')[:-1]
+        fn_new = ''.join(fn_new)
+        fn_new += '_modeled_%i_runs_%s.csv' % (len(param_list), today_str)
+        print 'saving modeled temperatures for boreholes to %s' % fn_new
+        dft.to_csv(os.path.join(output_folder, fn_new))
 
 print '-' * 30
-print 'saving summary of parameters and model results as %s' % fn_path
-
-df.to_csv(fn_path, index_label='row', encoding='utf-8')
-
-if mp.analyse_borehole_temp is True:
-    fn_new = os.path.split(mp.temperature_file)[-1].split('.')[:-1]
-    fn_new = ''.join(fn_new)
-    fn_new += '_modeled_%i_runs_%s.csv' % (len(param_list), today_str)
-    print 'saving modeled temperatures for boreholes to %s' % fn_new
-    dft.to_csv(os.path.join(output_folder, fn_new))
-
 print 'done with all model runs'

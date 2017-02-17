@@ -36,8 +36,16 @@ initial_base_run = False
 
 #exhumation_rate_s = [1.0e-5, 1.0e-4]
 
-#fault_fluxes_s = [[[-100.0 / year]], [[-150.0 / year]]]
+#fault_fluxes_s = [[[-300.0 / year]], [[-400.0 / year]],
+#                  [[-500.0 / year]], [[-600.0 / year]]]
 
-#fault_widths_s = [[20.0]]
+#fault_widths_s = [[10.0], [20.0], [30.0], [40.0]]
 
-exhumation_rate_s = [1e-5]
+# low exhumation rates (< 1e-4) result in solver errors.
+# Not yet sure why. Potentially there are problems with the grid, with low exhumation rates the layers between the
+# initial surface and final surface get really thin, which may result with grid elements that have angles that are
+# too low. reducing exhumation_steps may help, or reducing the grid cell size. Reducing the time step size may also
+# help with unstable model runs in general
+#exhumation_rate_s = [5e-4, 1e-4, 5e-5]
+
+radius_s = [60e-6, 100e-6, 150e-6]
