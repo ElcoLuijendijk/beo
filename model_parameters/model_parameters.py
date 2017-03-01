@@ -28,7 +28,7 @@ class ModelParams:
 
     # model dimensions
     width = 6000.0
-    total_depth = 6000.0
+    total_depth = 8000.0
     air_height = 100.0
 
     # depth to fine discretization at surface:
@@ -121,7 +121,7 @@ class ModelParams:
     dt = 1000 * year
 
     # duration of each timestep_slice
-    durations = [1e5 * year]
+    durations = [3e4 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and

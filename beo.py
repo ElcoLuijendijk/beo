@@ -670,13 +670,16 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 print 'step %i of %i' % (t, nt)
                 print '\ttemperature: ', T
                 if es.sup(land_surface) > 0:
-                    print '\tmax. temperature at land surface: ', es.sup(T * land_surface)
+                    print '\tmax. temperature at land surface: ', \
+                        es.sup(T * land_surface)
                 else:
                     print '\tcould not find land surface nodes'
                 if es.sup(vapour) > 0:
                     print '\tvapour present in: ', es.integrate(vapour), ' m^2'
-                    print '\t\tfrom x = ', xmin_vapour, ' to x = ', xmax_vapour
-                    print '\t\tand from y = ', ymin_vapour, ' to y = ', ymax_vapour
+                    print '\t\tfrom x = ', xmin_vapour, ' to x = ', \
+                        xmax_vapour
+                    print '\t\tand from y = ', ymin_vapour, ' to y = ', \
+                        ymax_vapour
                     print '\tmax. liquid T at the surface = ', es.sup(boiling_temp * land_surface)
                 else:
                     print '\tno vapour present'
@@ -1208,7 +1211,7 @@ if __name__ == "__main__":
 
     for j in range(N_output_steps):
 
-            # add output T at surface
+        # add output T at surface
         surface_elev = surface_levels[output_steps[j]]
 
         if surface_elev in target_depths:

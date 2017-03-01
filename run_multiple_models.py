@@ -344,12 +344,12 @@ for model_run, param_set in enumerate(param_list):
             x_coords_i = xzs[surface_ind]
 
         else:
-            # interpolate AHe age from nearest surfaces
+            # interpolate T from nearest surfaces
             diff = target_depths - surface_elev
             ind_low = np.where(diff < 0)[0][-1]
             ind_high = np.where(diff > 0)[0][0]
 
-            fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
+            #fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
 
             T_down = Tzs_cropped[ind_low][j]
             T_up = Tzs_cropped[ind_high][j]
@@ -357,9 +357,10 @@ for model_run, param_set in enumerate(param_list):
             if len(T_down) != len(T_up):
                 print 'warning, trying to interpolate two layers with unequal number of nodes'
 
-            T_surface_i = ((1.0-fraction) * Tzs_cropped[ind_low][j] + fraction * Tzs_cropped[ind_high][j])
-
-            x_coords_i = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
+            #T_surface_i = ((1.0-fraction) * Tzs_cropped[ind_low][j] + fraction * Tzs_cropped[ind_high][j])
+            #x_coords_i = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
+            T_surface_i = Tzs_cropped[ind_low][j]
+            x_coords_i = xzs[ind_low]
 
         T_surface.append(T_surface_i)
         x_surface.append(x_coords_i)
@@ -439,10 +440,11 @@ for model_run, param_set in enumerate(param_list):
                 fraction = np.abs(diff[ind_low]) \
                            / (target_depths[ind_high] - target_depths[ind_low])
 
-                ages_raw = ((1.0-fraction) * AHe_ages_cropped[ind_low][j]
-                            + fraction * AHe_ages_cropped[ind_high][j]) / My
-
-                x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
+                #ages_raw = ((1.0-fraction) * AHe_ages_cropped[ind_low][j]
+                #            + fraction * AHe_ages_cropped[ind_high][j]) / My
+                #x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
+                ages_raw = AHe_ages_cropped[ind_low][j] / My
+                x_coords = xzs[ind_low]
 
             # add surface AHe data to output
             AHe_ages_surface.append(ages_raw * My)
