@@ -239,10 +239,10 @@ for model_run, param_set in enumerate(param_list):
     # select data for output steps only
     output_steps = np.array(output_steps)
 
-    if mp.exhumation_rate != 0:
-        print 'exhumation, making sure output steps are equal to steps where ' \
-              'a new surface level is reached'
-        output_steps = [i for i, s in enumerate(surface_levels) if s in target_depths]
+    #if mp.exhumation_rate != 0:
+    #    print 'exhumation, making sure output steps are equal to steps where ' \
+    #          'a new surface level is reached'
+    #    output_steps = [i for i, s in enumerate(surface_levels) if s in target_depths]
 
     n_ts = len(output_steps)
 

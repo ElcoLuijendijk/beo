@@ -121,7 +121,7 @@ class ModelParams:
     dt = 1000 * year
 
     # duration of each timestep_slice
-    durations = [3e4 * year]
+    durations = [4e4 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -147,6 +147,13 @@ class ModelParams:
     radius = 100.0 * 1e-6
     U238 = 8.98e-6
     Th232 = 161.3e-6
+
+    distance_samples = [1500.0, 2000.0]
+    radius_samples = [100.0 * 1e-6, 150e-6]
+    U238_samples = [8.98e-6]
+    Th232_samples = [161.3e-6]
+
+    AHe_age_samples = [10e6, 15e6]
 
     # alpha ejection parameters:
     alpha_ejection = True
