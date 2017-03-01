@@ -159,6 +159,10 @@ fn = 'model_params_and_results_%i_runs_%s.csv' \
      % (len(param_list), today_str)
 fn_path_csv = os.path.join(output_folder, fn)
 
+if mp.calculate_he_ages is True:
+    AHe_ages_surface_all = []
+    AHe_xcoords_surface_all = []
+
 for model_run, param_set in enumerate(param_list):
 
     # reload default params
@@ -503,6 +507,9 @@ for model_run, param_set in enumerate(param_list):
                 col_name = 'x_max_full_reset_surface'
                 df.loc[output_number, col_name] = np.nan
 
+        AHe_ages_surface_all.append(AHe_ages_surface)
+        AHe_xcoords_surface_all.append(AHe_xcoords_surface)
+
     output_selected = \
         [runtimes, runtimes[output_steps], xyz_array,
          surface_levels[output_steps],
@@ -539,6 +546,30 @@ for model_run, param_set in enumerate(param_list):
         fn_new += '_modeled_%i_runs_%s.csv' % (len(param_list), today_str)
         print 'saving modeled temperatures for boreholes to %s' % fn_new
         dft.to_csv(os.path.join(output_folder, fn_new))
+
+    if AHe_ages_surface_all != []:
+
+        nxs = np.max(np.array([AHe_ii.shape[0] for AHe_i in AHe_ages_surface_all for AHe_ii in AHe_i]))
+        nts = len(AHe_ages_surface)
+
+        cols = []
+        for j in range(n_model_runs):
+            for i in range(nts):
+                cols += ['x_run_%i_ts%i' % (j, i),
+                         'AHe_age_run_%i_ts%i' % (j, i)]
+
+        dfh = pd.DataFrame(columns=cols, index=np.arange(nxs))
+
+        for j in range(n_model_runs):
+            for i in range(nts):
+                dfh['x_run_%i_ts%i' % (j, i)] = AHe_xcoords_surface_all[j][i]
+                dfh['AHe_age_run_%i_ts%i' % (j, i)] = AHe_ages_surface_all[j][i] / My
+
+        fnh = 'AHe_surface_modeled_%i_runs_%s.csv' % (n_model_runs, today_str)
+
+        print 'saving modeled AHe ages at the surface to %s' % fnh
+        dfh.to_csv(os.path.join(output_folder, fnh), index_label='row')
+
 
 print '-' * 30
 print 'done with all model runs'
