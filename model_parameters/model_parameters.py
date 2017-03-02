@@ -121,7 +121,7 @@ class ModelParams:
     dt = 1000 * year
 
     # duration of each timestep_slice
-    durations = [4e4 * year]
+    durations = [5e5 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and

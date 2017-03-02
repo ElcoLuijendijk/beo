@@ -46,6 +46,6 @@ initial_base_run = False
 # initial surface and final surface get really thin, which may result with grid elements that have angles that are
 # too low. reducing exhumation_steps may help, or reducing the grid cell size. Reducing the time step size may also
 # help with unstable model runs in general
-exhumation_rate_s = [1e-4, 3e-5]
+exhumation_rate_s = [1e-4]
 
 #radius_s = [60e-6, 100e-6, 150e-6]
