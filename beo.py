@@ -339,6 +339,112 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
     return mesh
 
 
+def setup_mesh_with_exhumation_v2(width, x_flt_surface, fault_width, fault_angle,
+                                  z_air,
+                                  z_surface_initial, z_surface_final,
+                                  z_surface_steps,
+                                  z_fine, z_base, cellsize,
+                                  cellsize_air, cellsize_fault,
+                                  cellsize_fine, cellsize_base, fault_buffer_zone):
+
+    """
+
+    create a mesh for the model of the bewowawe hydrothermal system
+
+    """
+
+    ###############################
+    # use gmsh to construct domain
+    ##############################
+
+    # calculate fault positions
+    # TODO: enable multiple faults, right now only one fault in model domain
+    zs_surface = np.linspace(z_surface_initial, z_surface_final, z_surface_steps + 1)
+    z_flt = np.concatenate((zs_surface, np.array([z_fine, z_base])))
+    #z_flt = np.array([z_surface, z_fine, z_base])
+    x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
+
+    print 'fault locations in mesh:'
+    for x, z in zip(x_flt, z_flt):
+        print x, z
+
+    #xys = [[0, z_air], [width, z_air],
+    #       [0, z_surface], [x_flt[0], z_surface], [x_flt[0] + fault_width, z_surface], [width, z_surface],
+    #       [0, z_fine], [x_flt[1], z_fine], [x_flt[1] + fault_width, z_fine], [width, z_fine],
+    #       [0, z_base], [x_flt[2], z_base], [x_flt[2] + fault_width, z_base], [width, z_base]]
+
+    xys = [[[0, z_air], [width, z_air]]]
+
+    for xf, zf in zip(x_flt, z_flt):
+        xys.append([[0, zf], [xf - fault_width, zf], [xf, zf], [xf + fault_width, zf], [xf + fault_width * 2, zf],  [width, zf]])
+
+    points = []
+    for xyi in xys:
+        points_local = [pc.Point(x, z) for x, z in xyi]
+        points.append(points_local)
+
+    # fine cellsize in air layer:
+    for point in points[0]:
+        point.setLocalScale(cellsize_air / cellsize)
+
+    # small cellsize in fault:
+    for point in points[1:]:
+        point[1].setLocalScale(cellsize_fault / cellsize)
+        point[2].setLocalScale(cellsize_fault / cellsize)
+        point[3].setLocalScale(cellsize_fault / cellsize)
+        point[4].setLocalScale(cellsize_fault / cellsize)
+
+    points[-1][0].setLocalScale(cellsize_base / cellsize)
+    points[-1][-1].setLocalScale(cellsize_base / cellsize)
+
+    # horizontal lines:
+    hlines = [[pc.Line(points[0][0], points[0][1])]]
+    for point in points[1:]:
+        hline_local = [pc.Line(point[0], point[1]),
+                       pc.Line(point[1], point[2]),
+                       pc.Line(point[2], point[3]),
+                       pc.Line(point[3], point[4]),
+                       pc.Line(point[4], point[5])]
+        hlines.append(hline_local)
+
+    # vertical lines:
+    vlines = [[pc.Line(points[0][0], points[1][0]), pc.Line(points[0][1], points[1][3])]]
+    for point, point_below in zip(points[1:], points[2:]):
+        vline_local = [pc.Line(point[0], point_below[0]),
+                       pc.Line(point[1], point_below[1]),
+                       pc.Line(point[2], point_below[2]),
+                       pc.Line(point[3], point_below[3]),
+                       pc.Line(point[4], point_below[4]),
+                       pc.Line(point[5], point_below[5])]
+        vlines.append(vline_local)
+
+    curves = [pc.CurveLoop(hlines[0][0], vlines[0][1],
+                           -hlines[1][4], -hlines[1][3], -hlines[1][2], -hlines[1][1], -hlines[1][0],
+                           -vlines[0][0])]
+    for hline, hline_below, vline in zip(hlines[1:-1], hlines[2:], vlines[1:]):
+        curve_local_left = pc.CurveLoop(hline[0], vline[1], -hline_below[0], -vline[0])
+        curve_local_fault_buffer_left = pc.CurveLoop(hline[1], vline[2], -hline_below[1], -vline[1])
+        curve_local_fault = pc.CurveLoop(hline[2], vline[3], -hline_below[2], -vline[2])
+        curve_local_fault_buffer_right = pc.CurveLoop(hline[3], vline[4], -hline_below[3], -vline[3])
+        curve_local_right = pc.CurveLoop(hline[4], vline[5], -hline_below[4], -vline[4])
+
+        curves += [curve_local_left, curve_local_fault_buffer_left, curve_local_fault, curve_local_fault_buffer_right, curve_local_right]
+
+    surfaces = [pc.PlaneSurface(curve) for curve in curves]
+
+    d = gmsh.Design(dim=2, element_size=cellsize)
+
+    d.setMeshFileName('beowawe_mesh')
+
+    d.addItems(*surfaces)
+
+    mesh = fl.MakeDomain(d, optimizeLabeling=True)
+
+    mesh.write('mesh.fly')
+
+    return mesh
+
+
 def setup_mesh_2faults(width, x_flt_surface, fault_width, fault_angle, z_air,
                        z_surface, z_fine, z_base, cellsize,
                        cellsize_air, cellsize_fault, cellsize_fine, cellsize_base):
@@ -512,6 +618,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
     c3 = 103.28
     c4 = 179.99
 
+    P_buffer = 10.0
+
     xyz = mesh.getX()
 
     exceed_max_liquid_T_old = None
@@ -553,27 +661,30 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
     Ts = []
     surface_levels = []
     surface_level = surface_level_init
+
+    depth = -(xyz[1] - surface_level)
+    subsurface = es.whereNonPositive(xyz[1] - surface_level)
+    air = es.wherePositive(xyz[1] - surface_level)
     surface = es.whereZero(xyz[1] - surface_level)
 
-    # calculate pressure
-    depth = -(xyz[1] - surface_level)
-    P_init = fluid_density * g * depth + atmospheric_pressure
-    P = P_init * es.wherePositive(depth) + atmospheric_pressure * es.whereNonPositive(depth)
+    if vapour_correction is True:
+        P_init = fluid_density * g * depth + atmospheric_pressure
+        P = P_init * es.wherePositive(depth) + atmospheric_pressure * es.whereNonPositive(depth)
 
-    vapour_pressure = calculate_vapour_pressure(T)
-    logP = es.log10(P / 1.0e6)
-    boiling_temp = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
-    vapour = es.whereNegative(P - vapour_pressure)
-    xmin_vapour = es.inf(vapour * xyz[0])
-    xmax_vapour = es.sup(vapour * xyz[0])
-    ymin_vapour = -es.sup(-(vapour * xyz[1]))
-    ymax_vapour = es.sup(vapour * xyz[1])
+        vapour_pressure = calculate_vapour_pressure(T)
+        logP = es.log10(P / 1.0e6)
+        boiling_temp = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
+        vapour = es.whereNegative(P - vapour_pressure)
+        xmin_vapour = es.inf(vapour * xyz[0])
+        xmax_vapour = es.sup(vapour * xyz[0])
+        ymin_vapour = -es.sup(-(vapour * xyz[1]))
+        ymax_vapour = es.sup(vapour * xyz[1])
 
-    boiling_temps = []
-    exceed_boiling_temps = []
+        boiling_temps = []
+        exceed_boiling_temps = []
 
-    if es.sup(vapour) >= 1:
-        print 'warning, vapour present at initial steady-state P-T conditions'
+        if es.sup(vapour) >= 1:
+            print 'warning, vapour present at initial steady-state P-T conditions'
 
     for fault_flux, duration in zip(fault_fluxes, durations):
 
@@ -674,15 +785,25 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                         es.sup(T * land_surface)
                 else:
                     print '\tcould not find land surface nodes'
-                if es.sup(vapour) > 0:
-                    print '\tvapour present in: ', es.integrate(vapour), ' m^2'
-                    print '\t\tfrom x = ', xmin_vapour, ' to x = ', \
-                        xmax_vapour
-                    print '\t\tand from y = ', ymin_vapour, ' to y = ', \
-                        ymax_vapour
-                    print '\tmax. liquid T at the surface = ', es.sup(boiling_temp * land_surface)
-                else:
-                    print '\tno vapour present'
+
+                if vapour_correction is True:
+                    vapour = subsurface * es.whereNegative(P - vapour_pressure + P_buffer)
+                    #vapour = es.whereNegative(P - vapour_pressure)
+
+                    xmin_vapour = es.inf(vapour * xyz[0])
+                    xmax_vapour = es.sup(vapour * xyz[0])
+                    ymin_vapour = -es.sup(-(vapour * xyz[1]))
+                    ymax_vapour = es.sup(vapour * xyz[1])
+
+                    if es.sup(vapour) > 0:
+                        print '\tvapour present in: ', es.integrate(vapour), ' m^2'
+                        print '\t\tfrom x = ', xmin_vapour, ' to x = ', \
+                            xmax_vapour
+                        print '\t\tand from y = ', ymin_vapour, ' to y = ', \
+                            ymax_vapour
+                        print '\tmax. liquid T at the surface = ', es.sup(boiling_temp * land_surface)
+                    else:
+                        print '\tno vapour present'
 
             surface_level = surface_level_init - t_total / year * exhumation_rate
 
@@ -725,33 +846,29 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 # recalculate fluid pressure
                 xyz = mesh.getX()
                 depth = -(xyz[1] - surface_level)
-                P_init = fluid_density * g * depth + atmospheric_pressure
-                P = P_init * es.wherePositive(depth) + atmospheric_pressure * es.whereNonPositive(depth)
+
+                if vapour_correction is True:
+                    P_init = fluid_density * g * depth + atmospheric_pressure
+                    P = P_init * es.wherePositive(depth) + atmospheric_pressure * es.whereNonPositive(depth)
+
+                    logP = es.log10(P / 1.0e6)
+                    boiling_temp = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
+
 
             # recalculate vapour pressure and max liquid temperature
-            vapour_pressure = calculate_vapour_pressure(T)
-            #boiling_temp = calculate_boiling_temp(P)
-            P_buffer = 10.0
-            vapour = subsurface * es.whereNegative(P - vapour_pressure + P_buffer)
-            #vapour = es.whereNegative(P - vapour_pressure)
+            if vapour_correction is True:
+                #vapour_pressure = calculate_vapour_pressure(T)
+                #boiling_temp = calculate_boiling_temp(P)
+                #exceed_boiling_temp = subsurface * es.wherePositive(T - boiling_temp)
 
-            xmin_vapour = es.inf(vapour * xyz[0])
-            xmax_vapour = es.sup(vapour * xyz[0])
-            ymin_vapour = -es.sup(-(vapour * xyz[1]))
-            ymax_vapour = es.sup(vapour * xyz[1])
+                if exceed_max_liquid_T_old is None:
+                    exceed_boiling_temp = subsurface * es.wherePositive(T - boiling_temp)
+                else:
+                    exceed_boiling_temp = \
+                        subsurface * es.whereZero(exceed_max_liquid_T_old) \
+                        * es.wherePositive(T - boiling_temp) + subsurface * exceed_max_liquid_T_old
 
-            logP = es.log10(P / 1.0e6)
-            boiling_temp = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
-            exceed_boiling_temp = subsurface * es.wherePositive(T - boiling_temp)
-
-            if exceed_max_liquid_T_old is None:
-                exceed_boiling_temp = subsurface * es.wherePositive(T - boiling_temp)
-            else:
-                exceed_boiling_temp = \
-                    subsurface * es.whereZero(exceed_max_liquid_T_old) \
-                    * es.wherePositive(T - boiling_temp) + subsurface * exceed_max_liquid_T_old
-
-            exceed_max_liquid_T_old =  exceed_boiling_temp
+                exceed_max_liquid_T_old =  exceed_boiling_temp
 
             if vapour_correction is True:
                 specified_T_loc = es.wherePositive(top_bnd) + es.wherePositive(bottom_bnd) + exceed_boiling_temp
@@ -775,8 +892,10 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             # store output
             Ts.append(T)
             q_vectors.append(q_vector)
-            boiling_temps.append(boiling_temp)
-            exceed_boiling_temps.append(exceed_boiling_temp)
+
+            if vapour_correction is True:
+                boiling_temps.append(boiling_temp)
+                exceed_boiling_temps.append(exceed_boiling_temp)
 
             #ti = output_steps.index(t)
             #print 'surface T: ', T * surface
@@ -836,13 +955,15 @@ def model_run(mp):
 
     elevation_top = z_surface + exhumed_thickness + mp.air_height
 
-    mesh = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0], mp.fault_widths[0],
-                                      mp.fault_angles[0], elevation_top,
-                                      z_surface + exhumed_thickness, z_surface,
-                                      exhumation_steps,
-                                      mp.z_fine, z_base, mp.cellsize,
-                                      mp.cellsize_air, mp.cellsize_fault,
-                                      mp.cellsize_fine, mp.cellsize_base)
+    mesh = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0],
+                                         mp.fault_widths[0],
+                                         mp.fault_angles[0], elevation_top,
+                                         z_surface + exhumed_thickness, z_surface,
+                                         exhumation_steps,
+                                         mp.z_fine, z_base, mp.cellsize,
+                                         mp.cellsize_air, mp.cellsize_fault,
+                                         mp.cellsize_fine, mp.cellsize_base)
+                                         #,mp.fault_widths)
 
     ###############################################################
     # convert input params to escript variables

@@ -6,8 +6,8 @@ xsize = 10.0
 ysize = 6.0
 
 # limits of x and y axis of figure
-xlim = [3500, 4500]
-ylim = [-1000, 100]
+xlim = [0, 6000]
+ylim = [-6000, 100]
 
 # grid size for interpolating model results
 dx = 10.0

@@ -165,6 +165,8 @@ if mp.calculate_he_ages is True:
 
 for model_run, param_set in enumerate(param_list):
 
+    print '-' * 20
+
     # reload default params
     Parameters = mp()
 
@@ -183,6 +185,8 @@ for model_run, param_set in enumerate(param_list):
 
             # update model parameter
             setattr(Parameters, model_param_name, scenario_parameter)
+
+    print '-' * 20
 
     # store input parameters in dataframe
     attributes = inspect.getmembers(
