@@ -34,7 +34,7 @@ initial_base_run = False
 
 #thermal_gradient_s = [0.04]
 
-#exhumation_rate_s = [1.0e-5, 1.0e-4]
+exhumation_rate_s = [1.0e-4]
 
 #fault_fluxes_s = [[[-300.0 / year]], [[-400.0 / year]],
 #                  [[-500.0 / year]], [[-600.0 / year]]]
@@ -46,6 +46,13 @@ initial_base_run = False
 # initial surface and final surface get really thin, which may result with grid elements that have angles that are
 # too low. reducing exhumation_steps may help, or reducing the grid cell size. Reducing the time step size may also
 # help with unstable model runs in general
-exhumation_rate_s = [1e-4]
+#exhumation_rate_s = [1e-4]
 
 #radius_s = [60e-6, 100e-6, 150e-6]
+
+
+
+#dt_s = [500 * year]
+
+#cellsize_fault_s = [2.5]
+#cellsize_s = [250.0, 100.0]

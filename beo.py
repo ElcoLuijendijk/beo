@@ -376,7 +376,7 @@ def setup_mesh_with_exhumation_v2(width, x_flt_surface, fault_width, fault_angle
     xys = [[[0, z_air], [width, z_air]]]
 
     for xf, zf in zip(x_flt, z_flt):
-        xys.append([[0, zf], [xf - fault_width, zf], [xf, zf], [xf + fault_width, zf], [xf + fault_width * 2, zf],  [width, zf]])
+        xys.append([[0, zf], [xf - fault_buffer_zone, zf], [xf, zf], [xf + fault_width, zf], [xf + fault_buffer_zone * 2, zf],  [width, zf]])
 
     points = []
     for xyi in xys:
@@ -389,10 +389,10 @@ def setup_mesh_with_exhumation_v2(width, x_flt_surface, fault_width, fault_angle
 
     # small cellsize in fault:
     for point in points[1:]:
-        point[1].setLocalScale(cellsize_fault / cellsize)
+        point[1].setLocalScale(cellsize_fine / cellsize)
         point[2].setLocalScale(cellsize_fault / cellsize)
         point[3].setLocalScale(cellsize_fault / cellsize)
-        point[4].setLocalScale(cellsize_fault / cellsize)
+        point[4].setLocalScale(cellsize_fine / cellsize)
 
     points[-1][0].setLocalScale(cellsize_base / cellsize)
     points[-1][-1].setLocalScale(cellsize_base / cellsize)
@@ -777,8 +777,16 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         for t in range(nt):
 
             if t / 10 == t / 10.0:
+
+                end = time.time()
+                comptime = end - start
+
+                start = end
+
                 land_surface = es.whereZero(xyz[1] - surface_level)
                 print 'step %i of %i' % (t, nt)
+                print '\tcomputational time for one timestep = %0.3f sec' \
+                      % (comptime / 10.0)
                 print '\ttemperature: ', T
                 if es.sup(land_surface) > 0:
                     print '\tmax. temperature at land surface: ', \
@@ -955,15 +963,29 @@ def model_run(mp):
 
     elevation_top = z_surface + exhumed_thickness + mp.air_height
 
-    mesh = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0],
-                                         mp.fault_widths[0],
-                                         mp.fault_angles[0], elevation_top,
-                                         z_surface + exhumed_thickness, z_surface,
-                                         exhumation_steps,
-                                         mp.z_fine, z_base, mp.cellsize,
-                                         mp.cellsize_air, mp.cellsize_fault,
-                                         mp.cellsize_fine, mp.cellsize_base)
-                                         #,mp.fault_widths)
+    if mp.use_mesh_with_buffer is False:
+        mesh = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0],
+                                             mp.fault_widths[0],
+                                             mp.fault_angles[0], elevation_top,
+                                             z_surface + exhumed_thickness, z_surface,
+                                             exhumation_steps,
+                                             mp.z_fine, z_base, mp.cellsize,
+                                             mp.cellsize_air, mp.cellsize_fault,
+                                             mp.cellsize_fine, mp.cellsize_base)
+                                             #,mp.fault_widths)
+
+    else:
+        print 'use mesh with a buffer zone with small cell sizes around faults'
+        mesh = setup_mesh_with_exhumation_v2(mp.width, mp.fault_xs[0],
+                                             mp.fault_widths[0],
+                                             mp.fault_angles[0], elevation_top,
+                                             z_surface + exhumed_thickness, z_surface,
+                                             exhumation_steps,
+                                             mp.z_fine, z_base, mp.cellsize,
+                                             mp.cellsize_air, mp.cellsize_fault,
+                                             mp.cellsize_fine, mp.cellsize_base,
+                                             mp.fault_buffer_zone)
+
 
     ###############################################################
     # convert input params to escript variables
@@ -978,6 +1000,15 @@ def model_run(mp):
     #######################################
     print 'setting up PDE and boundary conditions'
     hf_pde = linearPDEs.LinearPDE(mesh)
+
+    solver = ''
+    if solver == 'GMRES':
+        print 'using GMRES solver for heat transport PDE'
+        hf_pde.getSolverOptions().setSolverMethod(es.SolverOptions.GMRES)
+    elif solver is 'DIRECT':
+        print 'using direct solver for heat transport PDE'
+        hf_pde.getSolverOptions().setSolverMethod(
+            es.SolverOptions.DIRECT)
 
     # find which nodes are on top & bottom boundaries
     surface = es.whereZero(xyz[1])

@@ -28,28 +28,34 @@ class ModelParams:
 
     # model dimensions
     width = 6000.0
-    total_depth = 8000.0
+    total_depth = 6000.0
     air_height = 100.0
 
     # depth to fine discretization at surface:
+    # deprecated, doesnt work, maybe need to add this in again to increase numerical stability
     z_fine = -100
 
     # grid size
-    cellsize = 500.0
+    cellsize = 200.0
     cellsize_air = 10.0
     cellsize_fault = 5.0
-    cellsize_fine = 20.0
     cellsize_base = 1000.0
+
+    # new: buffer zone around fault with the same cell size as the fault
+    # this is to reduce model instability
+    use_mesh_with_buffer = False
+    fault_buffer_zone = 25.0
+    cellsize_fine = 10.0
 
     # exhumation parameters
     # exhumation rate in m/yr
     # assuming the AHe was not reset, the max exhumation is ~1500 m in 15 My = 1e-4 m/yr
     # look up regional AFT, AHe and cosmogenic nuclide work for realistic range of exhumation rates
-    exhumation_rate = 5e-5
+    exhumation_rate = 1e-4
 
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
-    # but this also slows the model down somehwat
+    # but this also slows the model down somewhat
     # note, to avoid errors this should be the same as N_outputs for now
     # working on a more elegant fix for this.....
     exhumation_steps = 10
@@ -66,7 +72,7 @@ class ModelParams:
     #bottom_temperature = total_depth * 0.03 + air_temperature
     #bottom_temperature = total_depth * 0.03
     # new version: calculate bottom T using a fixed geothermal gradient./r
-    thermal_gradient = 0.05
+    thermal_gradient = 0.04
 
     # bottom flux bnd condition, set to None if T bnd is used
     basal_heat_flux = None
@@ -83,17 +89,17 @@ class ModelParams:
     # leave depth of first layer at arbitrarily high value to make sure the entire
     # model domain is covered
     # note that currently only 1 fault is taken into account...
-    layer_bottom = [[-20000, -20000],
-                    [-500.0, - 450.0],
-                    [-200.0, -150.0]]
+    layer_bottom = [[-20000.0, -20220.0],
+                    [-1140.0, - 1360.0],
+                    [-1030.0, -1250.0]]
 
     # porosity for each layer
-    porosities = [0.1, 0.15, 0.25]
+    porosities = [0.08, 0.25, 0.05]
 
     # thermal parameters
     # note that only thermal conductivity is varied between layers, the rest
     # is constant
-    K_solids = [2.5, 2.5, 2.5]
+    K_solids = [4.44, 1.58, 1.8]
 
     # wikipedia: thermal properties air
     # heat transfer coefficient = 10- 100 W / (m2 K))
@@ -115,7 +121,7 @@ class ModelParams:
     # this is not used when exhumation > 0, in this case output is generated
     # once each new surface level is reached
     # the number of surfaces is controlled by the exhumation_steps parameter
-    N_outputs = [20]
+    N_outputs = [10]
 
     # size of timestep
     dt = 1000 * year
@@ -133,6 +139,10 @@ class ModelParams:
     # U-Th/He params
     calculate_he_ages = True
 
+    #save the AHe ages qat the surface to a separate file
+    # do not turn this on yet, there's a bug in this part of the code....
+    save_AHe_ages = False
+
     # method to calculate helium diffusivity, use Wolf1996, Farley2000 or RDAAM
     AHe_method = 'RDAAM'
 
@@ -148,12 +158,12 @@ class ModelParams:
     U238 = 8.98e-6
     Th232 = 161.3e-6
 
-    distance_samples = [1500.0, 2000.0]
-    radius_samples = [100.0 * 1e-6, 150e-6]
-    U238_samples = [8.98e-6]
-    Th232_samples = [161.3e-6]
+    #distance_samples = [1500.0, 2000.0]
+    #radius_samples = [100.0 * 1e-6, 150e-6]
+    #U238_samples = [8.98e-6]
+    #Th232_samples = [161.3e-6]
 
-    AHe_age_samples = [10e6, 15e6]
+    #AHe_age_samples = [10e6, 15e6]
 
     # alpha ejection parameters:
     alpha_ejection = True
@@ -203,4 +213,4 @@ class ModelParams:
     borehole_names = ['85-18']
 
     # locations of boreholes for temperature data
-    borehole_xs = [3000.0]
+    borehole_xs = [3675.0]

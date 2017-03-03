@@ -551,7 +551,7 @@ for model_run, param_set in enumerate(param_list):
         print 'saving modeled temperatures for boreholes to %s' % fn_new
         dft.to_csv(os.path.join(output_folder, fn_new))
 
-    if AHe_ages_surface_all != []:
+    if mp.save_AHe_ages is True and AHe_ages_surface_all != []:
 
         nxs = np.max(np.array([AHe_ii.shape[0]
                                for AHe_i in AHe_ages_surface_all
