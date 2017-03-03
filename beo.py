@@ -810,7 +810,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                     vapour = subsurface * es.whereNegative(P - vapour_pressure + P_buffer)
                     #vapour = es.whereNegative(P - vapour_pressure)
 
-                    xmin_vapour = es.inf(vapour * xyz[0])
+                    xmin_vapour = es.inf(vapour * xyz[0] + es.whereZero(vapour) * 999999.9)
                     xmax_vapour = es.sup(vapour * xyz[0])
                     ymin_vapour = -es.sup(-(vapour * xyz[1]))
                     ymax_vapour = es.sup(vapour * xyz[1])
