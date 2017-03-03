@@ -51,7 +51,7 @@ class ModelParams:
     # exhumation rate in m/yr
     # assuming the AHe was not reset, the max exhumation is ~1500 m in 15 My = 1e-4 m/yr
     # look up regional AFT, AHe and cosmogenic nuclide work for realistic range of exhumation rates
-    exhumation_rate = 1e-4
+    exhumation_rate = 5e-5
 
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
@@ -68,7 +68,7 @@ class ModelParams:
     #exhumation_interval = 10
 
     # temperature bnd conditions
-    air_temperature = 10.0
+    air_temperature = 13.0
     #bottom_temperature = total_depth * 0.03 + air_temperature
     #bottom_temperature = total_depth * 0.03
     # new version: calculate bottom T using a fixed geothermal gradient./r

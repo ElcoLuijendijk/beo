@@ -783,10 +783,21 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
                 start = end
 
-                land_surface = es.whereZero(xyz[1] - surface_level)
+                # find closest nodes to the actual surface level
+
+                try:
+                    surface_level_mesh_id = np.where(target_depths <= surface_level)[0][-1]
+                    surface_level_mesh = target_depths[surface_level_mesh_id]
+                except:
+                    surface_level_mesh = surface_level
+                    print '\twarning could not find land surface nodes'
+
+                land_surface = es.whereZero(xyz[1] - surface_level_mesh)
                 print 'step %i of %i' % (t, nt)
                 print '\tcomputational time for one timestep = %0.3f sec' \
                       % (comptime / 10.0)
+                print '\tactual surface level ', surface_level
+                print '\tclosest surface in mesh ', surface_level_mesh
                 print '\ttemperature: ', T
                 if es.sup(land_surface) > 0:
                     print '\tmax. temperature at land surface: ', \
@@ -795,6 +806,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                     print '\tcould not find land surface nodes'
 
                 if vapour_correction is True:
+                    vapour_pressure = calculate_vapour_pressure(T)
                     vapour = subsurface * es.whereNegative(P - vapour_pressure + P_buffer)
                     #vapour = es.whereNegative(P - vapour_pressure)
 
