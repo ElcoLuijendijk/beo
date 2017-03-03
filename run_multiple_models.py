@@ -573,9 +573,9 @@ for model_run, param_set in enumerate(param_list):
 
                 l = np.min((a, b))
                 try:
-                    dfh.loc[:l, 'x_run_%i_ts%i' % (j, i)] = \
+                    dfh.loc[:l-1, 'x_run_%i_ts%i' % (j, i)] = \
                         AHe_xcoords_surface_all[j][i][:l]
-                    dfh.loc[:l, 'AHe_age_run_%i_ts%i' % (j, i)] = \
+                    dfh.loc[:l-1, 'AHe_age_run_%i_ts%i' % (j, i)] = \
                         AHe_ages_surface_all[j][i][:l] / My
                 except Exception, msg:
                     print 'error, something went wrong with saving AHe data ' \
