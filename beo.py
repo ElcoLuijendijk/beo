@@ -821,15 +821,17 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                             xmax_vapour
                         print '\t\tand from y = ', ymin_vapour, ' to y = ', \
                             ymax_vapour
-                        print '\tmax. liquid T at the surface = ', es.sup(boiling_temp * land_surface)
+                        print '\tmax. liquid T at the surface = ', \
+                            es.sup(boiling_temp * land_surface)
                     else:
                         print '\tno vapour present'
 
-            surface_level = surface_level_init - t_total / year * exhumation_rate
+            surface_level = surface_level_init - t_total / year \
+                                                 * exhumation_rate
 
             if exhumation_rate != 0 and surface_level in target_depths:
 
-                print 'exhumation, new surface level at %0.2f' % surface_level
+                print '\texhumation, new surface level at %0.2f' % surface_level
                 subsurface = es.whereNonPositive(xyz[1] - surface_level)
                 air = es.wherePositive(xyz[1] - surface_level)
                 surface = es.whereZero(xyz[1] - surface_level)
@@ -869,7 +871,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
                 if vapour_correction is True:
                     P_init = fluid_density * g * depth + atmospheric_pressure
-                    P = P_init * es.wherePositive(depth) + atmospheric_pressure * es.whereNonPositive(depth)
+                    P = P_init * es.wherePositive(depth) \
+                        + atmospheric_pressure * es.whereNonPositive(depth)
 
                     logP = es.log10(P / 1.0e6)
                     boiling_temp = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
@@ -882,18 +885,24 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 #exceed_boiling_temp = subsurface * es.wherePositive(T - boiling_temp)
 
                 if exceed_max_liquid_T_old is None:
-                    exceed_boiling_temp = subsurface * es.wherePositive(T - boiling_temp)
+                    exceed_boiling_temp = \
+                        subsurface * es.wherePositive(T - boiling_temp)
                 else:
                     exceed_boiling_temp = \
                         subsurface * es.whereZero(exceed_max_liquid_T_old) \
-                        * es.wherePositive(T - boiling_temp) + subsurface * exceed_max_liquid_T_old
+                        * es.wherePositive(T - boiling_temp) \
+                        + subsurface * exceed_max_liquid_T_old
 
                 exceed_max_liquid_T_old =  exceed_boiling_temp
 
             if vapour_correction is True:
-                specified_T_loc = es.wherePositive(top_bnd) + es.wherePositive(bottom_bnd) + exceed_boiling_temp
-                specified_temperature = es.wherePositive(top_bnd) * air_temperature \
-                      + es.wherePositive(bottom_bnd) * bottom_temperature + exceed_boiling_temp * boiling_temp
+                specified_T_loc = es.wherePositive(top_bnd) \
+                                  + es.wherePositive(bottom_bnd) \
+                                  + exceed_boiling_temp
+                specified_temperature = \
+                    es.wherePositive(top_bnd) * air_temperature \
+                    + es.wherePositive(bottom_bnd) * bottom_temperature \
+                    + exceed_boiling_temp * boiling_temp
 
             # solve PDE for temperature
             T = hf_pde.getSolution()
@@ -1256,14 +1265,30 @@ def model_run(mp):
 
             for xii in range(nx):
 
-                t_he = np.concatenate((t_prov[:], t_prov[-1] + runtimes))
-                T_he = np.concatenate((T_prov[:], T_array[:, ind_surface[xii]]))
+                # reduce the nuber of timesteps for the AHe algorithm
+                runtimes_filtered = runtimes[::mp.AHe_timestep_reduction]
+                T_filtered = \
+                    T_array[:, ind_surface[xii]][::mp.AHe_timestep_reduction]
+
+                # make sure the last timestep is also included in the new
+                # tmeperature and time arrays:
+                if runtimes_filtered[-1] != runtimes[-1]:
+                    runtimes_filtered = \
+                        np.append(runtimes_filtered, runtimes[-1:])
+                    T_filtered = \
+                        np.append(T_filtered, T_array[:, ind_surface[xii]][-1])
+
+                #t_he = np.concatenate((t_prov[:], t_prov[-1] + runtimes))
+                #T_he = np.concatenate((T_prov[:], T_array[:, ind_surface[xii]]))
+                t_he = np.concatenate((t_prov[:], t_prov[-1] + runtimes_filtered))
+                T_he = np.concatenate((T_prov[:], T_filtered))
 
                 nt_prov = len(t_prov)
                 #T_he *= 2
 
                 T_he += mp.Kelvin
 
+                # calculate the AHe age:
                 he_age_i = he.calculate_he_age_meesters_dunai_2002(
                     t_he, T_he,
                     mp.radius, mp.U238, mp.Th232,
@@ -1273,8 +1298,14 @@ def model_run(mp):
                     n_eigenmodes=50)
 
                 # copy only He ages after provenance:
-                for i in xrange(nt):
-                    he_ages_surface[:, xii] = he_age_i[nt_prov:]
+                #for i in xrange(nt):
+
+                # copy AHe ages back into array with same length as the
+                # runtime and temperature arrays
+                he_ages_run_filtered = he_age_i[nt_prov:]
+                he_ages_unfiltered = np.interp(runtimes, runtimes_filtered,
+                                               he_ages_run_filtered)
+                he_ages_surface[:, xii] = he_ages_unfiltered
 
                 #My = 1e6 * 365.25 * 24 * 60 * 60
                 #print zip(t_he/My, T_he - mp.Kelvin, he_age_i / My)

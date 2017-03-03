@@ -29,7 +29,7 @@ class ModelParams:
     # model dimensions
     width = 6000.0
     total_depth = 6000.0
-    air_height = 100.0
+    air_height = 40.0
 
     # depth to fine discretization at surface:
     # deprecated, doesnt work, maybe need to add this in again to increase numerical stability
@@ -37,7 +37,7 @@ class ModelParams:
 
     # grid size
     cellsize = 200.0
-    cellsize_air = 10.0
+    cellsize_air = 5.0
     cellsize_fault = 5.0
     cellsize_base = 1000.0
 
@@ -56,9 +56,7 @@ class ModelParams:
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
     # but this also slows the model down somewhat
-    # note, to avoid errors this should be the same as N_outputs for now
-    # working on a more elegant fix for this.....
-    exhumation_steps = 10
+    exhumation_steps = 20
 
     # number of timesteps after which the surface level is recalculated
     # ideally this should be 1 (ie recalculate at each timestep)
@@ -124,7 +122,7 @@ class ModelParams:
     N_outputs = [10]
 
     # size of timestep
-    dt = 1000 * year
+    dt = 1000.0 * year
 
     # duration of each timestep_slice
     durations = [5e5 * year]
@@ -141,10 +139,16 @@ class ModelParams:
 
     #save the AHe ages qat the surface to a separate file
     # do not turn this on yet, there's a bug in this part of the code....
-    save_AHe_ages = False
+    save_AHe_ages = True
 
     # method to calculate helium diffusivity, use Wolf1996, Farley2000 or RDAAM
     AHe_method = 'RDAAM'
+
+    # use temperature at each x timestep for the calculation of AHe ages
+    # this should be an integer. Ideally this should be 1, but higher numbers
+    # significantly speed up the model
+    # !! new parameter (3 march 2017)
+    AHe_timestep_reduction = 4
 
     # temperature after crystallization and before hydrothermal heating
     T0 = 10.0
