@@ -18,6 +18,7 @@ import pdb
 import datetime
 
 import numpy as np
+import pandas as pd
 import matplotlib
 
 # escript/Finley modules:
@@ -1233,11 +1234,20 @@ def model_run(mp):
 
     else:
 
-        # convert escript vars to arrays
+        # find locations of AHe samples:
+        if mp.model_AHe_samples is True:
 
-        # calculate U-Th/He age for entire model domain.
-        # assume no T change after K-Ar determined crystallization age
-        # of 16.5 Ma
+            # read sample data
+            dfhs = pd.read_csv(mp.AHe_data_file)
+            locs = dfhs['profile'] == mp.profile_number
+            dfhs = dfhs.loc[locs]
+            AHe_sample_distances = dfhs['distance'].values
+            U_conc = dfhs['U'].values
+            Th_conc = dfhs['Th'].values
+            sphere_radius = dfhs['sphere_radius'].values
+            sample_names = dfhs['sample']
+            ngrains = len(AHe_sample_distances)
+
         ind_surface = np.where(xyz_array[:, 1] == 0)[0]
         nx = len(ind_surface)
 
@@ -1251,6 +1261,11 @@ def model_run(mp):
         Ahe_ages_all = []
         T_surf_mod_all = []
 
+        if mp.model_AHe_samples is True:
+            AHe_ages_samples_all = []
+        else:
+            AHe_ages_samples_all = None
+
         for target_depth in mp.target_zs:
             #target_depth = 0
             nt = len(Ts)
@@ -1263,15 +1278,18 @@ def model_run(mp):
             he_ages_surface = np.zeros((nt, nx))
             T_surf_mod = np.zeros((nt, nx))
 
+            if mp.model_AHe_samples is True:
+                he_ages_grains = np.zeros((nt, ngrains))
+
             for xii in range(nx):
 
-                # reduce the nuber of timesteps for the AHe algorithm
+                # reduce the number of timesteps for the AHe algorithm
                 runtimes_filtered = runtimes[::mp.AHe_timestep_reduction]
                 T_filtered = \
                     T_array[:, ind_surface[xii]][::mp.AHe_timestep_reduction]
 
                 # make sure the last timestep is also included in the new
-                # tmeperature and time arrays:
+                # temperature and time arrays:
                 if runtimes_filtered[-1] != runtimes[-1]:
                     runtimes_filtered = \
                         np.append(runtimes_filtered, runtimes[-1:])
@@ -1297,18 +1315,12 @@ def model_run(mp):
                     method=mp.AHe_method,
                     n_eigenmodes=50)
 
-                # copy only He ages after provenance:
-                #for i in xrange(nt):
-
                 # copy AHe ages back into array with same length as the
                 # runtime and temperature arrays
                 he_ages_run_filtered = he_age_i[nt_prov:]
                 he_ages_unfiltered = np.interp(runtimes, runtimes_filtered,
                                                he_ages_run_filtered)
                 he_ages_surface[:, xii] = he_ages_unfiltered
-
-                #My = 1e6 * 365.25 * 24 * 60 * 60
-                #print zip(t_he/My, T_he - mp.Kelvin, he_age_i / My)
 
             # get surface locs and T
             xs = xyz_array[:, 0][ind_surface]
@@ -1326,23 +1338,111 @@ def model_run(mp):
             xs_Ahe_all.append(xs)
             T_surf_mod_all.append(T_surf_mod)
 
+            ###############################
+            # calculate ages of AHe samples
+            ###############################
+            if mp.model_AHe_samples is True:
+                unique_dist = np.unique(AHe_sample_distances)
+
+                for distance in unique_dist:
+
+                    # find two nearest nodes for samples
+                    x_nodes = xyz_array[:, 0][ind_surface]
+
+                    ind_node_left = np.where(x_nodes < distance)[0][-1]
+                    ind_node_right = np.where(x_nodes > distance)[0][0]
+                    x_factor = (distance - x_nodes[ind_node_left]) / (x_nodes[ind_node_right] - x_nodes[ind_node_left])
+
+                    # extract temperature history for both nodes:
+                    t_hes = []
+                    T_hes = []
+
+                    for xii in (ind_node_left, ind_node_right):
+
+                        # reduce the number of timesteps for the AHe algorithm
+                        runtimes_filtered = runtimes[::mp.AHe_timestep_reduction]
+                        T_filtered = \
+                            T_array[:, ind_surface[xii]][::mp.AHe_timestep_reduction]
+
+                        # make sure the last timestep is also included in the new
+                        # temperature and time arrays:
+                        if runtimes_filtered[-1] != runtimes[-1]:
+                            runtimes_filtered = \
+                                np.append(runtimes_filtered, runtimes[-1:])
+                            T_filtered = \
+                                np.append(T_filtered,
+                                          T_array[:, ind_surface[xii]][-1])
+
+                        t_he = np.concatenate((t_prov[:],
+                                               t_prov[-1] + runtimes_filtered))
+                        T_he = np.concatenate((T_prov[:], T_filtered))
+
+                        nt_prov = len(t_prov)
+
+                        T_he += mp.Kelvin
+
+                        t_hes.append(t_he)
+                        T_hes.append(T_he)
+
+                    if np.max(np.abs(t_hes[1] - t_hes[0])) > 0.0:
+                        print 'warning, something wrong with taking time ' \
+                              'history of left and right nodes'
+
+                    T_he = x_factor * T_hes[1] + (1 - x_factor) * T_hes[0]
+                    t_he = t_hes[0]
+
+                    # find AHe grain data
+                    grain_inds = np.where(AHe_sample_distances == distance)[0]
+
+                    for grain_ind in grain_inds:
+
+                        # calculate AHe ages of two nearest nodes
+                        he_age_i = \
+                            he.calculate_he_age_meesters_dunai_2002(
+                                t_he, T_he,
+                                sphere_radius[grain_ind] * 1e-06,
+                                U_conc[grain_ind] * 1e-6,
+                                Th_conc[grain_ind] * 1e-6,
+                                alpha_ejection=mp.alpha_ejection,
+                                stopping_distance=mp.stopping_distance,
+                                method=mp.AHe_method,
+                                n_eigenmodes=50)
+
+                        # copy AHe ages back into array with same length as the
+                        # runtime and temperature arrays
+
+                        he_ages_run_filtered = he_age_i[nt_prov:]
+                        he_ages_unfiltered = np.interp(runtimes, runtimes_filtered,
+                                                       he_ages_run_filtered)
+                        he_ages_grains[:, grain_ind] = he_ages_unfiltered
+
+                AHe_ages_samples_all.append(he_ages_grains)
+
         AHe_data = [Ahe_ages_all, xs_Ahe_all]
 
         print 'done calculating helium ages'
 
         My = 1e6 * 365 * 24 * 60 * 60.
 
-
-
-        print 'AHe ages: '
+        print '\nAHe ages: '
         for i, Ahe_ages in enumerate(Ahe_ages_all):
             try:
-                print 'layer %i, min = %0.2f, mean = %0.2f, max = %0.2f My' \
+                print '\tlayer %i, min = %0.2f, mean = %0.2f, max = %0.2f My' \
                   % (i, Ahe_ages.min() / My,
                      Ahe_ages.mean() / My,
                      Ahe_ages.max() / My)
             except:
-                print 'layer %i, no modeled AHe data availabel'
+                print '\tlayer %i, no modeled AHe data available'
+
+        print '\nmodeled AHe ages samples'
+        if mp.model_AHe_samples is True:
+            print '\tname, distance, layer, modeled AHe age: '
+            for i, age_i in enumerate(AHe_ages_samples_all):
+                for sample_name, distance, age in zip(sample_names,
+                                                      AHe_sample_distances,
+                                                      age_i):
+                    print '\t%s, %0.1f m, %i, %0.2f My' \
+                          % (sample_name, distance, i, age[-1] / My)
 
     print 'surface T: ', T * surface
 
@@ -1352,7 +1452,8 @@ def model_run(mp):
               xyz_element_array,
               qh_array, qv_array,
               fault_fluxes_m_per_sec, mp.durations, xzs, Tzs,
-              Ahe_ages_all, xs_Ahe_all, mp.target_zs]
+              Ahe_ages_all, xs_Ahe_all, mp.target_zs,
+              AHe_ages_samples_all]
 
     return output
 
@@ -1378,7 +1479,8 @@ if __name__ == "__main__":
      xyz_element_array,
      qh_array, qv_array,
      fault_fluxes, durations, xzs, Tzs,
-     Ahe_ages_all, xs_Ahe_all, target_depths) = output
+     Ahe_ages_all, xs_Ahe_all, target_depths,
+     AHe_ages_samples_all) = output
 
     # crop output to only the output timesteps, to limit filesize
     output_steps = []
@@ -1398,6 +1500,11 @@ if __name__ == "__main__":
     else:
         AHe_ages_cropped = None
 
+    if mp.calculate_he_ages is True and mp.model_AHe_samples is True:
+        AHe_ages_samples_cropped = [AHe_i[output_steps] for AHe_i in AHe_ages_samples_all]
+    else:
+        AHe_ages_samples_cropped = None
+
     N_output_steps = len(output_steps)
 
     # find surface temperatures
@@ -1410,7 +1517,7 @@ if __name__ == "__main__":
         surface_elev = surface_levels[output_steps[j]]
 
         if surface_elev in target_depths:
-            surface_ind = np.where(target_depths == surface_elev)[0]
+            surface_ind = np.where(target_depths == surface_elev)[0][0]
             T_surface_i = Tzs[surface_ind][j]
             x_coords_i = xzs[surface_ind]
 
@@ -1440,7 +1547,7 @@ if __name__ == "__main__":
             surface_elev = surface_levels[i]
 
             if surface_elev in target_depths:
-                surface_ind = np.where(target_depths == surface_elev)[0]
+                surface_ind = np.where(target_depths == surface_elev)[0][0]
                 ages_raw = AHe_ages_cropped[surface_ind][i]
                 x_coords = xzs[surface_ind]
 
@@ -1455,12 +1562,53 @@ if __name__ == "__main__":
                 ages_raw = ((1.0-fraction) * AHe_ages_cropped[ind_low][i] + fraction * AHe_ages_cropped[ind_high][i])
 
                 x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
+
             # add surface AHe data to output
             AHe_ages_surface.append(ages_raw)
             AHe_xcoords_surface.append(x_coords)
     else:
         AHe_ages_surface = None
         AHe_xcoords_surface = None
+
+    # find AHe age of samples at surface
+    if mp.calculate_he_ages is True and mp.model_AHe_samples is True:
+
+        # add surface AHe data to output
+        AHe_ages_samples_surface = []
+
+        for i in range(N_output_steps):
+            surface_elev = surface_levels[i]
+
+            if surface_elev in target_depths:
+                surface_ind = np.where(target_depths == surface_elev)[0][0]
+                ages_raw = AHe_ages_samples_cropped[surface_ind][i]
+                #x_coords = xzs[surface_ind]
+
+            else:
+                # interpolate AHe age from nearest surfaces
+                diff = target_depths - surface_elev
+                ind_low = np.where(diff < 0)[0][-1]
+                ind_high = np.where(diff > 0)[0][0]
+
+                fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
+
+                ages_raw = ((1.0-fraction) * AHe_ages_samples_cropped[ind_low][i] + fraction * AHe_ages_samples_cropped[ind_high][i])
+
+                #x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
+
+            # add surface AHe data to output
+            AHe_ages_samples_surface.append(ages_raw)
+
+    else:
+        AHe_ages_samples_surface = None
+
+    if mp.model_AHe_samples is True:
+
+        AHe_data_file = pd.read_csv(mp.AHe_data_file)
+
+    else:
+        AHe_data_file = None
+
 
     output_selected = \
         [runtimes, runtimes[output_steps], xyz_array, surface_levels,
@@ -1472,7 +1620,8 @@ if __name__ == "__main__":
          fault_fluxes, durations,
          xzs, Tzs_cropped, x_surface, T_surface,
          AHe_ages_cropped, xs_Ahe_all, target_depths,
-         AHe_ages_surface, AHe_xcoords_surface]
+         AHe_ages_surface, AHe_xcoords_surface,
+         AHe_ages_samples_surface, AHe_data_file]
 
     #output_folder = os.path.join(folder, 'model_output')
     output_folder = os.path.join(scriptdir, mp.output_folder)

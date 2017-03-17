@@ -24,7 +24,7 @@ parameter_combinations = False
 
 # option to add a first base run with unchanged parameters to the lsit of model
 # runs
-initial_base_run = True
+initial_base_run = False
 
 ###################################################################
 # parameters that will be changes in the sensitivity analysis runs:
@@ -34,13 +34,13 @@ initial_base_run = True
 
 #thermal_gradient_s = [0.04]
 
-exhumation_rate_s = [1.0e-4, 1.0e-5]
+#exhumation_rate_s = [1.0e-4, 1.0e-5]
 
-fault_fluxes_s = [[[-200.0 / year]], [[-600.0 / year]]]
+#fault_fluxes_s = [[[-200.0 / year]], [[-600.0 / year]]]
 
-fault_widths_s = [[30.0], [40.0]]
+#fault_widths_s = [[30.0], [40.0]]
 
-total_depth_s = [8000.0, 10000.0]
+total_depth_s = [8000.0]
 
 # low exhumation rates (< 1e-4) result in solver errors.
 # Not yet sure why. Potentially there are problems with the grid, with low exhumation rates the layers between the

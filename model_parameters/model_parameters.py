@@ -28,7 +28,7 @@ class ModelParams:
 
     # model dimensions
     width = 6000.0
-    total_depth = 6000.0
+    total_depth = 8000.0
     air_height = 40.0
 
     # depth to fine discretization at surface:
@@ -125,7 +125,7 @@ class ModelParams:
     dt = 1000.0 * year
 
     # duration of each timestep_slice
-    durations = [5e5 * year]
+    durations = [3e4 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -136,6 +136,11 @@ class ModelParams:
 
     # U-Th/He params
     calculate_he_ages = True
+
+    # model-data comparison AHe samples
+    model_AHe_samples = True
+    AHe_data_file = 'model_parameters/AHe_data.csv'
+    profile_number = 1
 
     #save the AHe ages qat the surface to a separate file
     # do not turn this on yet, there's a bug in this part of the code....

@@ -109,7 +109,8 @@ for fn in files:
          fault_fluxes, durations,
          xzs, Tzs, x_surface, T_surface,
          Ahe_ages_all, xs_Ahe_all, Ahe_depths,
-         AHe_ages_surface, AHe_xcoords_surface] \
+         AHe_ages_surface, AHe_xcoords_surface,
+         AHe_ages_samples_surface, AHe_data_file] \
             = output_data
 
     except ValueError:
@@ -179,8 +180,11 @@ for fn in files:
                 #nind = ind == False
                 ind = bt > 0.0
                 nind = ind == False
-                leg_vp = p.scatter(xyz_array_exc[:, 0][ind], xyz_array_exc[:, 1][ind], s=1, color='gray', alpha=0.3)
-                #leg_vp = panels[-1].scatter(xyz_array[:, 0][nind], xyz_array[:, 1][nind], s=1, color='gray')
+                leg_vp = p.scatter(xyz_array_exc[:, 0][ind],
+                                   xyz_array_exc[:, 1][ind],
+                                   s=1, color='gray', alpha=0.3)
+                #leg_vp = panels[-1].scatter(xyz_array[:, 0][nind],
+                # xyz_array[:, 1][nind], s=1, color='gray')
 
         for p, qhi, qvi in zip(panels, qh_array, qv_array):
             print 'adding arrows'
