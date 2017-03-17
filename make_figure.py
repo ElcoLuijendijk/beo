@@ -142,6 +142,8 @@ for fn in files:
         #fig, panels = pl.subplots(1, 3, figsize=(8, 6), sharey=True)
         fig = pl.figure(figsize=(fp.xsize, fp.ysize))
 
+        legs = []
+        labels =[]
         #fig.subplots_adjust(wspace=0.05, hspace=0.05)
 
         import matplotlib.gridspec as gridspec
@@ -158,9 +160,12 @@ for fn in files:
         rpanels = [tp.twinx() for tp in tpanels]
 
         cpanel = fig.add_subplot(gs[-1, :2])
-
         cpanel.set_xticks([])
         cpanel.set_yticks([])
+
+        leg_panel = fig.add_subplot(gs[3, 2], frameon=False)
+        leg_panel.set_xticks([])
+        leg_panel.set_yticks([])
 
         kwargs = dict(edgecolor='None', vmin=vmin, vmax=vmax)
 
@@ -186,6 +191,9 @@ for fn in files:
                 #leg_vp = panels[-1].scatter(xyz_array[:, 0][nind],
                 # xyz_array[:, 1][nind], s=1, color='gray')
 
+            legs.append(leg_vp)
+            labels.append('water vapour')
+
         for p, qhi, qvi in zip(panels, qh_array, qv_array):
             print 'adding arrows'
             xq, yq, qhg = interpolate_data(xyz_element_array, qhi * year,
@@ -208,6 +216,9 @@ for fn in files:
                              qhg[ind][a][::thin], qvg[ind][a][::thin],
                              angles='xy', scale=scale, headwidth=5)
 
+            #legs.append(leg_q)
+            #labels.append('flow arrows')
+
         lss = ['-'] * 50
         #colors = ['darkblue', 'green']
         # surface temperatures
@@ -219,8 +230,11 @@ for fn in files:
                               T_surface[timeslice],
                               color='black', ls=lss[i])
 
+        legs.append(leg_st)
+        labels.append('surface temperature')
+
         for p, timeslice in zip(panels, fp.timeslices):
-            p.axhline(y=surface_levels[timeslice], color='black')
+            p.axhline(y=surface_levels[timeslice], color='black', lw=0.25)
 
         #
         if Ahe_ages_all is not None:
@@ -230,7 +244,28 @@ for fn in files:
 
                 leg_ahe, = rp.plot(AHe_xcoords_surface[timeslice],
                                    AHe_ages_surface[timeslice] / My,
-                                   color='blue', ls=lss[i])
+                                   color=fp.AHe_color, ls=lss[i])
+
+            legs.append(leg_ahe)
+            labels.append('modeled AHe ages')
+
+        #AHe_ages_samples_surface, AHe_data_file
+        if AHe_data_file is not None:
+
+            x = AHe_data_file['distance'].values
+            y = AHe_data_file['AHe_age_uncorr'].values
+            yerr = AHe_data_file['AHe_age_uncorr_2se'].values
+
+            for rp, timeslice in zip(rpanels, fp.timeslices):
+                leg_ahe_samples = rp.errorbar(x, y, yerr=yerr,
+                                              marker='o',
+                                              ms=fp.marker_size,
+                                              markeredgecolor='black',
+                                              color=fp.AHe_color,
+                                              linestyle='None')
+
+            legs.append(leg_ahe_samples)
+            labels.append('measured AHe ages')
 
         #for p in panels[:]:
         panels[0].set_ylabel('Elevation (m)')
@@ -280,7 +315,7 @@ for fn in files:
         for rp in rpanels:
             rp.set_xlim(xmin, xmax)
             if Ahe_ages_all is not None:
-                rp.set_ylim(0, Ahe_ages_all[0].max() / My * 1.1)
+                rp.set_ylim(0, Ahe_ages_all[0].max() / My * 1.25)
             rp.spines['top'].set_visible(False)
             rp.get_xaxis().tick_bottom()
 
@@ -305,8 +340,8 @@ for fn in files:
 
         tpanels[0].set_ylabel('Temperature (%s C)' % degree_symbol)
         rpanels[-1].set_ylabel('AHe age (My)')
-        rpanels[-1].yaxis.label.set_color('blue')
-        rpanels[-1].tick_params(axis='y', colors='blue')
+        rpanels[-1].yaxis.label.set_color(fp.AHe_color)
+        rpanels[-1].tick_params(axis='y', colors=fp.AHe_color)
 
         for p in panels:
             p.set_xlim(xmin, xmax)
@@ -315,13 +350,20 @@ for fn in files:
         cb = fig.colorbar(leg_cn, cax=cpanel, orientation='horizontal')
         cb.set_label('Temperature (%s C)' % degree_symbol)
 
-        fn_fig = fn[:-4] + '_T_field.png'
+        if fp.add_legend is True:
+            leg = leg_panel.legend(legs, labels, frameon=False,
+                                   fontsize=fp.legend_font_size,
+                                   loc='upper center')
+            #leg = fig.legend(legs, labels, frameon=False,
+            #                 loc='lower right', fontsize=fp.legend_font_size)
+
+        fn_fig = fn[:-4] + '_T_field.%s' % fp.fig_format
 
         fn_local1 = os.path.split(fn_fig)[-1]
         fn_local2 = os.path.join('model_output', fn_local1)
 
         print 'saving %s' % fn_fig
-        fig.savefig(fn_local2, dpi=150)
+        fig.savefig(fn_local2, dpi=fp.figure_resolution)
 
         pl.clf()
 

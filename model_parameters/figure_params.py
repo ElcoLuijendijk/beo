@@ -1,9 +1,19 @@
-__author__ = 'elco'
+"""
+
+"""
+
+__author__ = 'Elco Luijendijk'
 
 
 # size of plot in inches
 xsize = 10.0
 ysize = 6.0
+
+# resolution in dpi
+figure_resolution = 150
+
+# figure format, png, jpg, svg, eps, etc..
+fig_format = 'png'
 
 # limits of x and y axis of figure
 xlim = [0, 6000]
@@ -23,3 +33,11 @@ scale_multiplier = 5.0
 
 # option to show nodes where water vapour is present
 show_vapour = True
+
+# marker size and color for AHe data:
+marker_size = 4
+AHe_color = 'blue'
+
+# add a legend or not
+add_legend = True
+legend_font_size = 'x-small'
