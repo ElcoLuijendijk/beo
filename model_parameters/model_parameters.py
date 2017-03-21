@@ -19,8 +19,8 @@ class ModelParams:
     output_folder = 'model_output'
 
     # steady state or transient model
-    # note that initial condition of transient model =
-    # steady-state solution without any advection
+    # note that regardless of this setting, the initial condition of transient model is
+    # the steady-state solution without any advection
     steady_state = False
 
     # keep the temperature below the max T in the vapour pressure curve
@@ -125,7 +125,7 @@ class ModelParams:
     dt = 1000.0 * year
 
     # duration of each timestep_slice
-    durations = [3e4 * year]
+    durations = [5e5 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -200,9 +200,14 @@ class ModelParams:
     # fault zone
     fault_fluxes = [[-400.0 / year]]
 
-    aquifer_bottoms = [None]
-    aquifer_tops = [None]
-    aquifer_fluxes = [None]
+    # aquifers, use aquifer_top = [None] to not use this:
+    #aquifer_tops = [-0.0]
+    aquifer_tops = [-50]
+    aquifer_bottoms = [-200.0]
+    aquifer_fluxes = [[-267.0 / year]]
+
+    # left side of aquifer. right hand bnd is assumed to be the fault zone
+    aquifer_left_bnds = [1500.0]
 
     # relative limit to consider a sample partial reset or not, ie if 0.95
     # a sample will be considered partially reset if the modeled uncorrected

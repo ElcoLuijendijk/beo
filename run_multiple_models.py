@@ -531,14 +531,6 @@ for model_run, param_set in enumerate(param_list):
         AHe_ages_samples_surface = []
         if mp.model_AHe_samples is True:
 
-            # find lcoations
-            #locs = dfh['profile'] == mp.profile_number
-            #dfhs = dfh.loc[locs]
-            #distances = dfhs['distance']
-
-            # add surface AHe data to output
-
-
             for i in range(N_output_steps):
                 surface_elev = surface_levels[i]
 
@@ -553,9 +545,11 @@ for model_run, param_set in enumerate(param_list):
                     ind_low = np.where(diff < 0)[0][-1]
                     ind_high = np.where(diff > 0)[0][0]
 
-                    fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
+                    fraction = np.abs(diff[ind_low]) / (target_depths[ind_high]
+                                                        - target_depths[ind_low])
 
-                    ages_raw = ((1.0-fraction) * AHe_ages_samples_cropped[ind_low][i] + fraction * AHe_ages_samples_cropped[ind_high][i])
+                    ages_raw = ((1.0-fraction) * AHe_ages_samples_cropped[ind_low][i]
+                                + fraction * AHe_ages_samples_cropped[ind_high][i])
 
                     #x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
 

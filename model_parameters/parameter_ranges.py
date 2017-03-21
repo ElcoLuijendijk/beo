@@ -38,9 +38,12 @@ initial_base_run = False
 
 #fault_fluxes_s = [[[-200.0 / year]], [[-600.0 / year]]]
 
+aquifer_fluxes_s = [[[-50.0 / year]], [[-150.0 / year]], [[-250.0 / year]]]
+
 #fault_widths_s = [[30.0], [40.0]]
 
-total_depth_s = [8000.0]
+#total_depth_s = [8000.0]
+
 
 # low exhumation rates (< 1e-4) result in solver errors.
 # Not yet sure why. Potentially there are problems with the grid, with low exhumation rates the layers between the

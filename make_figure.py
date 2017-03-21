@@ -159,18 +159,21 @@ for fn in files:
 
         rpanels = [tp.twinx() for tp in tpanels]
 
-        cpanel = fig.add_subplot(gs[-1, :2])
+        cpanel = fig.add_subplot(gs[-1, :-1])
         cpanel.set_xticks([])
         cpanel.set_yticks([])
 
-        leg_panel = fig.add_subplot(gs[3, 2], frameon=False)
+        leg_panel = fig.add_subplot(gs[-1:, -1], frameon=False)
         leg_panel.set_xticks([])
         leg_panel.set_yticks([])
 
         kwargs = dict(edgecolor='None', vmin=vmin, vmax=vmax)
 
-        cnt_int = 10.0
-        cnts = np.arange(vmin, vmax+cnt_int, cnt_int)
+        #cnt_int = 10.0
+        if fp.cnt_range is None:
+            cnts = np.arange(vmin, vmax+fp.cnt_int, fp.cnt_int)
+        else:
+            cnts = np.arange(fp.cnt_range[0], fp.cnt_range[-1] + fp.cnt_int, fp.cnt_int)
 
         for p, Ta in zip(panels, Tas):
             xg, yg, zg = interpolate_data(xyz_array, Ta, fp.dx, fp.dy)
@@ -200,7 +203,6 @@ for fn in files:
                                            fp.dx, fp.dy)
             xq, yq, qvg = interpolate_data(xyz_element_array, qvi * year,
                                            fp.dx, fp.dy)
-            thin = 40
 
             # set arrow scale
             va = (qhg ** 2 + qvg ** 2) ** 0.5
@@ -212,9 +214,10 @@ for fn in files:
             # and sort with increasing x coord:
             a = np.argsort(xg[ind])
 
-            leg_q = p.quiver(xg[ind][a][::thin], yg[ind][a][::thin],
-                             qhg[ind][a][::thin], qvg[ind][a][::thin],
-                             angles='xy', scale=scale, headwidth=5)
+            leg_q = p.quiver(xg[ind][a][::fp.skip_arrows], yg[ind][a][::fp.skip_arrows],
+                             qhg[ind][a][::fp.skip_arrows], qvg[ind][a][::fp.skip_arrows],
+                             angles='xy', scale=scale, headwidth=5, pivot='tip',
+                             alpha=fp.arrow_transparency)
 
             #legs.append(leg_q)
             #labels.append('flow arrows')

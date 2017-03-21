@@ -16,20 +16,25 @@ figure_resolution = 150
 fig_format = 'png'
 
 # limits of x and y axis of figure
-xlim = [0, 6000]
-ylim = [-6000, 100]
+xlim = [3000, 5000]
+ylim = [-2000, 100]
 
 # grid size for interpolating model results
-dx = 10.0
-dy = 10.0
+dx = 5.0
+dy = 5.0
 
 # timeslices to show
 # timeslices = [0] make a figure of the first timestep
 # timeslices = [-1] make a figure of the last timestep
-timeslices = [1, -5, -1]
+timeslices = [-5, -1]
 
 # scale for flow arrows, usually 5 is a good value
 scale_multiplier = 5.0
+
+# show only one in every x flow arrows:
+skip_arrows = 40
+
+arrow_transparency = 0.75
 
 # option to show nodes where water vapour is present
 show_vapour = True
@@ -41,3 +46,11 @@ AHe_color = 'blue'
 # add a legend or not
 add_legend = True
 legend_font_size = 'x-small'
+
+# interval temperature contours
+cnt_int = 10.0
+
+# min and max of temperature contours
+# set to cnt_range = None to use the min and max values of the data
+#cnt_range = [10.0, 200.0]
+cnt_range = None
