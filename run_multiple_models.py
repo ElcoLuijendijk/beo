@@ -570,12 +570,14 @@ for model_run, param_set in enumerate(param_list):
         for timestep in range(N_output):
 
             output_number2 = model_run * n_ts + timestep
+            profile_loc = dfhs['profile'] == mp.profile_number
+            dfhs2 = dfhs.loc[profile_loc]
 
-            diff = dfhs['AHe_age_uncorr'].values - AHe_ages_samples_surface[timestep] / My
+            diff = dfhs2['AHe_age_uncorr'].values - AHe_ages_samples_surface[timestep] / My
 
             me_ahe[timestep] = np.mean(diff)
             mae_ahe[timestep] = np.mean(np.abs(diff))
-            mswd_ahe[timestep] = np.sum((diff / (0.5 * dfhs['AHe_age_uncorr_2se'])) ** 2) / (n_grains - 1)
+            mswd_ahe[timestep] = np.sum((diff / (0.5 * dfhs2['AHe_age_uncorr_2se'])) ** 2) / (n_grains - 1)
 
             df.loc[output_number2, 'mean_error_AHe_samples'] = me_ahe[timestep]
             df.loc[output_number2, 'mean_abs_error_AHe_samples'] = mae_ahe[timestep]
@@ -670,7 +672,7 @@ for model_run, param_set in enumerate(param_list):
 
             if True in profile_loc:
                 try:
-                    dfhs[col_name] = AHe_ages_samples_surface[timestep] / My
+                    dfhs.loc[profile_loc, col_name] = AHe_ages_samples_surface[timestep] / My
                 except Exception, msg:
                     print 'error, something went wrong with saving AHe ' \
                           'sample data to a .csv file for model run %i ' \

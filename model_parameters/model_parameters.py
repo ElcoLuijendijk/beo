@@ -27,7 +27,7 @@ class ModelParams:
     vapour_correction = True
 
     # model dimensions
-    width = 6000.0
+    width = 8000.0
     total_depth = 8000.0
     air_height = 40.0
 
@@ -66,7 +66,7 @@ class ModelParams:
     #exhumation_interval = 10
 
     # temperature bnd conditions
-    air_temperature = 13.0
+    air_temperature = 10.0
     #bottom_temperature = total_depth * 0.03 + air_temperature
     #bottom_temperature = total_depth * 0.03
     # new version: calculate bottom T using a fixed geothermal gradient./r
@@ -202,7 +202,8 @@ class ModelParams:
 
     # aquifers, use aquifer_top = [None] to not use this:
     #aquifer_tops = [-0.0]
-    aquifer_tops = [-50]
+    aquifer_tops = [None]
+    #aquifer_tops = [-50]
     aquifer_bottoms = [-200.0]
     aquifer_fluxes = [[-267.0 / year]]
 
@@ -218,8 +219,6 @@ class ModelParams:
     reset_limit = 0.1
 
     # option to calculate temperature data for one or several boreholes
-    # note that there seems to be a bug in the output timesteps for the temperature calculation
-    # avoid using this for now...
     analyse_borehole_temp = True
 
     # file that contains temperature data
@@ -227,4 +226,4 @@ class ModelParams:
     borehole_names = ['85-18']
 
     # locations of boreholes for temperature data
-    borehole_xs = [3675.0]
+    borehole_xs = [3500.0]

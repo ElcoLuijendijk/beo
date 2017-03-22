@@ -37,14 +37,24 @@ def He_diffusion_Meesters_and_Dunai_2002(t, D, radius, Ur0,
         diffusivity for each timestep (m2 s-1)
     radius : float
         radius of diffusion domain (m)
+    Ur0 : ?
+
     U_function : string, optional
         'constant' or 'exponential'
     shape : string, optional
         shape of the modeled diffusion domain, default is 'sphere'
+    decay_constant: float
+        decay constant
     n_eigenmodes : int
         number of eigenmodes to evaluate
     x : float
         initial concentration of daughter isotope
+    all_timesteps : bool
+        report AHe age for all timesteps or just the last
+    alpha_ejection : bool
+        model alpha ejection or not
+    stopping_distance : float
+        alpha ejection stopping distance (m)
 
     """
 
