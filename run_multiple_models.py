@@ -155,8 +155,8 @@ today = datetime.datetime.now()
 today_str = '%i-%i-%i' % (today.day, today.month,
                           today.year)
 
-fn = 'model_params_and_results_%i_runs_%s.csv' \
-     % (len(param_list), today_str)
+fn = 'model_params_and_results_%i_runs_%s_%s.csv' \
+     % (len(param_list), mp.output_fn_adj, today_str)
 fn_path_csv = os.path.join(output_folder, fn)
 
 if mp.calculate_he_ages is True:
@@ -602,8 +602,8 @@ for model_run, param_set in enumerate(param_list):
     today_str = '%i-%i-%i' % (today.day, today.month,
                               today.year)
 
-    fn = 'results_model_run_%i_%s_%s.pck' \
-         % (model_run, str(param_set), today_str)
+    fn = 'results_model_run_%i_%s_%s_%s.pck' \
+         % (model_run, str(param_set), mp.output_fn_adj, today_str)
     fn_path = os.path.join(output_folder, fn)
 
     print 'saving model results as %s' % fn_path
@@ -618,7 +618,9 @@ for model_run, param_set in enumerate(param_list):
     if mp.analyse_borehole_temp is True:
         fn_new = os.path.split(mp.temperature_file)[-1].split('.')[:-1]
         fn_new = ''.join(fn_new)
-        fn_new += '_modeled_%i_runs_%s.csv' % (len(param_list), today_str)
+        fn_new += '_modeled_%i_runs_%s_%s.csv' % (len(param_list),
+                                                  mp.output_fn_adj,
+                                                  today_str)
         print 'saving modeled temperatures for boreholes to %s' % fn_new
         dft.to_csv(os.path.join(output_folder, fn_new))
 
@@ -654,7 +656,9 @@ for model_run, param_set in enumerate(param_list):
                           % (j, i)
                     print msg
                     print 'continuing with next timestep'
-        fnh = 'AHe_surface_modeled_%i_runs_%s.csv' % (n_model_runs, today_str)
+        fnh = 'AHe_surface_modeled_%i_runs_%s_%s.csv' % (n_model_runs,
+                                                      mp.output_fn_adj,
+                                                      today_str)
 
         print 'saving modeled AHe ages at the surface to %s' % fnh
         dfh.to_csv(os.path.join(output_folder, fnh), index_label='row')
@@ -681,8 +685,10 @@ for model_run, param_set in enumerate(param_list):
                     print 'continuing with next timestep'
 
         output_fn1 = os.path.split(mp.AHe_data_file)[-1]
-        output_fn2 = output_fn1[:-4] + '_modeled_%i_runs_%s.csv' \
-                                       % (n_model_runs, today_str)
+        output_fn2 = output_fn1[:-4] + '_modeled_%i_runs_%s_%s.csv' \
+                                       % (n_model_runs,
+                                          mp.output_fn_adj,
+                                          today_str)
         output_fn = os.path.join(output_folder, output_fn2)
         print 'saving modeled AHe ages samples to %s' % output_fn
         dfhs.to_csv(output_fn, index=False)

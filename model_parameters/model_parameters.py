@@ -18,6 +18,9 @@ class ModelParams:
     # directory to store model output
     output_folder = 'model_output'
 
+    #
+    output_fn_adj = 'profile1'
+
     # steady state or transient model
     # note that regardless of this setting, the initial condition of transient model is
     # the steady-state solution without any advection
@@ -51,7 +54,7 @@ class ModelParams:
     # exhumation rate in m/yr
     # assuming the AHe was not reset, the max exhumation is ~1500 m in 15 My = 1e-4 m/yr
     # look up regional AFT, AHe and cosmogenic nuclide work for realistic range of exhumation rates
-    exhumation_rate = 5e-5
+    exhumation_rate = 1e-4
 
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
@@ -87,17 +90,20 @@ class ModelParams:
     # leave depth of first layer at arbitrarily high value to make sure the entire
     # model domain is covered
     # note that currently only 1 fault is taken into account...
-    layer_bottom = [[-20000.0, -20220.0],
-                    [-1140.0, - 1360.0],
-                    [-1030.0, -1250.0]]
+    #85-18
+    layer_bottom = [[-20000.0, -20250.0],
+                    [-810.0, -1060.0],
+                    [-530.0, -780.0],
+                    [-440.0, -690.0],
+                    [-210.0, -460.0]]
 
     # porosity for each layer
-    porosities = [0.08, 0.25, 0.05]
+    porosities = [0.08, 0.05, 0.25, 0.17, 0.05]
 
     # thermal parameters
     # note that only thermal conductivity is varied between layers, the rest
     # is constant
-    K_solids = [4.44, 1.58, 1.8]
+    K_solids = [4.44, 2.26, 1.58, 1.6, 2.0]
 
     # wikipedia: thermal properties air
     # heat transfer coefficient = 10- 100 W / (m2 K))
@@ -119,10 +125,10 @@ class ModelParams:
     # this is not used when exhumation > 0, in this case output is generated
     # once each new surface level is reached
     # the number of surfaces is controlled by the exhumation_steps parameter
-    N_outputs = [10]
+    N_outputs = [50]
 
     # size of timestep
-    dt = 1000.0 * year
+    dt = 500.0 * year
 
     # duration of each timestep_slice
     durations = [5e5 * year]
@@ -160,7 +166,7 @@ class ModelParams:
     T_surface = 10.0
 
     # crystallization age
-    t0 = 15.2 * My
+    t0 = 15.6 * My
 
     # apatite params
     radius = 100.0 * 1e-6
@@ -182,7 +188,7 @@ class ModelParams:
     ## fault data for multiple faults:
 
     # x location of fault:
-    fault_xs = [4000]
+    fault_xs = [5000]
 
     # fault width
     fault_widths = [20.0]
@@ -202,13 +208,12 @@ class ModelParams:
 
     # aquifers, use aquifer_top = [None] to not use this:
     #aquifer_tops = [-0.0]
-    aquifer_tops = [None]
-    #aquifer_tops = [-50]
-    aquifer_bottoms = [-200.0]
-    aquifer_fluxes = [[-267.0 / year]]
+    aquifer_tops = [-50.0]
+    aquifer_bottoms = [-100.0]
+    aquifer_fluxes = [[-250.0 / year]]
 
     # left side of aquifer. right hand bnd is assumed to be the fault zone
-    aquifer_left_bnds = [1500.0]
+    aquifer_left_bnds = [2000.0]
 
     # relative limit to consider a sample partial reset or not, ie if 0.95
     # a sample will be considered partially reset if the modeled uncorrected
@@ -219,6 +224,8 @@ class ModelParams:
     reset_limit = 0.1
 
     # option to calculate temperature data for one or several boreholes
+    # note that there seems to be a bug in the output timesteps for the temperature calculation
+    # avoid using this for now...
     analyse_borehole_temp = True
 
     # file that contains temperature data
@@ -226,4 +233,4 @@ class ModelParams:
     borehole_names = ['85-18']
 
     # locations of boreholes for temperature data
-    borehole_xs = [3500.0]
+    borehole_xs = [4800.0]
