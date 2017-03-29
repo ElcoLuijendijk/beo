@@ -255,6 +255,13 @@ for fn in files:
         #AHe_ages_samples_surface, AHe_data_file
         if AHe_data_file is not None:
 
+            if len(np.unique(AHe_data_file['profile'].values)) > 1:
+                print 'found multiple profiles in AHe data file'
+                print 'select profile number to show in figure:'
+                profile_no = int(raw_input())
+
+                AHe_data_file = AHe_data_file[AHe_data_file['profile'] == profile_no]
+
             x = AHe_data_file['distance'].values
             y = AHe_data_file['AHe_age_uncorr'].values
             yerr = AHe_data_file['AHe_age_uncorr_2se'].values

@@ -16,8 +16,8 @@ figure_resolution = 150
 fig_format = 'png'
 
 # limits of x and y axis of figure
-xlim = [3000, 5000]
-ylim = [-2000, 100]
+xlim = [4750, 5250]
+ylim = [-500, 100]
 
 # grid size for interpolating model results
 dx = 5.0

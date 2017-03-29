@@ -573,6 +573,8 @@ for model_run, param_set in enumerate(param_list):
             profile_loc = dfhs['profile'] == mp.profile_number
             dfhs2 = dfhs.loc[profile_loc]
 
+            AHe_data_file = dfhs2
+
             diff = dfhs2['AHe_age_uncorr'].values - AHe_ages_samples_surface[timestep] / My
 
             me_ahe[timestep] = np.mean(diff)
