@@ -161,6 +161,7 @@ fn_path_csv = os.path.join(output_folder, fn)
 
 if mp.calculate_he_ages is True:
     AHe_ages_surface_all = []
+    AHe_ages_surface_corr_all = []
     AHe_xcoords_surface_all = []
 
 if mp.model_AHe_samples is True:
@@ -237,7 +238,7 @@ for model_run, param_set in enumerate(param_list):
      xyz_element_array, qh_array, qv_array,
      fault_fluxes, durations,
      xzs, Tzs,
-     Ahe_ages_all, xs_Ahe_all,
+     Ahe_ages_all, Ahe_ages_corr_all, xs_Ahe_all,
      target_depths,
      AHe_ages_samples_all) = output
 
@@ -263,6 +264,7 @@ for model_run, param_set in enumerate(param_list):
 
     if Ahe_ages_all is not None:
         AHe_ages_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_all]
+        AHe_ages_corr_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_corr_all]
     else:
         AHe_ages_cropped = None
 
@@ -282,6 +284,7 @@ for model_run, param_set in enumerate(param_list):
 
     # add surface AHe data to output
     AHe_ages_surface = []
+    AHe_ages_surface_corr = []
     AHe_xcoords_surface = []
     AHe_ages_samples_surface = []
 
@@ -397,6 +400,7 @@ for model_run, param_set in enumerate(param_list):
 
             for i in range(n_depths):
                 ages_raw = AHe_ages_cropped[i][j] / My
+                ages_raw_corr = AHe_ages_corr_cropped[i][j] / My
                 x_step = 1.0
                 x_coords_int = np.arange(xzs[i].min(), xzs[i].max() + x_step, x_step)
                 ages = np.interp(x_coords_int, xzs[i], ages_raw)
@@ -451,6 +455,7 @@ for model_run, param_set in enumerate(param_list):
             if surface_elev in target_depths:
                 surface_ind = np.where(target_depths == surface_elev)[0][0]
                 ages_raw = AHe_ages_cropped[surface_ind][j] / My
+                ages_raw_corr = AHe_ages_corr_cropped[surface_ind][j] / My
                 x_coords = xzs[surface_ind]
 
             else:
@@ -466,10 +471,12 @@ for model_run, param_set in enumerate(param_list):
                 #            + fraction * AHe_ages_cropped[ind_high][j]) / My
                 #x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
                 ages_raw = AHe_ages_cropped[ind_low][j] / My
+                ages_raw_corr = AHe_ages_corr_cropped[ind_low][j] / My
                 x_coords = xzs[ind_low]
 
             # add surface AHe data to output
             AHe_ages_surface.append(ages_raw * My)
+            AHe_ages_surface_corr.append(ages_raw_corr * My)
             AHe_xcoords_surface.append(x_coords)
 
             x_coords_int = np.arange(x_coords.min(), x_coords.max() + x_step, x_step)
@@ -526,6 +533,7 @@ for model_run, param_set in enumerate(param_list):
                 df.loc[output_number, col_name] = np.nan
 
         AHe_ages_surface_all.append(AHe_ages_surface)
+        AHe_ages_surface_corr_all.append(AHe_ages_surface_corr)
         AHe_xcoords_surface_all.append(AHe_xcoords_surface)
 
         AHe_ages_samples_surface = []
@@ -585,6 +593,9 @@ for model_run, param_set in enumerate(param_list):
             df.loc[output_number2, 'mean_abs_error_AHe_samples'] = mae_ahe[timestep]
             df.loc[output_number2, 'mswd_AHe_samples'] = mswd_ahe[timestep]
 
+    # option to save corrected ages for figure output
+
+
     # gather and save model output
     output_selected = \
         [runtimes, runtimes[output_steps], xyz_array,
@@ -596,8 +607,8 @@ for model_run, param_set in enumerate(param_list):
          qh_array[output_steps], qv_array[output_steps],
          fault_fluxes, durations,
          xzs, Tzs_cropped, x_surface, T_surface,
-         AHe_ages_cropped, xs_Ahe_all, target_depths,
-         AHe_ages_surface, AHe_xcoords_surface,
+         AHe_ages_cropped, AHe_ages_corr_cropped, xs_Ahe_all, target_depths,
+         AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
          AHe_ages_samples_surface, AHe_data_file]
 
     today = datetime.datetime.now()
@@ -637,7 +648,7 @@ for model_run, param_set in enumerate(param_list):
         for j in range(n_model_runs):
             for i in range(nts):
                 cols += ['x_run_%i_ts%i' % (j, i),
-                         'AHe_age_run_%i_ts%i' % (j, i)]
+                         'AHe_age_uncorr_run_%i_ts%i' % (j, i)]
 
         dfh = pd.DataFrame(columns=cols, index=np.arange(nxs))
 
@@ -650,7 +661,7 @@ for model_run, param_set in enumerate(param_list):
                 try:
                     dfh.loc[:l-1, 'x_run_%i_ts%i' % (j, i)] = \
                         AHe_xcoords_surface_all[j][i][:l]
-                    dfh.loc[:l-1, 'AHe_age_run_%i_ts%i' % (j, i)] = \
+                    dfh.loc[:l-1, 'AHe_age_uncorr_run_%i_ts%i' % (j, i)] = \
                         AHe_ages_surface_all[j][i][:l] / My
                 except Exception, msg:
                     print 'error, something went wrong with saving AHe data ' \
@@ -658,9 +669,10 @@ for model_run, param_set in enumerate(param_list):
                           % (j, i)
                     print msg
                     print 'continuing with next timestep'
+
         fnh = 'AHe_surface_modeled_%i_runs_%s_%s.csv' % (n_model_runs,
-                                                      mp.output_fn_adj,
-                                                      today_str)
+                                                         mp.output_fn_adj,
+                                                         today_str)
 
         print 'saving modeled AHe ages at the surface to %s' % fnh
         dfh.to_csv(os.path.join(output_folder, fnh), index_label='row')
@@ -671,7 +683,7 @@ for model_run, param_set in enumerate(param_list):
         for timestep in range(N_output):
 
             # and store in datafile
-            col_name = 'modeled_AHe_age_run_%i_timestep_%i' \
+            col_name = 'modeled_AHe_age_uncorr_run_%i_timestep_%i' \
                        % (model_run, output_steps[timestep])
 
             profile_loc = dfhs['profile'] == mp.profile_number

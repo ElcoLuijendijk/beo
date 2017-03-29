@@ -54,3 +54,6 @@ cnt_int = 10.0
 # set to cnt_range = None to use the min and max values of the data
 #cnt_range = [10.0, 200.0]
 cnt_range = None
+
+# option to show corrected or uncorrected AHe ages
+show_corrected_AHe_ages = True

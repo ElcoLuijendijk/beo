@@ -38,7 +38,7 @@ initial_base_run = False
 
 #fault_fluxes_s = [[[-200.0 / year]], [[-600.0 / year]]]
 
-aquifer_fluxes_s = [[[-50.0 / year]], [[-150.0 / year]], [[-250.0 / year]]]
+#aquifer_fluxes_s = [[[-250.0 / year]]]
 
 #fault_widths_s = [[30.0], [40.0]]
 
@@ -56,7 +56,9 @@ aquifer_fluxes_s = [[[-50.0 / year]], [[-150.0 / year]], [[-250.0 / year]]]
 
 
 
-#dt_s = [500 * year]
+dt_s = [500 * year]
 
 #cellsize_fault_s = [2.5]
-#cellsize_s = [250.0, 100.0]
+#cellsize_s = [400.0, 200.0, 100.0]
+
+#dt_s = [1000 * year, 500 * year, 250 * year, 100 * year]

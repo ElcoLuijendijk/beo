@@ -1518,6 +1518,14 @@ def model_run(mp):
                                 method=mp.AHe_method,
                                 n_eigenmodes=50)
 
+                        R = sphere_radius[grain_ind] * 1e-06
+                        S = mp.stopping_distance
+                        Ft_i = 1 - 3 * S / (4 * R) + S**3 / (16 * R**3)
+
+
+                        #if mp.report_corrected_AHe_ages is True:
+
+
                         # copy AHe ages back into array with same length as the
                         # runtime and temperature arrays
 
@@ -1525,10 +1533,22 @@ def model_run(mp):
                         he_ages_unfiltered = np.interp(runtimes, runtimes_filtered,
                                                        he_ages_run_filtered)
                         he_ages_grains[:, grain_ind] = he_ages_unfiltered
+                        he_ages_grains_corr1[:, grain_ind] = he_ages_unfiltered
 
+                        # TODO...
                 AHe_ages_samples_all.append(he_ages_grains)
 
-        AHe_data = [Ahe_ages_all, xs_Ahe_all]
+        # calculate corrected ages, for surface data
+        R = mp.radius
+        S = mp.stopping_distance
+        Ft_surf = 1 - 3 * S / (4 * R) + S**3 / (16 * R**3)
+
+        Ahe_ages_corr_all = [age / Ft_surf for age in Ahe_ages_all]
+
+        Ahe_ages_all_output = Ahe_ages_all
+
+        #if mp.report_corrected_AHe_ages is True:
+        #    Ahe_ages_all_output = Ahe_ages_corr_all
 
         print 'done calculating helium ages'
 
@@ -1562,7 +1582,7 @@ def model_run(mp):
               xyz_element_array,
               qh_array, qv_array,
               fault_fluxes_m_per_sec, mp.durations, xzs, Tzs,
-              Ahe_ages_all, xs_Ahe_all, mp.target_zs,
+              Ahe_ages_all, Ahe_ages_corr_all, xs_Ahe_all, mp.target_zs,
               AHe_ages_samples_all]
 
     return output
@@ -1589,7 +1609,7 @@ if __name__ == "__main__":
      xyz_element_array,
      qh_array, qv_array,
      fault_fluxes, durations, xzs, Tzs,
-     Ahe_ages_all, xs_Ahe_all, target_depths,
+     Ahe_ages_all, Ahe_ages_corr_all, xs_Ahe_all, target_depths,
      AHe_ages_samples_all) = output
 
     # crop output to only the output timesteps, to limit filesize
@@ -1606,12 +1626,16 @@ if __name__ == "__main__":
     Tzs_cropped = [Tzi[output_steps] for Tzi in Tzs]
 
     if mp.calculate_he_ages is True:
-        AHe_ages_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_all]
+        AHe_ages_cropped = [AHe_i[output_steps]
+                            for AHe_i in Ahe_ages_all]
+        AHe_ages_corr_cropped = [AHe_i[output_steps]
+                                 for AHe_i in Ahe_ages_corr_all]
     else:
         AHe_ages_cropped = None
 
     if mp.calculate_he_ages is True and mp.model_AHe_samples is True:
-        AHe_ages_samples_cropped = [AHe_i[output_steps] for AHe_i in AHe_ages_samples_all]
+        AHe_ages_samples_cropped = [AHe_i[output_steps]
+                                    for AHe_i in AHe_ages_samples_all]
     else:
         AHe_ages_samples_cropped = None
 
@@ -1637,11 +1661,14 @@ if __name__ == "__main__":
             ind_low = np.where(diff < 0)[0][-1]
             ind_high = np.where(diff > 0)[0][0]
 
-            fraction = np.abs(diff[ind_low]) / (surface_levels[ind_high] - surface_levels[ind_low])
+            fraction = np.abs(diff[ind_low]) / \
+                       (surface_levels[ind_high] - surface_levels[ind_low])
 
-            T_surface_i = ((1.0-fraction) * Tzs[ind_low][j] + fraction * Tzs[ind_high][j])
+            T_surface_i = ((1.0-fraction) * Tzs[ind_low][j]
+                           + fraction * Tzs[ind_high][j])
 
-            x_coords_i = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
+            x_coords_i = (1.0-fraction) * xzs[ind_low] \
+                         + fraction * xzs[ind_high]
 
         T_surface.append(T_surface_i)
         x_surface.append(x_coords_i)
@@ -1651,6 +1678,7 @@ if __name__ == "__main__":
 
         # add surface AHe data to output
         AHe_ages_surface = []
+        AHe_ages_surface_corr = []
         AHe_xcoords_surface = []
 
         for i in range(N_output_steps):
@@ -1659,6 +1687,7 @@ if __name__ == "__main__":
             if surface_elev in target_depths:
                 surface_ind = np.where(target_depths == surface_elev)[0][0]
                 ages_raw = AHe_ages_cropped[surface_ind][i]
+                ages_raw_corr = AHe_ages_corr_cropped[surface_ind][i]
                 x_coords = xzs[surface_ind]
 
             else:
@@ -1669,15 +1698,21 @@ if __name__ == "__main__":
 
                 fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
 
-                ages_raw = ((1.0-fraction) * AHe_ages_cropped[ind_low][i] + fraction * AHe_ages_cropped[ind_high][i])
+                ages_raw = ((1.0-fraction) * AHe_ages_cropped[ind_low][i]
+                            + fraction * AHe_ages_cropped[ind_high][i])
+                ages_raw_corr = ((1.0-fraction) * AHe_ages_corr_cropped[ind_low][i]
+                                 + fraction * AHe_ages_corr_cropped[ind_high][i])
 
-                x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
+                x_coords = (1.0-fraction) * xzs[ind_low] \
+                           + fraction * xzs[ind_high]
 
             # add surface AHe data to output
             AHe_ages_surface.append(ages_raw)
+            AHe_ages_surface_corr.append(ages_raw_corr)
             AHe_xcoords_surface.append(x_coords)
     else:
         AHe_ages_surface = None
+        AHe_ages_surface_corr = None
         AHe_xcoords_surface = None
 
     # find AHe age of samples at surface
@@ -1729,8 +1764,8 @@ if __name__ == "__main__":
          qh_array[output_steps], qv_array[output_steps],
          fault_fluxes, durations,
          xzs, Tzs_cropped, x_surface, T_surface,
-         AHe_ages_cropped, xs_Ahe_all, target_depths,
-         AHe_ages_surface, AHe_xcoords_surface,
+         AHe_ages_cropped, AHe_ages_corr_cropped, xs_Ahe_all, target_depths,
+         AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
          AHe_ages_samples_surface, AHe_data_file]
 
     #output_folder = os.path.join(folder, 'model_output')

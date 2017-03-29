@@ -54,7 +54,7 @@ class ModelParams:
     # exhumation rate in m/yr
     # assuming the AHe was not reset, the max exhumation is ~1500 m in 15 My = 1e-4 m/yr
     # look up regional AFT, AHe and cosmogenic nuclide work for realistic range of exhumation rates
-    exhumation_rate = 1e-4
+    exhumation_rate = 5e-5
 
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
@@ -125,13 +125,13 @@ class ModelParams:
     # this is not used when exhumation > 0, in this case output is generated
     # once each new surface level is reached
     # the number of surfaces is controlled by the exhumation_steps parameter
-    N_outputs = [50]
+    N_outputs = [20]
 
     # size of timestep
     dt = 500.0 * year
 
     # duration of each timestep_slice
-    durations = [5e5 * year]
+    durations = [3e4 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -148,8 +148,7 @@ class ModelParams:
     AHe_data_file = 'model_parameters/AHe_data.csv'
     profile_number = 1
 
-    #save the AHe ages qat the surface to a separate file
-    # do not turn this on yet, there's a bug in this part of the code....
+    #save the AHe ages at the surface to a separate file
     save_AHe_ages = True
 
     # method to calculate helium diffusivity, use Wolf1996, Farley2000 or RDAAM
@@ -182,6 +181,7 @@ class ModelParams:
 
     # alpha ejection parameters:
     alpha_ejection = True
+
     # alpha ejection stopping distance, see Ketcham (2011) for estimates
     stopping_distance = 21e-6
 
@@ -232,5 +232,6 @@ class ModelParams:
     temperature_file = 'model_parameters/temperature_data.csv'
     borehole_names = ['85-18']
 
-    # locations of boreholes for temperature data
-    borehole_xs = [4800.0]
+    # locations of boreholes for temperature data, location is relative to
+    # the location of the first fault
+    borehole_xs = [-100.0]

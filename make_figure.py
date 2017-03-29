@@ -99,19 +99,38 @@ for fn in files:
 
     go = True
     try:
-        #[runtimes, xyz_array, T_array, xyz_element_array, qh_array, qv_array,
-        # fault_fluxes, durations, xzs, Tzs, AHe_data] = output_data
-        [runtimes_all, runtimes, xyz_array, surface_levels,
-         T_init_array, T_array, boiling_temp_array,
-         xyz_array_exc, exceed_boiling_temp_array,
-         xyz_element_array,
-         qh_array, qv_array,
-         fault_fluxes, durations,
-         xzs, Tzs, x_surface, T_surface,
-         Ahe_ages_all, xs_Ahe_all, Ahe_depths,
-         AHe_ages_surface, AHe_xcoords_surface,
-         AHe_ages_samples_surface, AHe_data_file] \
-            = output_data
+        if len(output_data) == 25:
+            print 'reading output data, previous version of code, ' \
+                  'without corrected AHe ages'
+            [runtimes_all, runtimes, xyz_array, surface_levels,
+             T_init_array, T_array, boiling_temp_array,
+             xyz_array_exc, exceed_boiling_temp_array,
+             xyz_element_array,
+             qh_array, qv_array,
+             fault_fluxes, durations,
+             xzs, Tzs, x_surface, T_surface,
+             Ahe_ages_all, xs_Ahe_all, Ahe_depths,
+             AHe_ages_surface, AHe_xcoords_surface,
+             AHe_ages_samples_surface, AHe_data_file] \
+                = output_data
+
+            Ahe_ages_all_corr = None
+            AHe_ages_surface_corr = None
+        else:
+            print 'reading output data, new verison of code with corrected ' \
+                  'AHe data'
+            [runtimes_all, runtimes, xyz_array, surface_levels,
+             T_init_array, T_array, boiling_temp_array,
+             xyz_array_exc, exceed_boiling_temp_array,
+             xyz_element_array,
+             qh_array, qv_array,
+             fault_fluxes, durations,
+             xzs, Tzs, x_surface, T_surface,
+             Ahe_ages_all, Ahe_ages_all_corr, xs_Ahe_all, Ahe_depths,
+             AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
+             AHe_ages_samples_surface, AHe_data_file] \
+                = output_data
+
 
     except ValueError:
         msg = 'error, could not read file %s' % fn
@@ -245,9 +264,18 @@ for fn in files:
             #for i in range(n_depths):
             for rp, timeslice in zip(rpanels, fp.timeslices):
 
-                leg_ahe, = rp.plot(AHe_xcoords_surface[timeslice],
-                                   AHe_ages_surface[timeslice] / My,
-                                   color=fp.AHe_color, ls=lss[i])
+                if (fp.show_corrected_AHe_ages is True
+                    and AHe_ages_surface_corr is not None):
+
+                    print 'plotting corrected AHe ages'
+                    leg_ahe, = rp.plot(AHe_xcoords_surface[timeslice],
+                                       AHe_ages_surface_corr[timeslice] / My,
+                                       color=fp.AHe_color, ls=lss[i])
+                else:
+                    print 'plotting uncorrected AHe ages'
+                    leg_ahe, = rp.plot(AHe_xcoords_surface[timeslice],
+                                       AHe_ages_surface[timeslice] / My,
+                                       color=fp.AHe_color, ls=lss[i])
 
             legs.append(leg_ahe)
             labels.append('modeled AHe ages')
