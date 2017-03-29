@@ -217,7 +217,7 @@ def calculate_RDAAM_diffusivity(temperature, time, U238, U235, Th232, radius,
         rmr0 = kinetic_value
         kappa = 1.04 - rmr0
 
-    print 'rmr0 = %0.3f, kappa = %0.3f' % (rmr0, kappa)
+    #print 'rmr0 = %0.3f, kappa = %0.3f' % (rmr0, kappa)
 
     if np.isnan(rmr0) is True or rmr0 <= rmr0_min:
         print '!! warning, rmr0 lower than minimum'
@@ -411,10 +411,10 @@ def calculate_he_age_meesters_dunai_2002(t, T, radius, U, Th,
         Ea = 32.9 * 4184.0  # J/mol
         D_div_a2 = D0 / (radius**2) * np.exp(-Ea / (R*T))
         D = D_div_a2 * radius**2
-        print 'using Farley (2000) diffusion parameters'
+        #print 'using Farley (2000) diffusion parameters'
 
     elif method is 'RDAAM':
-        print 'using RDAAM model to calculate helium diffusivity'
+        #print 'using RDAAM model to calculate helium diffusivity'
         #print 'with U238=%0.3e, U235=%0.3e, Th232=%0.3e, radius=%0.3e' % \
         #      (U238, U235, Th232, radius)
         D = calculate_RDAAM_diffusivity(T, t, U238, U235, Th232, radius,
@@ -424,7 +424,7 @@ def calculate_he_age_meesters_dunai_2002(t, T, radius, U, Th,
                                          use_fortran_algorithm)
 
     elif method is 'Wolf1996':
-        print 'using Wolf et al. (1996) diffusion parameters'
+        #print 'using Wolf et al. (1996) diffusion parameters'
 
         # diffusivity params Wolf et al (1996), table 7, Durango
         # tested, values are really given in log10 instead of ln
@@ -444,8 +444,8 @@ def calculate_he_age_meesters_dunai_2002(t, T, radius, U, Th,
               'or "RDAAM", current method = %s' % method
         raise ValueError(msg)
 
-    print 'calculated mean, min, max diffusivity = %0.2e, %0.2e, %0.2e' \
-          % (D.mean(), D.min(), D.max())
+    #print 'calculated mean, min, max diffusivity = %0.2e, %0.2e, %0.2e' \
+    #      % (D.mean(), D.min(), D.max())
     ahe_age = He_diffusion_Meesters_and_Dunai_2002(
         t, D, radius, Ur0,
         decay_constant=decay_constant,

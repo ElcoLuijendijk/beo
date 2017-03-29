@@ -151,7 +151,7 @@ class ModelParams:
 
     # model-data comparison AHe samples
     model_AHe_samples = True
-    AHe_data_file = 'model_parameters/AHe_data_test.csv'
+    AHe_data_file = 'model_parameters/AHe_data.csv'
     profile_number = 1
 
     #save the AHe ages at the surface to a separate file

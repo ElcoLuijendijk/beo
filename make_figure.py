@@ -117,8 +117,9 @@ for fn in files:
 
             Ahe_ages_all_corr = None
             AHe_ages_surface_corr = None
+            AHe_ages_samples_surface_corr = None
         else:
-            print 'reading output data, new verison of code with corrected ' \
+            print 'reading output data, new version of code with corrected ' \
                   'AHe data'
             [runtimes_all, runtimes, xyz_array, surface_levels,
              T_init_array, T_array, boiling_temp_array,
@@ -129,7 +130,7 @@ for fn in files:
              xzs, Tzs, x_surface, T_surface,
              Ahe_ages_all, Ahe_ages_all_corr, xs_Ahe_all, Ahe_depths,
              AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
-             AHe_ages_samples_surface, AHe_data_file,
+             AHe_ages_samples_surface, AHe_ages_samples_surface_corr, AHe_data_file,
              borehole_xlocs, borehole_zlocs,
              borehole_depths, borehole_temp_measured, borehole_temps_modeled] \
                 = output_data
@@ -239,25 +240,32 @@ for fn in files:
 
         for p, qhi, qvi in zip(panels, qh_array, qv_array):
             print 'adding arrows'
-            xq, yq, qhg = interpolate_data(xyz_element_array[::fp.skip_arrows],
-                                           qhi[::fp.skip_arrows] * year,
-                                           fp.dx, fp.dy)
-            xq, yq, qvg = interpolate_data(xyz_element_array[::fp.skip_arrows],
-                                           qvi[::fp.skip_arrows] * year,
-                                           fp.dx, fp.dy)
+            #xq, yq, qhg = interpolate_data(xyz_element_array[::fp.skip_arrows],
+            #                               qhi[::fp.skip_arrows] * year,
+            #                               fp.dx, fp.dy)
+            #xq, yq, qvg = interpolate_data(xyz_element_array[::fp.skip_arrows],
+            #                               qvi[::fp.skip_arrows] * year,
+            #                               fp.dx, fp.dy)
 
             # set arrow scale
-            va = (qhg ** 2 + qvg ** 2) ** 0.5
+            #va = (qhg ** 2 + qvg ** 2) ** 0.5
+            va = ((qhi*year)**2 + (qvi*year)**2) ** 0.5
             scale = np.abs(va).max() * fp.scale_multiplier
             print 'quiver scale = %0.2e' % scale
 
             # select only nodes with non-zero q
             ind = va != 0.0
             # and sort with increasing x coord:
-            a = np.argsort(xg[ind])
+            #a = np.argsort(xg[ind])
 
-            leg_q = p.quiver(xg[ind][a], yg[ind][a],
-                             qhg[ind][a], qvg[ind][a],
+            #leg_q = p.quiver(xg[ind][a], yg[ind][a],
+            #                 qhg[ind][a], qvg[ind][a],
+            #                 angles='xy', scale=scale, headwidth=5, pivot='tip',
+            #                 alpha=fp.arrow_transparency)
+            leg_q = p.quiver(xyz_element_array[:, 0][ind][::fp.skip_arrows],
+                             xyz_element_array[:, 1][ind][::fp.skip_arrows],
+                             qhi[ind][::fp.skip_arrows] * year,
+                             qvi[ind][::fp.skip_arrows] * year,
                              angles='xy', scale=scale, headwidth=5, pivot='tip',
                              alpha=fp.arrow_transparency)
 
@@ -333,8 +341,8 @@ for fn in files:
                 AHe_data_file = AHe_data_file[AHe_data_file['profile'] == profile_no]
 
             x = AHe_data_file['distance'].values
-            y = AHe_data_file['AHe_age_uncorr'].values
-            yerr = AHe_data_file['AHe_age_uncorr_2se'].values
+            y = AHe_data_file['AHe_age_corr'].values
+            yerr = AHe_data_file['AHe_age_corr_2se'].values
 
             for rp, timeslice in zip(rpanels, fp.timeslices):
                 leg_ahe_samples = rp.errorbar(x, y, yerr=yerr,

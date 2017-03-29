@@ -1353,6 +1353,7 @@ def model_run(mp):
             locs = dfhs['profile'] == mp.profile_number
             dfhs = dfhs.loc[locs]
             AHe_sample_distances = dfhs['distance'].values
+            AHe_relative_sample_distances = dfhs['distance_to_fault'].values
             U_conc = dfhs['U'].values
             Th_conc = dfhs['Th'].values
             sphere_radius = dfhs['sphere_radius'].values
@@ -1381,6 +1382,8 @@ def model_run(mp):
             AHe_ages_samples_all_corr = None
 
         for target_depth in mp.target_zs:
+
+            print '\tfor surface level = %0.2f m' % target_depth
             #target_depth = 0
             nt = len(Ts)
 
@@ -1457,12 +1460,17 @@ def model_run(mp):
             # calculate ages of AHe samples
             ###############################
             if mp.model_AHe_samples is True:
-                unique_dist = np.unique(AHe_sample_distances)
+                print '\tfor %i AHe samples' % (len(AHe_relative_sample_distances))
+                unique_dist = np.unique(AHe_relative_sample_distances)
 
-                for distance in unique_dist:
+                for rel_distance in unique_dist:
 
                     # find two nearest nodes for samples
                     x_nodes = xyz_array[:, 0][ind_surface]
+
+                    fault_ind = np.where(target_depth >= z_flt)[0][0]
+                    x_flt_timestep = x_flt[fault_ind]
+                    distance = x_flt_timestep + rel_distance
 
                     ind_node_left = np.where(x_nodes < distance)[0][-1]
                     ind_node_right = np.where(x_nodes > distance)[0][0]
@@ -1507,7 +1515,7 @@ def model_run(mp):
                     t_he = t_hes[0]
 
                     # find AHe grain data
-                    grain_inds = np.where(AHe_sample_distances == distance)[0]
+                    grain_inds = np.where(AHe_relative_sample_distances == rel_distance)[0]
 
                     for grain_ind in grain_inds:
 
@@ -1579,11 +1587,11 @@ def model_run(mp):
         if mp.model_AHe_samples is True:
             print '\tname, distance, layer, modeled AHe age uncorr, corrected: '
             for i, age_i, age_i_corr in zip(itertools.count(), AHe_ages_samples_all, AHe_ages_samples_all_corr):
-                for sample_name, distance, age, age_corr in zip(sample_names,
-                                                      AHe_sample_distances,
-                                                      age_i, age_i_corr):
+                for sample_name, rel_distance, age, age_corr in zip(sample_names,
+                                                      AHe_relative_sample_distances,
+                                                      age_i[-1], age_i_corr[-1]):
                     print '\t%s, %0.1f m, %i, %0.2f My, %0.2f My' \
-                          % (sample_name, distance, i, age[-1] / My, age_corr[-1] / My)
+                          % (sample_name, distance, i, age / My, age_corr / My)
 
     print 'surface T: ', T * surface
 
