@@ -240,7 +240,7 @@ for model_run, param_set in enumerate(param_list):
      xzs, Tzs,
      Ahe_ages_all, Ahe_ages_corr_all, xs_Ahe_all,
      target_depths,
-     AHe_ages_samples_all) = output
+     AHe_ages_samples_all, AHe_ages_samples_all_corr) = output
 
     # crop output to only the output timesteps, to limit filesize
     output_steps = []
@@ -272,8 +272,11 @@ for model_run, param_set in enumerate(param_list):
     if mp.calculate_he_ages is True and mp.model_AHe_samples is True:
         AHe_ages_samples_cropped = [AHe_i[output_steps]
                                     for AHe_i in AHe_ages_samples_all]
+        AHe_ages_samples_corr_cropped = [AHe_i[output_steps]
+                                         for AHe_i in AHe_ages_samples_all_corr]
     else:
         AHe_ages_samples_cropped = None
+        AHe_ages_samples_corr_cropped = None
 
     N_output_steps = len(output_steps)
 
@@ -288,6 +291,7 @@ for model_run, param_set in enumerate(param_list):
     AHe_ages_surface_corr = []
     AHe_xcoords_surface = []
     AHe_ages_samples_surface = []
+    AHe_ages_samples_surface_corr = []
     borehole_xlocs = None
     borehole_zlocs = None
     borehole_depths = None
@@ -576,14 +580,16 @@ for model_run, param_set in enumerate(param_list):
             AHe_xcoords_surface_all.append(AHe_xcoords_surface)
 
         AHe_ages_samples_surface = []
+        AHe_ages_samples_surface_corr = []
         if mp.calculate_he_ages and mp.model_AHe_samples is True:
 
             for i in range(N_output_steps):
-                surface_elev = surface_levels[i]
+                surface_elev = surface_levels[output_steps[i]]
 
                 if surface_elev in target_depths:
                     surface_ind = np.where(target_depths == surface_elev)[0][0]
                     ages_raw = AHe_ages_samples_cropped[surface_ind][i]
+                    ages_raw_corr = AHe_ages_samples_corr_cropped[surface_ind][i]
                     #x_coords = xzs[surface_ind]
 
                 else:
@@ -597,11 +603,14 @@ for model_run, param_set in enumerate(param_list):
 
                     ages_raw = ((1.0-fraction) * AHe_ages_samples_cropped[ind_low][i]
                                 + fraction * AHe_ages_samples_cropped[ind_high][i])
+                    ages_raw_corr = ((1.0-fraction) * AHe_ages_samples_corr_cropped[ind_low][i]
+                                + fraction * AHe_ages_samples_corr_cropped[ind_high][i])
 
                     #x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
 
                 # add surface AHe data to output
                 AHe_ages_samples_surface.append(ages_raw)
+                AHe_ages_samples_surface_corr.append(ages_raw_corr)
 
     # analyze model-data fit of AHe surface samples
     if mp.model_AHe_samples is True:
@@ -648,7 +657,7 @@ for model_run, param_set in enumerate(param_list):
          xzs, Tzs_cropped, x_surface, T_surface,
          AHe_ages_cropped, AHe_ages_corr_cropped, xs_Ahe_all, target_depths,
          AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
-         AHe_ages_samples_surface, AHe_data_file,
+         AHe_ages_samples_surface, AHe_ages_samples_surface_corr, AHe_data_file,
          borehole_xlocs, borehole_zlocs,
          borehole_depths, borehole_temp_measured, borehole_temps_modeled]
 
@@ -696,7 +705,8 @@ for model_run, param_set in enumerate(param_list):
         for j in range(n_model_runs):
             for i in range(nts):
                 cols += ['x_run_%i_ts%i' % (j, i),
-                         'AHe_age_uncorr_run_%i_ts%i' % (j, i)]
+                         'AHe_age_uncorr_run_%i_ts%i' % (j, i),
+                         'AHe_age_corrected_run_%i_ts%i' % (j, i)]
 
         dfh = pd.DataFrame(columns=cols, index=np.arange(nxs))
 
@@ -711,6 +721,8 @@ for model_run, param_set in enumerate(param_list):
                         AHe_xcoords_surface_all[j][i][:l]
                     dfh.loc[:l-1, 'AHe_age_uncorr_run_%i_ts%i' % (j, i)] = \
                         AHe_ages_surface_all[j][i][:l] / My
+                    dfh.loc[:l-1, 'AHe_age_corrected_run_%i_ts%i' % (j, i)] = \
+                        AHe_ages_surface_corr_all[j][i][:l] / My
                 except Exception, msg:
                     print 'error, something went wrong with saving AHe data ' \
                           'to a .csv file for model run %i and timestep %i' \
@@ -733,12 +745,15 @@ for model_run, param_set in enumerate(param_list):
             # and store in datafile
             col_name = 'modeled_AHe_age_uncorr_run_%i_timestep_%i' \
                        % (model_run, output_steps[timestep])
+            col_name_corr = 'modeled_AHe_age_corrected_run_%i_timestep_%i' \
+                       % (model_run, output_steps[timestep])
 
             profile_loc = dfhs['profile'] == mp.profile_number
 
             if True in profile_loc:
                 try:
                     dfhs.loc[profile_loc, col_name] = AHe_ages_samples_surface[timestep] / My
+                    dfhs.loc[profile_loc, col_name_corr] = AHe_ages_samples_surface_corr[timestep] / My
                 except Exception, msg:
                     print 'error, something went wrong with saving AHe ' \
                           'sample data to a .csv file for model run %i ' \

@@ -441,7 +441,7 @@ for fn in files:
             temp_panel.get_xaxis().tick_bottom()
             temp_panel.spines['right'].set_visible(False)
             temp_panel.get_yaxis().tick_left()
-            temp_panel.set_xlabel('Borehole\ntemperature (%s C)' % degree_symbol)
+            temp_panel.set_xlabel('Borehole\ntemperature (%sC)' % degree_symbol)
             temp_panel.set_yticks(temp_panel.get_yticks()[::2])
 
         for panel in panels:
@@ -458,7 +458,7 @@ for fn in files:
             panel.set_xticks(panel.get_xticks()[::2])
             tpanel.set_xticks(tpanel.get_xticks()[::2])
 
-        tpanels[0].set_ylabel('Surface\ntemperature (%s C)' % degree_symbol)
+        tpanels[0].set_ylabel('Surface\ntemperature (%sC)' % degree_symbol)
 
         if Ahe_ages_all is not None:
             rpanels[-1].set_ylabel('AHe age (My)')

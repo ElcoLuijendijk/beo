@@ -65,7 +65,7 @@ class ModelParams:
     # are less than the min thickness apart, the number of steps is reduced
     # default value is 1.0, reduce this value if gmsh returns an error while
     # creating the mesh
-    min_layer_thickness = 0.5
+    min_layer_thickness = 1.0
 
     # number of timesteps after which the surface level is recalculated
     # ideally this should be 1 (ie recalculate at each timestep)
@@ -134,10 +134,10 @@ class ModelParams:
     N_outputs = [20]
 
     # size of timestep
-    dt = 500.0 * year
+    dt = 1000.0 * year
 
     # duration of each timestep_slice
-    durations = [5.0e4 * year]
+    durations = [1.0e5 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -147,11 +147,11 @@ class ModelParams:
     target_zs = [10.0, 5.0, 0.0]
 
     # U-Th/He params
-    calculate_he_ages = False
+    calculate_he_ages = True
 
     # model-data comparison AHe samples
-    model_AHe_samples = False
-    AHe_data_file = 'model_parameters/AHe_data.csv'
+    model_AHe_samples = True
+    AHe_data_file = 'model_parameters/AHe_data_test.csv'
     profile_number = 1
 
     #save the AHe ages at the surface to a separate file

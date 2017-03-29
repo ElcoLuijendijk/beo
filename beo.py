@@ -1135,7 +1135,7 @@ def model_run(mp):
         depth = xyz[1]
         #x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
 
-        fault_left = -depth * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + fault_x
+        fault_left = -depth * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 - fault_width / 2.0 + fault_x
         fault_right = fault_left + fault_width + 0.02
         fault_zone = ((subsurface * es.wherePositive(xyz[0] - fault_left))
                       * (subsurface * es.whereNegative(xyz[0] - fault_right))
@@ -1375,8 +1375,10 @@ def model_run(mp):
 
         if mp.model_AHe_samples is True:
             AHe_ages_samples_all = []
+            AHe_ages_samples_all_corr = []
         else:
             AHe_ages_samples_all = None
+            AHe_ages_samples_all_corr = None
 
         for target_depth in mp.target_zs:
             #target_depth = 0
@@ -1392,6 +1394,7 @@ def model_run(mp):
 
             if mp.model_AHe_samples is True:
                 he_ages_grains = np.zeros((nt, ngrains))
+                he_ages_grains_corr = np.zeros((nt, ngrains))
 
             for xii in range(nx):
 
@@ -1524,7 +1527,7 @@ def model_run(mp):
                         S = mp.stopping_distance
                         Ft_i = 1 - 3 * S / (4 * R) + S**3 / (16 * R**3)
 
-
+                        he_age_i_corr = he_age_i / Ft_i
                         #if mp.report_corrected_AHe_ages is True:
 
 
@@ -1535,10 +1538,16 @@ def model_run(mp):
                         he_ages_unfiltered = np.interp(runtimes, runtimes_filtered,
                                                        he_ages_run_filtered)
                         he_ages_grains[:, grain_ind] = he_ages_unfiltered
+
+                        he_ages_run_filtered = he_age_i_corr[nt_prov:]
+                        he_ages_unfiltered = np.interp(runtimes, runtimes_filtered,
+                                                       he_ages_run_filtered)
+                        he_ages_grains_corr[:, grain_ind] = he_ages_unfiltered
+
                         #he_ages_grains_corr1[:, grain_ind] = he_ages_unfiltered
 
-                        # TODO...
                 AHe_ages_samples_all.append(he_ages_grains)
+                AHe_ages_samples_all_corr.append(he_ages_grains_corr)
 
         # calculate corrected ages, for surface data
         R = mp.radius
@@ -1568,13 +1577,13 @@ def model_run(mp):
 
         print '\nmodeled AHe ages samples'
         if mp.model_AHe_samples is True:
-            print '\tname, distance, layer, modeled AHe age: '
-            for i, age_i in enumerate(AHe_ages_samples_all):
-                for sample_name, distance, age in zip(sample_names,
+            print '\tname, distance, layer, modeled AHe age uncorr, corrected: '
+            for i, age_i, age_i_corr in zip(itertools.count(), AHe_ages_samples_all, AHe_ages_samples_all_corr):
+                for sample_name, distance, age, age_corr in zip(sample_names,
                                                       AHe_sample_distances,
-                                                      age_i):
-                    print '\t%s, %0.1f m, %i, %0.2f My' \
-                          % (sample_name, distance, i, age[-1] / My)
+                                                      age_i, age_i_corr):
+                    print '\t%s, %0.1f m, %i, %0.2f My, %0.2f My' \
+                          % (sample_name, distance, i, age[-1] / My, age_corr[-1] / My)
 
     print 'surface T: ', T * surface
 
@@ -1585,7 +1594,7 @@ def model_run(mp):
               qh_array, qv_array,
               fault_fluxes_m_per_sec, mp.durations, xzs, Tzs,
               Ahe_ages_all, Ahe_ages_corr_all, xs_Ahe_all, mp.target_zs,
-              AHe_ages_samples_all]
+              AHe_ages_samples_all, AHe_ages_samples_all_corr]
 
     return output
 
