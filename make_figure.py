@@ -14,6 +14,7 @@ Elco Luijendijk, Goettingen University, 2015
 import os
 import pickle
 import pdb
+import itertools
 
 import numpy as np
 import matplotlib.pyplot as pl
@@ -128,9 +129,10 @@ for fn in files:
              xzs, Tzs, x_surface, T_surface,
              Ahe_ages_all, Ahe_ages_all_corr, xs_Ahe_all, Ahe_depths,
              AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
-             AHe_ages_samples_surface, AHe_data_file] \
+             AHe_ages_samples_surface, AHe_data_file,
+             borehole_xlocs, borehole_zlocs,
+             borehole_depths, borehole_temp_measured, borehole_temps_modeled] \
                 = output_data
-
 
     except ValueError:
         msg = 'error, could not read file %s' % fn
@@ -168,17 +170,36 @@ for fn in files:
         import matplotlib.gridspec as gridspec
         nrows = 4
         ncols = len(fp.timeslices)
-        gs = gridspec.GridSpec(nrows, ncols, height_ratios=[25, 75, 17, 3])
+        height_ratios = [25, 75, 17, 3]
+        width_ratios = [2] * ncols
+
+        if fp.add_temperature_panel is True:
+            ncols += 1
+            width_ratios.append(1)
+
+        gs = gridspec.GridSpec(nrows, ncols,
+                               height_ratios=height_ratios,
+                               width_ratios=width_ratios)
         #ax = fig.add_subplot(gs[0, 0])
 
-        panels = [fig.add_subplot(gs[1, i]) for i in range(ncols)]
-        tpanels = [fig.add_subplot(gs[0, i]) for i in range(ncols)]
+        if fp.add_temperature_panel is True:
+            panels = [fig.add_subplot(gs[1, i]) for i in range(ncols - 1)]
+            tpanels = [fig.add_subplot(gs[0, i]) for i in range(ncols - 1)]
+            temp_panel = fig.add_subplot(gs[1, -1])
+        else:
+            panels = [fig.add_subplot(gs[1, i]) for i in range(ncols)]
+            tpanels = [fig.add_subplot(gs[0, i]) for i in range(ncols)]
+
 
         gs.update(wspace=0.05, hspace=0.2)
 
-        rpanels = [tp.twinx() for tp in tpanels]
+        if Ahe_ages_all is not None:
+            rpanels = [tp.twinx() for tp in tpanels]
 
-        cpanel = fig.add_subplot(gs[-1, :-1])
+        if ncols <= 3:
+            cpanel = fig.add_subplot(gs[-1, 0])
+        else:
+            cpanel = fig.add_subplot(gs[-1, :-1])
         cpanel.set_xticks([])
         cpanel.set_yticks([])
 
@@ -196,7 +217,7 @@ for fn in files:
 
         for p, Ta in zip(panels, Tas):
             xg, yg, zg = interpolate_data(xyz_array, Ta, fp.dx, fp.dy)
-            leg_cn = p.contourf(xg, yg, zg, cnts)
+            leg_cn = p.contourf(xg, yg, zg, cnts, cmap=fp.cmap)
             #p.scatter(xyz_array[:, 0], xyz_array[:, 1], s=0.1, color='gray')
             #c=Ta, **kwargs)
 
@@ -218,9 +239,11 @@ for fn in files:
 
         for p, qhi, qvi in zip(panels, qh_array, qv_array):
             print 'adding arrows'
-            xq, yq, qhg = interpolate_data(xyz_element_array, qhi * year,
+            xq, yq, qhg = interpolate_data(xyz_element_array[::fp.skip_arrows],
+                                           qhi[::fp.skip_arrows] * year,
                                            fp.dx, fp.dy)
-            xq, yq, qvg = interpolate_data(xyz_element_array, qvi * year,
+            xq, yq, qvg = interpolate_data(xyz_element_array[::fp.skip_arrows],
+                                           qvi[::fp.skip_arrows] * year,
                                            fp.dx, fp.dy)
 
             # set arrow scale
@@ -233,30 +256,49 @@ for fn in files:
             # and sort with increasing x coord:
             a = np.argsort(xg[ind])
 
-            leg_q = p.quiver(xg[ind][a][::fp.skip_arrows], yg[ind][a][::fp.skip_arrows],
-                             qhg[ind][a][::fp.skip_arrows], qvg[ind][a][::fp.skip_arrows],
+            leg_q = p.quiver(xg[ind][a], yg[ind][a],
+                             qhg[ind][a], qvg[ind][a],
                              angles='xy', scale=scale, headwidth=5, pivot='tip',
                              alpha=fp.arrow_transparency)
 
             #legs.append(leg_q)
             #labels.append('flow arrows')
 
-        lss = ['-'] * 50
+        if fp.add_temperature_panel is True:
+            # show borehole locations
+            for p, timeslice in zip(panels, fp.timeslices):
+
+                for borehole_xloc, borehole_zloc, borehole_depth in \
+                        zip(borehole_xlocs, borehole_zlocs, borehole_depths):
+
+                    leg_bh, = p.plot((borehole_xloc[timeslice], borehole_xloc[timeslice]),
+                                     (borehole_zloc[timeslice],
+                                      borehole_zloc[timeslice] - borehole_depth.max()),
+                                     color='gray', lw=1.5)
+
+            legs.append(leg_bh)
+            labels.append('borehole location')
+
+        for p, timeslice in zip(panels, fp.timeslices):
+            leg_surf = p.axhline(y=surface_levels[timeslice], color='black',
+                                 lw=0.5)
+
+        legs.append(leg_surf)
+        labels.append('land surface')
+
+        lss = fp.linestyles
         #colors = ['darkblue', 'green']
         # surface temperatures
         n_depths = len(Tzs)
 
         #for i in range(n_depths):
-        for tp, timeslice in zip(tpanels, fp.timeslices):
+        for j, tp, timeslice in zip(itertools.count(), tpanels, fp.timeslices):
             leg_st, = tp.plot(x_surface[timeslice],
                               T_surface[timeslice],
-                              color='black', ls=lss[i])
+                              color=fp.colors[j], ls=lss[j])
 
         legs.append(leg_st)
-        labels.append('surface temperature')
-
-        for p, timeslice in zip(panels, fp.timeslices):
-            p.axhline(y=surface_levels[timeslice], color='black', lw=0.25)
+        labels.append('modeled temperature')
 
         #
         if Ahe_ages_all is not None:
@@ -281,7 +323,7 @@ for fn in files:
             labels.append('modeled AHe ages')
 
         #AHe_ages_samples_surface, AHe_data_file
-        if AHe_data_file is not None:
+        if Ahe_ages_all is not None and AHe_data_file is not None:
 
             if len(np.unique(AHe_data_file['profile'].values)) > 1:
                 print 'found multiple profiles in AHe data file'
@@ -304,6 +346,26 @@ for fn in files:
 
             legs.append(leg_ahe_samples)
             labels.append('measured AHe ages')
+
+        if fp.add_temperature_panel is True:
+
+            for borehole_depth, borehole_temp_modeled, borehole_temp_measured_i in \
+                    zip(borehole_depths, borehole_temps_modeled, borehole_temp_measured):
+
+                leg_bh_temp_meas, = temp_panel.plot(borehole_temp_measured_i, -borehole_depth,
+                                color='gray', lw=1.5)
+
+                for j, timeslice in enumerate(fp.timeslices):
+
+                    leg_bh_temp_mod, = temp_panel.plot(borehole_temp_modeled[timeslice],
+                                                       -borehole_depth,
+                                                       lw=1.0,
+                                                       ls=lss[j],
+                                                       color=fp.colors[j])
+
+
+                legs += [leg_bh_temp_meas]
+                labels += ['measured temperature']
 
         #for p in panels[:]:
         panels[0].set_ylabel('Elevation (m)')
@@ -341,21 +403,28 @@ for fn in files:
             tp.set_ylim(0, T_surface[-1].max() * 1.1)
             tp.yaxis.grid(True)
             tp.set_xlim(xmin, xmax)
+            tp.set_xticks(tp.get_xticks()[:-1])
 
         for tp in tpanels[:]:
             tp.spines['top'].set_visible(False)
             tp.get_xaxis().tick_bottom()
+
+            if Ahe_ages_all is None:
+                tp.spines['right'].set_visible(False)
+                tp.get_yaxis().tick_left()
         #useful_functions.simpleaxis(tpanels[-1], removeh=False)
 
-        for rp in rpanels[:-1]:
-            rp.set_yticklabels([])
+        if Ahe_ages_all is not None:
 
-        for rp in rpanels:
-            rp.set_xlim(xmin, xmax)
-            if Ahe_ages_all is not None:
-                rp.set_ylim(0, Ahe_ages_all[0].max() / My * 1.25)
-            rp.spines['top'].set_visible(False)
-            rp.get_xaxis().tick_bottom()
+            for rp in rpanels[:-1]:
+                rp.set_yticklabels([])
+
+            for rp in rpanels:
+                rp.set_xlim(xmin, xmax)
+                if Ahe_ages_all is not None:
+                    rp.set_ylim(0, Ahe_ages_all[0].max() / My * 1.25)
+                rp.spines['top'].set_visible(False)
+                rp.get_xaxis().tick_bottom()
 
             #useful_functions.simpleaxis(rp, removeh=False)
 
@@ -365,25 +434,44 @@ for fn in files:
             title = '%0.0f years' % (dti / year)
             tp.set_title(title)
 
+        if fp.add_temperature_panel is True:
+            temp_panel.set_yticklabels([])
+            temp_panel.set_ylim(ymin, ymax)
+            temp_panel.spines['top'].set_visible(False)
+            temp_panel.get_xaxis().tick_bottom()
+            temp_panel.spines['right'].set_visible(False)
+            temp_panel.get_yaxis().tick_left()
+            temp_panel.set_xlabel('Borehole\ntemperature (%s C)' % degree_symbol)
+            temp_panel.set_yticks(temp_panel.get_yticks()[::2])
+
         for panel in panels:
             panel.set_yticks(panel.get_yticks()[::2])
+
         for tpanel in tpanels:
             tpanel.set_yticks(tpanel.get_yticks()[::2])
-        for rpanel in rpanels:
-            rpanel.set_yticks(rpanel.get_yticks()[::2])
+
+        if Ahe_ages_all is not None:
+            for rpanel in rpanels:
+                rpanel.set_yticks(rpanel.get_yticks()[::2])
 
         for panel, tpanel in zip(panels, tpanels):
             panel.set_xticks(panel.get_xticks()[::2])
             tpanel.set_xticks(tpanel.get_xticks()[::2])
 
-        tpanels[0].set_ylabel('Temperature (%s C)' % degree_symbol)
-        rpanels[-1].set_ylabel('AHe age (My)')
-        rpanels[-1].yaxis.label.set_color(fp.AHe_color)
-        rpanels[-1].tick_params(axis='y', colors=fp.AHe_color)
+        tpanels[0].set_ylabel('Surface\ntemperature (%s C)' % degree_symbol)
 
-        for p in panels:
+        if Ahe_ages_all is not None:
+            rpanels[-1].set_ylabel('AHe age (My)')
+            rpanels[-1].yaxis.label.set_color(fp.AHe_color)
+            rpanels[-1].tick_params(axis='y', colors=fp.AHe_color)
+
+        for p, tp in zip(panels, tpanels):
             p.set_xlim(xmin, xmax)
+            tp.set_xlim(xmin, xmax)
             p.set_ylim(ymin, ymax)
+
+        if fp.add_temperature_panel is True:
+            temp_panel.set_ylim(ymin, ymax)
 
         cb = fig.colorbar(leg_cn, cax=cpanel, orientation='horizontal')
         cb.set_label('Temperature (%s C)' % degree_symbol)

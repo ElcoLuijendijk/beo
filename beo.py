@@ -268,7 +268,7 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
     #z_flt = np.array([z_surface, z_fine, z_base])
     x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
 
-    print 'fault locations in mesh:'
+    print 'x, z coords of fault locations in mesh:'
     for x, z in zip(x_flt, z_flt):
         print x, z
 
@@ -280,7 +280,10 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
     xys = [[[0, z_air], [width, z_air]]]
 
     for xf, zf in zip(x_flt, z_flt):
-        xys.append([[0, zf], [xf, zf], [xf + fault_width, zf], [width, zf]])
+        xys.append([[0, zf],
+                    [xf - fault_width / 2.0, zf],
+                    [xf + fault_width / 2.0 + 0.02, zf],
+                    [width, zf]])
 
     points = []
     for xyi in xys:
@@ -338,7 +341,7 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
 
     mesh.write('mesh.fly')
 
-    return mesh
+    return mesh, x_flt[:-2], z_flt[:-2]
 
 
 def setup_mesh_with_exhumation_v2(width, x_flt_surface, fault_width, fault_angle,
@@ -553,7 +556,6 @@ def setup_mesh_2faults(width, x_flt_surface, fault_width, fault_angle, z_air,
     ps1 = es.PropertySet("bottomleft", surface_base_left)
     ps2 = es.PropertySet("bottommid", surface_flt_base)
     ps3 = es.PropertySet("bottomright", surface_base_right)
-
 
     d.addItems(surface_air, surface_flt_fine, surface_flt_base,
                surface_fine_left, surface_fine_right,
@@ -988,7 +990,7 @@ def model_run(mp):
     exhumed_thickness = mp.exhumation_rate * (np.sum(np.array(mp.durations)) / mp.year)
     exhumation_steps = mp.exhumation_steps
 
-    min_layer_thickness = 1.0
+    min_layer_thickness = mp.min_layer_thickness
     if exhumed_thickness / exhumation_steps < min_layer_thickness:
         print 'warning, exhumation levels would be smaller than %0.2f m' % min_layer_thickness
         exhumation_steps = int(np.ceil(exhumed_thickness) / min_layer_thickness)
@@ -997,8 +999,6 @@ def model_run(mp):
 
         print 'reducing exhumation steps to %i' % exhumation_steps
 
-        mp.exhumation_steps = exhumation_steps
-
     if exhumed_thickness != 0:
         # track AHe and temperature in each exhumed layer in the model domain:
         mp.target_zs = np.linspace(0, exhumed_thickness, exhumation_steps + 1)
@@ -1006,7 +1006,7 @@ def model_run(mp):
     elevation_top = z_surface + exhumed_thickness + mp.air_height
 
     if mp.use_mesh_with_buffer is False:
-        mesh = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0],
+        mesh, x_flt, z_flt = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0],
                                              mp.fault_widths[0],
                                              mp.fault_angles[0], elevation_top,
                                              z_surface + exhumed_thickness, z_surface,
@@ -1027,7 +1027,6 @@ def model_run(mp):
                                              mp.cellsize_air, mp.cellsize_fault,
                                              mp.cellsize_fine, mp.cellsize_base,
                                              mp.fault_buffer_zone)
-
 
     ###############################################################
     # convert input params to escript variables
@@ -1340,6 +1339,8 @@ def model_run(mp):
 
     if mp.calculate_he_ages is False:
         Ahe_ages_all = None
+        Ahe_ages_corr_all = None
+        AHe_ages_samples_all = None
         xs_Ahe_all = None
 
     else:
@@ -1369,6 +1370,7 @@ def model_run(mp):
         print 'calculating helium ages'
         xs_Ahe_all = []
         Ahe_ages_all = []
+        Ahe_ages_corr_all = None
         T_surf_mod_all = []
 
         if mp.model_AHe_samples is True:
@@ -1533,7 +1535,7 @@ def model_run(mp):
                         he_ages_unfiltered = np.interp(runtimes, runtimes_filtered,
                                                        he_ages_run_filtered)
                         he_ages_grains[:, grain_ind] = he_ages_unfiltered
-                        he_ages_grains_corr1[:, grain_ind] = he_ages_unfiltered
+                        #he_ages_grains_corr1[:, grain_ind] = he_ages_unfiltered
 
                         # TODO...
                 AHe_ages_samples_all.append(he_ages_grains)
@@ -1576,7 +1578,7 @@ def model_run(mp):
 
     print 'surface T: ', T * surface
 
-    output = [runtimes, xyz_array, surface_levels,
+    output = [runtimes, xyz_array, surface_levels, x_flt, z_flt,
               T_init_array, T_array, boiling_temp_array,
               xyz_array_exc, exceed_boiling_temp_array,
               xyz_element_array,

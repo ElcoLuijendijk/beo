@@ -136,8 +136,8 @@ attribute_names = [attribute[0] for attribute in attributes
 # set up pandas dataframe to store model input params
 n_model_runs = len(param_list)
 n_ts = np.sum(np.array(mp.N_outputs))
-if mp.exhumation_rate > 0:
-    n_ts = mp.exhumation_steps
+#if mp.exhumation_rate > 0:
+#    n_ts = mp.exhumation_steps
 n_rows = n_model_runs * n_ts
 
 ind = np.arange(n_rows)
@@ -159,10 +159,10 @@ fn = 'model_params_and_results_%i_runs_%s_%s.csv' \
      % (len(param_list), mp.output_fn_adj, today_str)
 fn_path_csv = os.path.join(output_folder, fn)
 
-if mp.calculate_he_ages is True:
-    AHe_ages_surface_all = []
-    AHe_ages_surface_corr_all = []
-    AHe_xcoords_surface_all = []
+AHe_ages_surface_all = []
+AHe_ages_surface_corr_all = []
+AHe_xcoords_surface_all = []
+AHe_data_file = None
 
 if mp.model_AHe_samples is True:
     dfhs = pd.read_csv(mp.AHe_data_file)
@@ -232,7 +232,7 @@ for model_run, param_set in enumerate(param_list):
 
         continue
         
-    (runtimes, xyz_array, surface_levels,
+    (runtimes, xyz_array, surface_levels, x_flt, z_flt,
      T_init_array, T_array, boiling_temp_array,
      xyz_array_exc, exceed_boiling_temp_array,
      xyz_element_array, qh_array, qv_array,
@@ -267,6 +267,7 @@ for model_run, param_set in enumerate(param_list):
         AHe_ages_corr_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_corr_all]
     else:
         AHe_ages_cropped = None
+        AHe_ages_corr_cropped = None
 
     if mp.calculate_he_ages is True and mp.model_AHe_samples is True:
         AHe_ages_samples_cropped = [AHe_i[output_steps]
@@ -287,24 +288,57 @@ for model_run, param_set in enumerate(param_list):
     AHe_ages_surface_corr = []
     AHe_xcoords_surface = []
     AHe_ages_samples_surface = []
+    borehole_xlocs = None
+    borehole_zlocs = None
+    borehole_depths = None
+    borehole_temp_measured = []
+    borehole_temps_modeled = []
 
     if mp.analyse_borehole_temp is True:
 
         print 'extracting borehole temperature data'
 
-        for borehole, xloc in zip(mp.borehole_names, mp.borehole_xs):
+        borehole_xlocs = np.zeros((len(mp.borehole_names), n_ts))
+        borehole_zlocs = np.zeros_like(borehole_xlocs)
+        borehole_depths = []
+        borehole_temp_measured = []
 
-            ind_mod = xyz_array[:, 0] == xloc
+        for borehole_number, borehole, xloc_raw in zip(itertools.count(),
+                                                       mp.borehole_names,
+                                                       mp.borehole_xs):
+
+            ind = dft['borehole'] == borehole
+            dfti = dft.loc[ind]
+
+            borehole_depth = dfti['depth'].values
+            T_obs = dfti['temperature'].values
+
+            borehole_depths.append(borehole_depth)
+            borehole_temp_measured.append(T_obs)
+
+            borehole_temp_modeled = np.zeros((n_ts, len(T_obs)))
 
             for j in range(n_ts):
 
+                z_surface = surface_levels[output_steps[j]]
+
+                #ind_ts = np.where()
+                surface_ind = np.where(z_flt < z_surface)[0][0]
+                x_flt_step = x_flt[surface_ind]
+                xloc = x_flt_step + xloc_raw
+
+                borehole_xlocs[borehole_number, j] = xloc
+                borehole_zlocs[borehole_number, j] = z_flt[surface_ind]
+
                 output_number = model_run * n_ts + j
 
-                ind = dft['borehole'] == borehole
-                dfti = dft.loc[ind]
 
-                z_obs = surface_levels[output_steps[j]] - dfti['depth']
-                T_obs = dft['temperature']
+                col_name = 'modeled_xcoord_borehole_%s_run_%i_timestep_%i' \
+                           % (borehole, model_run, output_steps[j])
+                dft[col_name] = xloc
+
+                z_obs = surface_levels[output_steps[j]] - borehole_depth
+
                 x_buffer = 200.0
                 pre_select = np.abs(xyz_array[:, 0] - xloc) < x_buffer
 
@@ -313,6 +347,8 @@ for model_run, param_set in enumerate(param_list):
                                           xloc, y_steps=300)
 
                 T_mod = np.interp(z_obs, zi, Ti)
+
+                borehole_temp_modeled[j, :] = T_mod
 
                 col_name = 'modeled_T_%s_run_%i_timestep_%i' \
                            % (borehole, model_run, output_steps[j])
@@ -330,6 +366,9 @@ for model_run, param_set in enumerate(param_list):
 
                 R2_T = coefficient_of_determination(T_obs, T_mod)
                 df.loc[output_number, 'R2_temperature_%s' % borehole] = R2_T
+
+            #borehole_xlocs.append(borehole_xloc)
+            borehole_temps_modeled.append( borehole_temp_modeled)
 
     for j in range(n_ts):
 
@@ -532,12 +571,12 @@ for model_run, param_set in enumerate(param_list):
                 col_name = 'x_max_full_reset_surface'
                 df.loc[output_number, col_name] = np.nan
 
-        AHe_ages_surface_all.append(AHe_ages_surface)
-        AHe_ages_surface_corr_all.append(AHe_ages_surface_corr)
-        AHe_xcoords_surface_all.append(AHe_xcoords_surface)
+            AHe_ages_surface_all.append(AHe_ages_surface)
+            AHe_ages_surface_corr_all.append(AHe_ages_surface_corr)
+            AHe_xcoords_surface_all.append(AHe_xcoords_surface)
 
         AHe_ages_samples_surface = []
-        if mp.model_AHe_samples is True:
+        if mp.calculate_he_ages and mp.model_AHe_samples is True:
 
             for i in range(N_output_steps):
                 surface_elev = surface_levels[i]
@@ -609,7 +648,16 @@ for model_run, param_set in enumerate(param_list):
          xzs, Tzs_cropped, x_surface, T_surface,
          AHe_ages_cropped, AHe_ages_corr_cropped, xs_Ahe_all, target_depths,
          AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
-         AHe_ages_samples_surface, AHe_data_file]
+         AHe_ages_samples_surface, AHe_data_file,
+         borehole_xlocs, borehole_zlocs,
+         borehole_depths, borehole_temp_measured, borehole_temps_modeled]
+
+#    borehole_xlocs = None
+#    borehole_zlocs = None
+#    borehole_depths = None
+#    borehole_temp_measured = []
+#    borehole_temps_modeled = []
+
 
     today = datetime.datetime.now()
     today_str = '%i-%i-%i' % (today.day, today.month,

@@ -34,7 +34,7 @@ initial_base_run = False
 
 #thermal_gradient_s = [0.04]
 
-#exhumation_rate_s = [1.0e-4, 1.0e-5]
+exhumation_rate_s = [1.0e-4]
 
 #fault_fluxes_s = [[[-200.0 / year]], [[-600.0 / year]]]
 
@@ -53,10 +53,6 @@ initial_base_run = False
 #exhumation_rate_s = [1e-4]
 
 #radius_s = [60e-6, 100e-6, 150e-6]
-
-
-
-dt_s = [500 * year]
 
 #cellsize_fault_s = [2.5]
 #cellsize_s = [400.0, 200.0, 100.0]

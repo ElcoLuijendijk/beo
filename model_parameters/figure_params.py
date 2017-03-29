@@ -4,6 +4,7 @@
 
 __author__ = 'Elco Luijendijk'
 
+import matplotlib.cm
 
 # size of plot in inches
 xsize = 10.0
@@ -19,9 +20,12 @@ fig_format = 'png'
 xlim = [4750, 5250]
 ylim = [-500, 100]
 
+# add an extra panel on the right with the modeled temperatures
+add_temperature_panel = True
+
 # grid size for interpolating model results
-dx = 5.0
-dy = 5.0
+dx = 10.0
+dy = 10.0
 
 # timeslices to show
 # timeslices = [0] make a figure of the first timestep
@@ -57,3 +61,13 @@ cnt_range = None
 
 # option to show corrected or uncorrected AHe ages
 show_corrected_AHe_ages = True
+
+# linestyles for the modeled surface/borehole temperature
+#linestyles = [':', '--', '-', '-.']
+linestyles = ['-', '-', '-', '-']
+
+# colors for the modeled surface/borehole temperature
+colors = ['green', 'orange', 'red', 'yellow']
+
+# colors for the temperature contours:
+cmap = matplotlib.cm.get_cmap('coolwarm')

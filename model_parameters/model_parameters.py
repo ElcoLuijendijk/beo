@@ -54,12 +54,18 @@ class ModelParams:
     # exhumation rate in m/yr
     # assuming the AHe was not reset, the max exhumation is ~1500 m in 15 My = 1e-4 m/yr
     # look up regional AFT, AHe and cosmogenic nuclide work for realistic range of exhumation rates
-    exhumation_rate = 5e-5
+    exhumation_rate = 1e-4
 
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
     # but this also slows the model down somewhat
     exhumation_steps = 20
+
+    # minimum layer thickness, if the exhumation steps result in surfaces that
+    # are less than the min thickness apart, the number of steps is reduced
+    # default value is 1.0, reduce this value if gmsh returns an error while
+    # creating the mesh
+    min_layer_thickness = 0.5
 
     # number of timesteps after which the surface level is recalculated
     # ideally this should be 1 (ie recalculate at each timestep)
@@ -131,7 +137,7 @@ class ModelParams:
     dt = 500.0 * year
 
     # duration of each timestep_slice
-    durations = [3e4 * year]
+    durations = [5.0e4 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -141,10 +147,10 @@ class ModelParams:
     target_zs = [10.0, 5.0, 0.0]
 
     # U-Th/He params
-    calculate_he_ages = True
+    calculate_he_ages = False
 
     # model-data comparison AHe samples
-    model_AHe_samples = True
+    model_AHe_samples = False
     AHe_data_file = 'model_parameters/AHe_data.csv'
     profile_number = 1
 
@@ -209,7 +215,7 @@ class ModelParams:
     # aquifers, use aquifer_top = [None] to not use this:
     #aquifer_tops = [-0.0]
     aquifer_tops = [-50.0]
-    aquifer_bottoms = [-100.0]
+    aquifer_bottoms = [-150.0]
     aquifer_fluxes = [[-250.0 / year]]
 
     # left side of aquifer. right hand bnd is assumed to be the fault zone
@@ -232,6 +238,10 @@ class ModelParams:
     temperature_file = 'model_parameters/temperature_data.csv'
     borehole_names = ['85-18']
 
-    # locations of boreholes for temperature data, location is relative to
-    # the location of the first fault
+    # locations of boreholes for temperature data,
+    # !! note location is now relative to the location of the first fault
+    # ie, -100 m means 100 m to the left of the fault.
+    # the model code autoamtically calculates the correct position to take
+    # into account the changing position of the fault surface over time
+    # due to exhumation
     borehole_xs = [-100.0]
