@@ -1341,6 +1341,8 @@ def model_run(mp):
         Ahe_ages_all = None
         Ahe_ages_corr_all = None
         AHe_ages_samples_all = None
+        AHe_ages_samples_all_corr = None
+
         xs_Ahe_all = None
 
     else:
