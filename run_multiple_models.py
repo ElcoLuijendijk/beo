@@ -345,10 +345,10 @@ for model_run, param_set in enumerate(param_list):
 
                 output_number = model_run * n_ts + j
 
-
-                col_name = 'modeled_xcoord_borehole_%s_run_%i_timestep_%i' \
-                           % (borehole, model_run, output_steps[j])
-                dft[col_name] = xloc
+                if mp.report_borehole_xcoords is True:
+                    col_name = 'modeled_xcoord_borehole_%s_run_%i_timestep_%i' \
+                               % (borehole, model_run, output_steps[j])
+                    dft[col_name] = xloc
 
                 z_obs = surface_levels[output_steps[j]] - borehole_depth
 

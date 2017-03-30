@@ -237,6 +237,7 @@ class ModelParams:
     # file that contains temperature data
     temperature_file = 'model_parameters/temperature_data.csv'
     borehole_names = ['85-18']
+    report_borehole_xcoords = False
 
     # locations of boreholes for temperature data,
     # !! note location is now relative to the location of the first fault
