@@ -122,6 +122,7 @@ for fn in files:
             print 'reading output data, new version of code with corrected ' \
                   'AHe data'
             [runtimes_all, runtimes, xyz_array, surface_levels,
+             x_loc_fault, z_loc_fault,
              T_init_array, T_array, boiling_temp_array,
              xyz_array_exc, exceed_boiling_temp_array,
              xyz_element_array,
@@ -269,9 +270,6 @@ for fn in files:
                              angles='xy', scale=scale, headwidth=5, pivot='tip',
                              alpha=fp.arrow_transparency)
 
-            #legs.append(leg_q)
-            #labels.append('flow arrows')
-
         if fp.add_temperature_panel is True:
             # show borehole locations
             for p, timeslice in zip(panels, fp.timeslices):
@@ -340,11 +338,12 @@ for fn in files:
 
                 AHe_data_file = AHe_data_file[AHe_data_file['profile'] == profile_no]
 
-            x = AHe_data_file['distance'].values
+            xr = AHe_data_file['distance_to_fault'].values
             y = AHe_data_file['AHe_age_corr'].values
             yerr = AHe_data_file['AHe_age_corr_2se'].values
 
             for rp, timeslice in zip(rpanels, fp.timeslices):
+                x = x_loc_fault[timeslice] + xr
                 leg_ahe_samples = rp.errorbar(x, y, yerr=yerr,
                                               marker='o',
                                               ms=fp.marker_size,
@@ -430,7 +429,7 @@ for fn in files:
             for rp in rpanels:
                 rp.set_xlim(xmin, xmax)
                 if Ahe_ages_all is not None:
-                    rp.set_ylim(0, Ahe_ages_all[0].max() / My * 1.25)
+                    rp.set_ylim(0, Ahe_ages_all[0].max() / My * 1.5)
                 rp.spines['top'].set_visible(False)
                 rp.get_xaxis().tick_bottom()
 

@@ -298,6 +298,17 @@ for model_run, param_set in enumerate(param_list):
     borehole_temp_measured = []
     borehole_temps_modeled = []
 
+    # find x coord of first fault, for relative positioning of borehole temperature data and AHe samples
+    x_loc_fault = np.zeros((n_ts))
+    z_loc_fault = np.zeros((n_ts))
+
+    for j in range(n_ts):
+        z_surface = surface_levels[output_steps[j]]
+        surface_ind = np.where(z_flt < z_surface)[0][0]
+        x_flt_step = x_flt[surface_ind]
+        x_loc_fault[j] = x_flt_step
+        z_loc_fault[j] = z_flt[surface_ind]
+
     if mp.analyse_borehole_temp is True:
 
         print 'extracting borehole temperature data'
@@ -306,6 +317,7 @@ for model_run, param_set in enumerate(param_list):
         borehole_zlocs = np.zeros_like(borehole_xlocs)
         borehole_depths = []
         borehole_temp_measured = []
+
 
         for borehole_number, borehole, xloc_raw in zip(itertools.count(),
                                                        mp.borehole_names,
@@ -324,15 +336,12 @@ for model_run, param_set in enumerate(param_list):
 
             for j in range(n_ts):
 
+                # find location of borehole
                 z_surface = surface_levels[output_steps[j]]
-
-                #ind_ts = np.where()
-                surface_ind = np.where(z_flt < z_surface)[0][0]
-                x_flt_step = x_flt[surface_ind]
-                xloc = x_flt_step + xloc_raw
+                xloc = x_loc_fault[j] + xloc_raw
 
                 borehole_xlocs[borehole_number, j] = xloc
-                borehole_zlocs[borehole_number, j] = z_flt[surface_ind]
+                borehole_zlocs[borehole_number, j] = z_loc_fault[j]
 
                 output_number = model_run * n_ts + j
 
@@ -581,6 +590,7 @@ for model_run, param_set in enumerate(param_list):
 
         AHe_ages_samples_surface = []
         AHe_ages_samples_surface_corr = []
+
         if mp.calculate_he_ages and mp.model_AHe_samples is True:
 
             for i in range(N_output_steps):
@@ -648,6 +658,7 @@ for model_run, param_set in enumerate(param_list):
     output_selected = \
         [runtimes, runtimes[output_steps], xyz_array,
          surface_levels[output_steps],
+         x_loc_fault, z_loc_fault,
          T_init_array,
          T_array, boiling_temp_array[output_steps],
          xyz_array_exc, exceed_boiling_temp_array[output_steps],
