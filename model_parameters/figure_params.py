@@ -62,6 +62,9 @@ cnt_range = None
 # option to show corrected or uncorrected AHe ages
 show_corrected_AHe_ages = True
 
+# option to show mesh nodes
+show_mesh = True
+
 # linestyles for the modeled surface/borehole temperature
 #linestyles = [':', '--', '-', '-.']
 linestyles = ['-', '-', '-', '-']

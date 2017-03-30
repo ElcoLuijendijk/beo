@@ -34,21 +34,31 @@ class ModelParams:
     total_depth = 8000.0
     air_height = 40.0
 
-    # depth to fine discretization at surface:
-    # deprecated, doesnt work, maybe need to add this in again to increase numerical stability
-    z_fine = -100
+    # depth to fine discretization near surface:
+    z_fine = -150
 
-    # grid size
+    # default cellsize
     cellsize = 200.0
-    cellsize_air = 5.0
+
+    # cellsize in the air layer:
+    cellsize_air = 10.0
+
+    # cellsize at surface layers:
+    cellsize_surface = 50.0
+
+    # fine cellsize near surface (up to depth = z_fine)
+    cellsize_fine = 200.0
+
+    # in fault zone:
     cellsize_fault = 5.0
+
+    # cellsize at the lower left and right corners:
     cellsize_base = 1000.0
 
     # new: buffer zone around fault with the same cell size as the fault
     # this is to reduce model instability
     use_mesh_with_buffer = False
     fault_buffer_zone = 25.0
-    cellsize_fine = 10.0
 
     # exhumation parameters
     # exhumation rate in m/yr
@@ -147,10 +157,10 @@ class ModelParams:
     target_zs = [10.0, 5.0, 0.0]
 
     # U-Th/He params
-    calculate_he_ages = True
+    calculate_he_ages = False
 
     # model-data comparison AHe samples
-    model_AHe_samples = True
+    model_AHe_samples = False
     AHe_data_file = 'model_parameters/AHe_data.csv'
     profile_number = 1
 

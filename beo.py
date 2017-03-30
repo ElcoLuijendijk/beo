@@ -248,7 +248,7 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
                                z_surface_initial, z_surface_final,
                                z_surface_steps,
                                z_fine, z_base, cellsize,
-                               cellsize_air, cellsize_fault,
+                               cellsize_air, cellsize_surface, cellsize_fault,
                                cellsize_fine, cellsize_base):
 
     """
@@ -293,6 +293,19 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
     # fine cellsize in air layer:
     for point in points[0]:
         point.setLocalScale(cellsize_air / cellsize)
+
+    # and at top surface:
+    for point in points[1]:
+        point.setLocalScale(cellsize_air / cellsize)
+
+    # small cellsize in surface layers
+    for point_i in points[2:-2]:
+        for p in point_i:
+            p.setLocalScale(cellsize_surface / cellsize)
+
+    # and small cellsize in layer close to surface
+    for point in points[-2]:
+        point.setLocalScale(cellsize_fine / cellsize)
 
     # small cellsize in fault:
     for point in points[1:]:
@@ -1012,7 +1025,7 @@ def model_run(mp):
                                              z_surface + exhumed_thickness, z_surface,
                                              exhumation_steps,
                                              mp.z_fine, z_base, mp.cellsize,
-                                             mp.cellsize_air, mp.cellsize_fault,
+                                             mp.cellsize_air, mp.cellsize_surface, mp.cellsize_fault,
                                              mp.cellsize_fine, mp.cellsize_base)
                                              #,mp.fault_widths)
 

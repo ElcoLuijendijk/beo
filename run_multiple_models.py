@@ -428,11 +428,11 @@ for model_run, param_set in enumerate(param_list):
 
             #fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
 
-            T_down = Tzs_cropped[ind_low][j]
-            T_up = Tzs_cropped[ind_high][j]
+            #T_down = Tzs_cropped[ind_low][j]
+            #T_up = Tzs_cropped[ind_high][j]
 
-            if len(T_down) != len(T_up):
-                print 'warning, trying to interpolate two layers with unequal number of nodes'
+            #if len(T_down) != len(T_up):
+            #    print 'warning, trying to interpolate two layers with unequal number of nodes'
 
             #T_surface_i = ((1.0-fraction) * Tzs_cropped[ind_low][j] + fraction * Tzs_cropped[ind_high][j])
             #x_coords_i = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]

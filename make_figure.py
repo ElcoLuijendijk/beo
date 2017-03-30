@@ -239,6 +239,10 @@ for fn in files:
             legs.append(leg_vp)
             labels.append('water vapour')
 
+        if fp.show_mesh is True:
+            for p in panels:
+                p.scatter(xyz_array[:, 0], xyz_array[:, 1], s=0.25, color='black')
+
         for p, qhi, qvi in zip(panels, qh_array, qv_array):
             print 'adding arrows'
             #xq, yq, qhg = interpolate_data(xyz_element_array[::fp.skip_arrows],
