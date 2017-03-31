@@ -17,8 +17,8 @@ figure_resolution = 150
 fig_format = 'png'
 
 # limits of x and y axis of figure
-xlim = [4750, 5250]
-ylim = [-500, 100]
+xlim = [3500, 5500]
+ylim = [-2000, 100]
 
 # add an extra panel on the right with the modeled temperatures
 add_temperature_panel = True
@@ -30,7 +30,7 @@ dy = 10.0
 # timeslices to show
 # timeslices = [0] make a figure of the first timestep
 # timeslices = [-1] make a figure of the last timestep
-timeslices = [3, -1]
+timeslices = [3, 9, -1]
 
 # scale for flow arrows, usually 5 is a good value
 scale_multiplier = 5.0
@@ -63,7 +63,7 @@ cnt_range = None
 show_corrected_AHe_ages = True
 
 # option to show mesh nodes
-show_mesh = True
+show_mesh = False
 
 # linestyles for the modeled surface/borehole temperature
 #linestyles = [':', '--', '-', '-.']

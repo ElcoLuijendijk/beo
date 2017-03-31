@@ -201,7 +201,7 @@ for fn in files:
         if ncols <= 3:
             cpanel = fig.add_subplot(gs[-1, 0])
         else:
-            cpanel = fig.add_subplot(gs[-1, :-1])
+            cpanel = fig.add_subplot(gs[-1, :-2])
         cpanel.set_xticks([])
         cpanel.set_yticks([])
 
@@ -378,18 +378,11 @@ for fn in files:
                 legs += [leg_bh_temp_meas]
                 labels += ['measured temperature']
 
-        #for p in panels[:]:
         panels[0].set_ylabel('Elevation (m)')
-        #bpanels[0].set_ylabel('Elevation (m)')
 
         for p in panels:
 
-            # horizontal line at surface
-            #p.axhline(y=0, color='black')
-
             p.yaxis.grid(True)
-
-            #p.set_xlim(0, xyz_array[:, 0].max())
 
             if fp.xlim[0] > xmin:
                 xmin = fp.xlim[0]
@@ -423,7 +416,6 @@ for fn in files:
             if Ahe_ages_all is None:
                 tp.spines['right'].set_visible(False)
                 tp.get_yaxis().tick_left()
-        #useful_functions.simpleaxis(tpanels[-1], removeh=False)
 
         if Ahe_ages_all is not None:
 
@@ -437,11 +429,8 @@ for fn in files:
                 rp.spines['top'].set_visible(False)
                 rp.get_xaxis().tick_bottom()
 
-            #useful_functions.simpleaxis(rp, removeh=False)
-
         for tp, dt in zip(tpanels, runtimes[fp.timeslices]):
             dti = dt
-            #dti = dt - runtimes[10]
             title = '%0.0f years' % (dti / year)
             tp.set_title(title)
 
@@ -454,6 +443,8 @@ for fn in files:
             temp_panel.get_yaxis().tick_left()
             temp_panel.set_xlabel('Borehole\ntemperature (%sC)' % degree_symbol)
             temp_panel.set_yticks(temp_panel.get_yticks()[::2])
+            if ncols > 3:
+                temp_panel.set_xticks(temp_panel.get_xticks()[::2])
 
         for panel in panels:
             panel.set_yticks(panel.get_yticks()[::2])

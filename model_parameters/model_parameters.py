@@ -89,7 +89,7 @@ class ModelParams:
     #bottom_temperature = total_depth * 0.03 + air_temperature
     #bottom_temperature = total_depth * 0.03
     # new version: calculate bottom T using a fixed geothermal gradient./r
-    thermal_gradient = 0.04
+    thermal_gradient = 0.03
 
     # bottom flux bnd condition, set to None if T bnd is used
     basal_heat_flux = None
@@ -222,14 +222,15 @@ class ModelParams:
     # fault zone
     fault_fluxes = [[-400.0 / year]]
 
-    # aquifers, use aquifer_top = [None] to not use this:
-    #aquifer_tops = [-0.0]
-    aquifer_tops = [-50.0]
-    aquifer_bottoms = [-150.0]
-    aquifer_fluxes = [[-250.0 / year]]
-
+    # aquifers, used for modeling horizontal advective flow
+    # use aquifer_top = [None] to not use this:
+    # note for multiple aquifers start at the lowest aquifer
+    aquifer_tops = [None]
+    #aquifer_tops = [-50.0, -350.0]
+    aquifer_bottoms = [-200.0, -550]
+    aquifer_fluxes = [[100.0 / year], [-350.0 / year]]
     # left side of aquifer. right hand bnd is assumed to be the fault zone
-    aquifer_left_bnds = [2000.0]
+    aquifer_left_bnds = [4000.0, 4000.0]
 
     # relative limit to consider a sample partial reset or not, ie if 0.95
     # a sample will be considered partially reset if the modeled uncorrected
@@ -255,4 +256,4 @@ class ModelParams:
     # the model code autoamtically calculates the correct position to take
     # into account the changing position of the fault surface over time
     # due to exhumation
-    borehole_xs = [-100.0]
+    borehole_xs = [-250.0]

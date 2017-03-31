@@ -1218,6 +1218,8 @@ def model_run(mp):
     for i, fault_zone, q_fault_zone, fault_width in zip(itertools.count(), fault_zones,
                                            mp.fault_fluxes, mp.fault_widths):
 
+        fault_int_fluxes_i = q_fault_zone
+
         for j, aquifer_loc, aquifer_flux in zip(itertools.count(),
                                                 aquifer_locs,
                                                 mp.aquifer_fluxes):
@@ -1227,7 +1229,7 @@ def model_run(mp):
 
                 # ok, aquifer and fault cross, calculate flux in intersection
                 fault_int_fluxes_i = \
-                    [a - b for a, b in zip(q_fault_zone, aquifer_flux)]
+                    [a - b for a, b in zip(fault_int_fluxes_i, aquifer_flux)]
 
                 print 'overlap aquifers and fault %i' % i
             else:
