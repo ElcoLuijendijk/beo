@@ -603,11 +603,10 @@ def interpolate_var_to_2d_grid(model_var):
 
 
 def model_hydrothermal_temperatures(mesh, hf_pde,
-                                    fault_zones, fault_angles,
+                                    fault_zones, fault_segments_all, fault_angles,
                                     specified_T_loc, specified_flux_loc,
                                     durations, fault_fluxes,
                                     aquifer_locs, aquifer_fluxes_m_per_sec,
-                                    fault_int_locs, fault_int_angles, fault_int_fluxes_m_per_sec,
                                     K_var, rho_var, c_var,
                                     rho_f, c_f,
                                     specified_temperature, specified_flux,
@@ -655,8 +654,6 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         print 'solving with specified heat flux bnd'
         #specified_heat_flux = specified_flux * specified_flux_loc
         specified_heat_flux = specified_flux
-
-        pdb.set_trace()
 
         hf_pde.setValue(A=A, D=D,
                         r=specified_temperature,
@@ -714,20 +711,19 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         q_vector = es.Vector((0, 0), es.Function(mesh))
 
         # add flux in faults
-        for fault_zone, fault_angle, q_fault_zone in \
-                zip(fault_zones, fault_angles, fault_flux):
+        for h, fault_zone, fault_angle, q_fault_zone in \
+                zip(itertools.count(), fault_zones, fault_angles, fault_flux):
 
-            # add heat advection in fault zone
-            qh_fault_zone = - q_fault_zone * np.cos(np.deg2rad(fault_angle))
-            qv_fault_zone = q_fault_zone * np.sin(np.deg2rad(fault_angle))
-            q_vector[0] += fault_zone * qh_fault_zone
-            q_vector[1] += fault_zone * qv_fault_zone
+            if fault_segments_all is not None:
+                for n_segment, fault_zone_segment, q_fault_zone_segment in zip(itertools.count(),
+                                                                               fault_segments_all[h], q_fault_zone):
+                    qh_fault_zone = - q_fault_zone_segment * np.cos(np.deg2rad(fault_angle))
+                    qv_fault_zone = q_fault_zone_segment * np.sin(np.deg2rad(fault_angle))
+                    q_vector[0] += fault_zone_segment * qh_fault_zone
+                    q_vector[1] += fault_zone_segment * qv_fault_zone
 
-        # add fluxes in part of faults intersected by aquifers
-        if fault_int_locs != []:
-            for fault_zone, fault_angle, q_fault_zone in \
-                    zip(fault_int_locs, fault_angles, fault_int_fluxes_m_per_sec[time_period]):
-
+                    print 'adding fault flux of %0.2e to fault segment %i of fault %i' % (q_fault_zone_segment, n_segment, h)
+            else:
                 # add heat advection in fault zone
                 qh_fault_zone = - q_fault_zone * np.cos(np.deg2rad(fault_angle))
                 qv_fault_zone = q_fault_zone * np.sin(np.deg2rad(fault_angle))
@@ -736,7 +732,10 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
         # add fluxes in aquifers
         if aquifer_locs != []:
-            for aquifer_loc, aquifer_flux in zip(aquifer_locs, aquifer_fluxes_m_per_sec[time_period]):
+            for k, aquifer_loc, aquifer_flux in zip(itertools.count(), aquifer_locs,
+                                                    aquifer_fluxes_m_per_sec[time_period]):
+                print 'adding aquifer flux %0.2e to aquifer %i' \
+                      % (aquifer_flux, k)
                 q_vector[0] += aquifer_loc * aquifer_flux
 
         ###############################################
@@ -1162,6 +1161,32 @@ def model_run(mp):
         # perhaps have an order of faults, ie first main fault,
         # second fault cannot cross the first fault, etc....
 
+    fault_segments_all = []
+    if mp.fault_segments is not None:
+        for h, fault_x, fault_angle, fault_width, fault_bottom, fault_segments \
+                in zip(itertools.count(), mp.fault_xs, mp.fault_angles,
+                       mp.fault_widths, mp.fault_bottoms, mp.fault_segments):
+
+            fault_segment_tops = [fault_bottom] + fault_segments
+
+            depth = xyz[1]
+            #x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
+
+            fault_left = -depth * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 - fault_width / 2.0 + fault_x
+            fault_right = fault_left + fault_width + 0.02
+
+            fault_segments_i = []
+            for segment_top, segment_bottom in zip(fault_segment_tops[1:], fault_segment_tops[:-1]):
+                fault_zone_segment = ((subsurface * es.wherePositive(xyz[0] - fault_left))
+                          * (subsurface * es.whereNegative(xyz[0] - fault_right))
+                          * (subsurface * es.wherePositive(xyz[1] - segment_bottom))
+                          * (subsurface * es.whereNonPositive(xyz[1] - segment_top)))
+
+                fault_segments_i.append(fault_zone_segment)
+
+                print 'adding segment from z=%0.2f to %0.2f for fault %i ' % (segment_bottom, segment_top, h)
+            fault_segments_all.append(fault_segments_i)
+
     # add horizontal aquifers:
     aquifer_locs = []
     for aquifer_top, aquifer_bottom, aquifer_left_bnd in zip(mp.aquifer_tops,
@@ -1211,51 +1236,20 @@ def model_run(mp):
 
                 fault_zones[i] = fault_zones[i] * es.whereNonPositive(xyz[1] - flow_cutoff_level)
 
-    # substract aquifer flux from fault flux
-    fault_int_fluxes = []
-    fault_int_widths = []
-    n_aquifers = len(aquifer_locs)
-    for i, fault_zone, q_fault_zone, fault_width in zip(itertools.count(), fault_zones,
-                                           mp.fault_fluxes, mp.fault_widths):
-
-        fault_int_fluxes_i = q_fault_zone
-
-        for j, aquifer_loc, aquifer_flux in zip(itertools.count(),
-                                                aquifer_locs,
-                                                mp.aquifer_fluxes):
-
-            # check if fault and aquifer overlap:
-            if fault_int_locs != [] and es.Lsup(fault_int_locs[i * n_aquifers + j]) > 0:
-
-                # ok, aquifer and fault cross, calculate flux in intersection
-                fault_int_fluxes_i = \
-                    [a - b for a, b in zip(fault_int_fluxes_i, aquifer_flux)]
-
-                print 'overlap aquifers and fault %i' % i
-            else:
-                fault_int_fluxes_i = 0.0
-                print 'no overlap aquifers and fault %i' % i
-
-            fault_int_fluxes.append(fault_int_fluxes_i)
-            fault_int_widths.append(fault_width)
-
-    print 'fault fluxes: ', [fi * year for f in mp.fault_fluxes for fi in f]
-    print 'fault fluxes at intersections with aquifer: ', \
-        [fi * year for f in fault_int_fluxes for fi in f]
+    #print 'fault fluxes: ', [fi * year for f in mp.fault_fluxes for fi in f]
 
     # convert fault fluxes from m2/sec to m/sec
     # by dividing by fault zone width
     fault_fluxes_m_per_sec = []
     for fault_width, fault_flux in zip(mp.fault_widths, mp.fault_fluxes):
-
-        fault_flux_i = [f / fault_width for f in fault_flux]
-        fault_fluxes_m_per_sec.append(fault_flux_i)
-
-    fault_int_fluxes_m_per_sec = []
-    for fault_width, fault_flux in zip(fault_int_widths, fault_int_fluxes):
-
-        fault_flux_i = [f / fault_width for f in fault_flux]
-        fault_int_fluxes_m_per_sec.append(fault_flux_i)
+        fts = []
+        for fault_flux_ts in fault_flux:
+            fseg = []
+            for fault_flux_segment in fault_flux_ts:
+                fault_flux_i = fault_flux_segment / fault_width
+                fseg.append(fault_flux_i)
+            fts.append(fseg)
+        fault_fluxes_m_per_sec.append(fts)
 
     # convert aquifer fluxes from m2/sec to m/sec
     aquifer_fluxes_m_per_sec = []
@@ -1273,10 +1267,10 @@ def model_run(mp):
     runtimes, T_steady, Ts, q_vectors, surface_levels, boiling_temps, exceed_boiling_temps = \
         model_hydrothermal_temperatures(
             mesh, hf_pde,
-            fault_zones, mp.fault_angles, specified_T_loc, specified_flux_loc,
+            fault_zones, fault_segments_all, mp.fault_angles,
+            specified_T_loc, specified_flux_loc,
             mp.durations, fault_fluxes_m_per_sec,
             aquifer_locs, aquifer_fluxes_m_per_sec,
-            fault_int_locs, fault_int_angles, fault_int_fluxes_m_per_sec,
             K_var, rho_var, c_var,
             mp.rho_f, mp.c_f,
             specified_T, specified_flux,

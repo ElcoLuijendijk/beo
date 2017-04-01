@@ -177,7 +177,7 @@ for fn in files:
 
         if fp.add_temperature_panel is True:
             ncols += 1
-            width_ratios.append(1)
+            width_ratios.append(2 * fp.relative_size_temp_panel)
 
         gs = gridspec.GridSpec(nrows, ncols,
                                height_ratios=height_ratios,

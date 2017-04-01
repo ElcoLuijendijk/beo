@@ -22,6 +22,7 @@ ylim = [-2000, 100]
 
 # add an extra panel on the right with the modeled temperatures
 add_temperature_panel = True
+relative_size_temp_panel = 0.5
 
 # grid size for interpolating model results
 dx = 10.0
@@ -30,7 +31,7 @@ dy = 10.0
 # timeslices to show
 # timeslices = [0] make a figure of the first timestep
 # timeslices = [-1] make a figure of the last timestep
-timeslices = [3, 9, -1]
+timeslices = [5, 10, -1]
 
 # scale for flow arrows, usually 5 is a good value
 scale_multiplier = 5.0

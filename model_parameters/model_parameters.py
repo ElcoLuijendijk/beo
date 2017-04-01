@@ -144,10 +144,10 @@ class ModelParams:
     N_outputs = [20]
 
     # size of timestep
-    dt = 1000.0 * year
+    dt = 500.0 * year
 
     # duration of each timestep_slice
-    durations = [1.0e5 * year]
+    durations = [3.0e4 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -215,20 +215,24 @@ class ModelParams:
     # elevation of bottom of fault
     fault_bottoms = [-5000.0]
 
+    # different segments of the fault, list of the top bnd of each segments starting from the bottom
+    # nested list: [[segment_top1_fault1, segment_top2_fault1], [segment_top1_fault2, segment_top2_fault2], etc...]
+    fault_segments = [[-350.0, -50.0, 100.0]]
+
     # fluid advection rates in faults:
     # nested list,
-    # [[fault1_t1, fault2_t1], [fault1_t2, fault2_t2], etc...]
+    # [[[fault1_segment1_t1, fault1_segment2_t1], [fault2_segment1_t1, fault2_segment2_t1], etc...]
     # note units are m2/sec, ie the integrated flux over the entire width of the
     # fault zone
-    fault_fluxes = [[-400.0 / year]]
+    fault_fluxes = [[[-400.0 / year, -500.0 / year, -150.0 / year]]]
 
     # aquifers, used for modeling horizontal advective flow
     # use aquifer_top = [None] to not use this:
     # note for multiple aquifers start at the lowest aquifer
-    aquifer_tops = [None]
-    #aquifer_tops = [-50.0, -350.0]
-    aquifer_bottoms = [-200.0, -550]
-    aquifer_fluxes = [[100.0 / year], [-350.0 / year]]
+    #aquifer_tops = [None]
+    aquifer_tops = [-350.0, -50.0]
+    aquifer_bottoms = [-550.0, -200.0]
+    aquifer_fluxes = [[100.0 / year, -350.0 / year]]
     # left side of aquifer. right hand bnd is assumed to be the fault zone
     aquifer_left_bnds = [4000.0, 4000.0]
 
