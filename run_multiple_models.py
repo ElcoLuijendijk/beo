@@ -633,6 +633,10 @@ for model_run, param_set in enumerate(param_list):
         mae_ahe = np.zeros(N_output)
         mswd_ahe = np.zeros(N_output)
 
+        me_ahe_corr = np.zeros(N_output)
+        mae_ahe_corr = np.zeros(N_output)
+        mswd_ahe_corr = np.zeros(N_output)
+
         for timestep in range(N_output):
 
             output_number2 = model_run * n_ts + timestep
@@ -642,14 +646,23 @@ for model_run, param_set in enumerate(param_list):
             AHe_data_file = dfhs2
 
             diff = dfhs2['AHe_age_uncorr'].values - AHe_ages_samples_surface[timestep] / My
+            diff_corr = dfhs2['AHe_age_corr'].values - AHe_ages_samples_surface_corr[timestep] / My
 
             me_ahe[timestep] = np.mean(diff)
             mae_ahe[timestep] = np.mean(np.abs(diff))
             mswd_ahe[timestep] = np.sum((diff / (0.5 * dfhs2['AHe_age_uncorr_2se'])) ** 2) / (n_grains - 1)
 
+            me_ahe_corr[timestep] = np.mean(diff_corr)
+            mae_ahe_corr[timestep] = np.mean(np.abs(diff_corr))
+            mswd_ahe_corr[timestep] = np.sum((diff_corr / (0.5 * dfhs2['AHe_age_uncorr_2se'])) ** 2) / (n_grains - 1)
+
             df.loc[output_number2, 'mean_error_AHe_samples'] = me_ahe[timestep]
             df.loc[output_number2, 'mean_abs_error_AHe_samples'] = mae_ahe[timestep]
             df.loc[output_number2, 'mswd_AHe_samples'] = mswd_ahe[timestep]
+
+            df.loc[output_number2, 'mean_error_AHe_samples_corrected'] = me_ahe_corr[timestep]
+            df.loc[output_number2, 'mean_abs_error_AHe_samples_corrected'] = mae_ahe_corr[timestep]
+            df.loc[output_number2, 'mswd_AHe_samples_corrected'] = mswd_ahe_corr[timestep]
 
     # option to save corrected ages for figure output
 
