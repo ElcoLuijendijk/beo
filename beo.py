@@ -722,7 +722,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                     q_vector[0] += fault_zone_segment * qh_fault_zone
                     q_vector[1] += fault_zone_segment * qv_fault_zone
 
-                    print 'adding fault flux of %0.2e to fault segment %i of fault %i' % (q_fault_zone_segment, n_segment, h)
+                    print 'adding fault flux of %0.2e to fault segment %i of fault %i' \
+                          % (q_fault_zone_segment, n_segment, h)
             else:
                 # add heat advection in fault zone
                 qh_fault_zone = - q_fault_zone * np.cos(np.deg2rad(fault_angle))
@@ -737,6 +738,9 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 print 'adding aquifer flux %0.2e to aquifer %i' \
                       % (aquifer_flux, k)
                 q_vector[0] += aquifer_loc * aquifer_flux
+
+        # make sure only flow in subsurface
+        q_vector = q_vector * subsurface
 
         ###############################################
         # model transient response to fluid convection
