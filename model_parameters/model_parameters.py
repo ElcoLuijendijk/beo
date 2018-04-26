@@ -5,6 +5,8 @@ file containing all parameters for Beo.py
 
 __author__ = 'Elco Luijendijk'
 
+import numpy as np
+
 
 class ModelParams:
 
@@ -19,7 +21,7 @@ class ModelParams:
     output_folder = 'model_output'
 
     #
-    output_fn_adj = 'profile1'
+    output_fn_adj = 'beowawe'
 
     # steady state or transient model
     # note that regardless of this setting, the initial condition of transient model is
@@ -30,12 +32,12 @@ class ModelParams:
     vapour_correction = True
 
     # model dimensions
-    width = 8000.0
+    width = 10000.0
     total_depth = 8000.0
     air_height = 40.0
 
     # depth to fine discretization near surface:
-    z_fine = -150
+    z_fine = -500
 
     # default cellsize
     cellsize = 200.0
@@ -47,7 +49,7 @@ class ModelParams:
     cellsize_surface = 50.0
 
     # fine cellsize near surface (up to depth = z_fine)
-    cellsize_fine = 200.0
+    cellsize_fine = 100.0
 
     # in fault zone:
     cellsize_fault = 5.0
@@ -62,18 +64,16 @@ class ModelParams:
 
     # exhumation parameters
     # exhumation rate in m/yr
-    # assuming the AHe was not reset, the max exhumation is ~1500 m in 15 My = 1e-4 m/yr
-    # look up regional AFT, AHe and cosmogenic nuclide work for realistic range of exhumation rates
-    exhumation_rate = 1e-4
+    exhumation_rate = 1e-3
 
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
     # but this also slows the model down somewhat
-    exhumation_steps = 20
+    exhumation_steps = 10
 
     # minimum layer thickness, if the exhumation steps result in surfaces that
     # are less than the min thickness apart, the number of steps is reduced
-    # default value is 1.0, reduce this value if gmsh returns an error while
+    # default value is 1.0 m, reduce this value if gmsh returns an error while
     # creating the mesh
     min_layer_thickness = 1.0
 
@@ -86,8 +86,7 @@ class ModelParams:
 
     # temperature bnd conditions
     air_temperature = 10.0
-    #bottom_temperature = total_depth * 0.03 + air_temperature
-    #bottom_temperature = total_depth * 0.03
+
     # new version: calculate bottom T using a fixed geothermal gradient./r
     thermal_gradient = 0.03
 
@@ -117,15 +116,15 @@ class ModelParams:
     porosities = [0.08, 0.05, 0.25, 0.17, 0.05]
 
     # thermal parameters
-    # note that only thermal conductivity is varied between layers, the rest
-    # is constant
+    # note that only thermal conductivity is varied between layers,
+    # the other parameters are constant
     K_solids = [4.44, 2.26, 1.58, 1.6, 2.0]
 
     # wikipedia: thermal properties air
     # heat transfer coefficient = 10- 100 W / (m2 K))
     # heat capacity = 1000 J kg-1 K-1
     # density = 1.29 kg m-3
-    K_air = 50.0
+    K_air = 100.0
     K_water = 0.58
 
     rho_air = 1.29
@@ -141,13 +140,13 @@ class ModelParams:
     # this is not used when exhumation > 0, in this case output is generated
     # once each new surface level is reached
     # the number of surfaces is controlled by the exhumation_steps parameter
-    N_outputs = [20]
+    N_outputs = [5]
 
-    # size of timestep
-    dt = 500.0 * year
+    # size of a single timestep
+    dt = 1000.0 * year
 
     # duration of each timestep_slice
-    durations = [3.0e4 * year]
+    durations = [5e4 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -157,31 +156,31 @@ class ModelParams:
     target_zs = [10.0, 5.0, 0.0]
 
     # U-Th/He params
-    calculate_he_ages = False
+    calculate_he_ages = True
 
     # model-data comparison AHe samples
-    model_AHe_samples = False
-    AHe_data_file = 'model_parameters/AHe_data.csv'
+    model_AHe_samples = True
+    AHe_data_file = 'model_parameters/AHe_data_test.csv'
     profile_number = 1
 
     #save the AHe ages at the surface to a separate file
     save_AHe_ages = True
 
     # method to calculate helium diffusivity, use Wolf1996, Farley2000 or RDAAM
-    AHe_method = 'RDAAM'
+    AHe_method = 'Farley2000'
 
     # use temperature at each x timestep for the calculation of AHe ages
     # this should be an integer. Ideally this should be 1, but higher numbers
-    # significantly speed up the model
+    # significantly speed up the model code
     # !! new parameter (3 march 2017)
     AHe_timestep_reduction = 4
 
-    # temperature after crystallization and before hydrothermal heating
+    # crystallization age
+    t0 = 15.3 * My
+
+    # temperature of apatites after crystallization and before hydrothermal heating
     T0 = 10.0
     T_surface = 10.0
-
-    # crystallization age
-    t0 = 15.6 * My
 
     # apatite params
     radius = 100.0 * 1e-6
@@ -198,39 +197,39 @@ class ModelParams:
     # alpha ejection parameters:
     alpha_ejection = True
 
-    # alpha ejection stopping distance, see Ketcham (2011) for estimates
+    # alpha ejection stopping distance (um), see Ketcham (2011) for estimates
     stopping_distance = 21e-6
 
     ## fault data for multiple faults:
 
-    # x location of fault:
+    # x location of fault (m):
     fault_xs = [5000]
 
-    # fault width
+    # fault width (m)
     fault_widths = [20.0]
 
     # angle of the fault zone (degrees), dip of normal faults ~60-70 degrees
     fault_angles = [-65.0]
 
     # elevation of bottom of fault
-    fault_bottoms = [-5000.0]
+    fault_bottoms = [-4000.0]
 
     # different segments of the fault, list of the top bnd of each segments starting from the bottom
     # nested list: [[segment_top1_fault1, segment_top2_fault1], [segment_top1_fault2, segment_top2_fault2], etc...]
-    fault_segments = [[-350.0, -50.0, 100.0]]
+    fault_segments = [[5000.0]]
 
     # fluid advection rates in faults:
     # nested list,
     # [[[fault1_segment1_t1, fault1_segment2_t1], [fault2_segment1_t1, fault2_segment2_t1], etc...]
     # note units are m2/sec, ie the integrated flux over the entire width of the
     # fault zone
-    fault_fluxes = [[[-400.0 / year, -500.0 / year, -150.0 / year]]]
+    fault_fluxes = [[[-300.0 / year]]]
 
     # aquifers, used for modeling horizontal advective flow
     # use aquifer_top = [None] to not use this:
     # note for multiple aquifers start at the lowest aquifer
-    #aquifer_tops = [None]
-    aquifer_tops = [-350.0, -50.0]
+    aquifer_tops = [None]
+    #aquifer_tops = [-350.0, -50.0]
     aquifer_bottoms = [-550.0, -200.0]
     aquifer_fluxes = [[100.0 / year, -350.0 / year]]
     # left side of aquifer. right hand bnd is assumed to be the fault zone
@@ -241,13 +240,13 @@ class ModelParams:
     # AHe age is less than 0.95 x the maximum age in the system.
     partial_reset_limit = 0.75
 
-    # absolute limit below which samples are considered reset (ie. AHe age ~0 My)
+    # absolute age limit below which samples are considered reset (ie. AHe age ~0 My)
     reset_limit = 0.1
 
     # option to calculate temperature data for one or several boreholes
     # note that there seems to be a bug in the output timesteps for the temperature calculation
     # avoid using this for now...
-    analyse_borehole_temp = True
+    analyse_borehole_temp = False
 
     # file that contains temperature data
     temperature_file = 'model_parameters/temperature_data.csv'
@@ -257,7 +256,65 @@ class ModelParams:
     # locations of boreholes for temperature data,
     # !! note location is now relative to the location of the first fault
     # ie, -100 m means 100 m to the left of the fault.
-    # the model code autoamtically calculates the correct position to take
+    # the model code automatically calculates the correct position to take
     # into account the changing position of the fault surface over time
     # due to exhumation
     borehole_xs = [-250.0]
+
+
+class ParameterRanges:
+
+    """
+    parameter ranges for sensitivity or uncertainty analysis
+
+    beo.py will look for any variable ending with _s below and then look for the
+    corresponding variable in model_parameters.py
+
+    each _s variable should be a list of values, beo.py will replace the variable
+    in model_parameters.py with each item in the list consecutively
+    """
+
+    year = 365.25 * 24 * 60 * 60.0
+
+    # option whether to vary one model parameter at a time
+    # (ie for a sensitivtiy analysis)
+    # or to run all parameter combinations, using the parameter ranges specified
+    # in the parameter_ranges.py file
+    parameter_combinations = False
+
+    # option to add a first base run with unchanged parameters to the lsit of model
+    # runs
+    initial_base_run = False
+
+    ###################################################################
+    # parameters that will be changed in the sensitivity analysis runs:
+    ###################################################################
+
+    # fault_bottoms_s = [[-2000.0], [-2500.0], [-3000.0], [-3500.0], [-4000.0]]
+    fault_bottoms_s = [[-4000.0]]
+    # thermal_gradient_s = [0.04]
+
+    # exhumation_rate_s = [1.0e-4]
+
+    # fault_fluxes_s = [[[-200.0 / year]], [[-600.0 / year]]]
+
+    # aquifer_fluxes_s = [[[-250.0 / year]]]
+
+    # fault_widths_s = [[30.0], [40.0]]
+
+    # total_depth_s = [8000.0]
+
+
+    # low exhumation rates (< 1e-4) result in solver errors.
+    # Not yet sure why. Potentially there are problems with the grid, with low exhumation rates the layers between the
+    # initial surface and final surface get really thin, which may result with grid elements that have angles that are
+    # too low. reducing exhumation_steps may help, or reducing the grid cell size. Reducing the time step size may also
+    # help with unstable model runs in general
+    # exhumation_rate_s = [1e-4]
+
+    # radius_s = [60e-6, 100e-6, 150e-6]
+
+    # cellsize_fault_s = [2.5]
+    # cellsize_s = [400.0, 200.0, 100.0]
+
+    # dt_s = [1000 * year, 500 * year, 250 * year, 100 * year]

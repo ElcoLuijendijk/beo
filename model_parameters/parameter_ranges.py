@@ -27,14 +27,14 @@ parameter_combinations = False
 initial_base_run = False
 
 ###################################################################
-# parameters that will be changes in the sensitivity analysis runs:
+# parameters that will be changed in the sensitivity analysis runs:
 ###################################################################
 
-#fault_bottoms_s = [[-5000], [-4000]]
-
+#fault_bottoms_s = [[-2000.0], [-2500.0], [-3000.0], [-3500.0], [-4000.0]]
+fault_bottoms_s = [[-4000.0]]
 #thermal_gradient_s = [0.04]
 
-exhumation_rate_s = [1.0e-4]
+#exhumation_rate_s = [1.0e-4]
 
 #fault_fluxes_s = [[[-200.0 / year]], [[-600.0 / year]]]
 

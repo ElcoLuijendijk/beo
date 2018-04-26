@@ -12,13 +12,16 @@ import itertools
 import inspect
 import pdb
 import datetime
+import imp
 import scipy.interpolate
 
 import numpy as np
 import pandas as pd
 
 from model_parameters.model_parameters import ModelParams
-import model_parameters.parameter_ranges as pr
+#import model_parameters.parameter_ranges as pr
+from model_parameters.model_parameters import ParameterRanges as pr
+
 import beo
 
 
@@ -82,13 +85,39 @@ def coefficient_of_determination(y, f):
     return R2
 
 
-mp = ModelParams
-
 day = 24.0 * 60.0 * 60.0
 year = 365.25 * day
 My = year * 1e6
 
 scriptdir = os.path.realpath(sys.path[0])
+
+if len(sys.argv) > 1 and 'beo.py' not in sys.argv[-1]:
+    #scenario_name = sys.argv[-1]
+    #model_input_subfolder = os.path.join(scriptdir, 'model_input',
+    #                                     scenario_name)
+    inp_file_loc = os.path.join(scriptdir, sys.argv[-1])
+
+    print 'model input files: ', inp_file_loc
+
+    try:
+        model_parameters = imp.load_source('model_parameters', inp_file_loc)
+    except IOError:
+        msg = 'cannot find parameter file %s' % inp_file_loc
+        raise IOError(msg)
+
+    ModelParams = model_parameters.ModelParams
+    pr = model_parameters.ParameterRanges
+
+else:
+
+    print 'running model input data from file ' \
+          'model_input/model_parameters.py'
+
+    from model_parameters.model_parameters import ModelParams
+    from model_parameters.model_parameters import ParameterRanges as pr
+
+mp = ModelParams
+
 output_folder = os.path.join(scriptdir, mp.output_folder)
 
 # create list with param values for each model run
