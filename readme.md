@@ -5,7 +5,7 @@
 
 # Introduction
 
-Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code escript (https://launchpad.net/escript-finley) to solve the advective and conductive heat flow in a 2D cross-section of the subsurface. The resulting temperature history is used to calculate two low-temperature thermochronometers, apatite fission track data and apatite (U-Th)/He data. The modeled values of these thermochronometers can then be compared to measured values. Beo also support automated model runs to explore which parameter values like fluid fluxes, fault geometry and age of the hydrothermal system best match the thermochronometer data, as well as present-day spring temperature data or temperature records in nearby boreholes. 
+Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code escript (https://launchpad.net/escript-finley) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The resulting temperature history is used to calculate two low-temperature thermochronometers, apatite fission track data and apatite (U-Th)/He data. The modeled values of these thermochronometers can then be compared to measured values. Beo also support automated model runs to explore which parameter values like fluid fluxes, fault geometry and age of the hydrothermal system best match the thermochronometer data, as well as present-day spring temperature data or temperature records in nearby boreholes. 
 
  
 
@@ -39,7 +39,7 @@ Alternatively use the command
 This will show you three lines that define environment variables that your system needs to be able to find the location of escript. Add these lines to your .bashrc (Ubuntu linux) or profile file in your home directory. After adding these lines and logging out and in again, you can start beo by going to the folder where the beo code is located (so not to the escript/bin directory) and start beo.py like any regular python code:
 
 ````bash
-python run_multiple_models.py model_parameters/model_parameters.py
+python beo.py model_parameters/model_parameters.py
 ````
 
 where ``model_parameters/model_parameters.py`` is a file containing all model parameters. An example file called ``model_parameters.py`` is located in the directory ``model_parameters``.
