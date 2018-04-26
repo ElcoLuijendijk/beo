@@ -79,7 +79,7 @@ There are two options for running multiple model runs. The default is a sensitiv
 
 ## Output
 
-* After each model run, the modeled temperature field and (U-Th)/He data are stored in the directory ``model_output`` as a .pck file, which can be read using the Python's pickle module. 
+* After each model run, the modeled temperature field and (U-Th)/He data are stored in the directory ``model_output`` as a .pck file, which can be read using Python's pickle module. 
 * In addition, Beo saves a comma separated file containing the model parameters and a summary of the results for each model run and each timestep in the same directory.
 
 

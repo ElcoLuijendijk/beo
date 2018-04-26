@@ -611,10 +611,12 @@ for model_run, param_set in enumerate(param_list):
                     fraction = np.abs(diff[ind_low]) / (target_depths[ind_high]
                                                         - target_depths[ind_low])
 
-                    ages_raw = ((1.0-fraction) * AHe_ages_samples_cropped[ind_low][i]
-                                + fraction * AHe_ages_samples_cropped[ind_high][i])
-                    ages_raw_corr = ((1.0-fraction) * AHe_ages_samples_corr_cropped[ind_low][i]
-                                + fraction * AHe_ages_samples_corr_cropped[ind_high][i])
+                    #ages_raw = ((1.0-fraction) * AHe_ages_samples_cropped[ind_low][i]
+                    #            + fraction * AHe_ages_samples_cropped[ind_high][i])
+                    #ages_raw_corr = ((1.0-fraction) * AHe_ages_samples_corr_cropped[ind_low][i]
+                    #            + fraction * AHe_ages_samples_corr_cropped[ind_high][i])
+                    ages_raw = AHe_ages_samples_cropped[ind_low][i]
+                    ages_raw_corr = AHe_ages_samples_corr_cropped[ind_low][i]
 
                     #x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
 
@@ -670,20 +672,17 @@ for model_run, param_set in enumerate(param_list):
     # gather and save model output
     output_selected = \
         [runtimes, runtimes[output_steps], xyz_array,
-         surface_levels[output_steps],
-         x_loc_fault, z_loc_fault,
-         T_init_array,
-         T_array, boiling_temp_array[output_steps],
-         xyz_array_exc, exceed_boiling_temp_array[output_steps],
-         xyz_element_array,
-         qh_array[output_steps], qv_array[output_steps],
-         fault_fluxes, durations,
-         xzs, Tzs_cropped, x_surface, T_surface,
-         AHe_ages_cropped, AHe_ages_corr_cropped, xs_Ahe_all, target_depths,
+         surface_levels[output_steps], x_loc_fault, z_loc_fault,
+         T_init_array, T_array, boiling_temp_array[output_steps],
+         xyz_array_exc, exceed_boiling_temp_array[output_steps], xyz_element_array,
+         qh_array[output_steps], qv_array[output_steps], fault_fluxes,
+         durations, xzs, Tzs_cropped,
+         x_surface, T_surface, AHe_ages_cropped,
+         AHe_ages_corr_cropped, xs_Ahe_all, target_depths,
          AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
          AHe_ages_samples_surface, AHe_ages_samples_surface_corr, AHe_data_file,
-         borehole_xlocs, borehole_zlocs,
-         borehole_depths, borehole_temp_measured, borehole_temps_modeled]
+         borehole_xlocs, borehole_zlocs, borehole_depths,
+         borehole_temp_measured, borehole_temps_modeled]
 
 #    borehole_xlocs = None
 #    borehole_zlocs = None

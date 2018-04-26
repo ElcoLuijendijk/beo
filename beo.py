@@ -1,7 +1,7 @@
 """
 2D model of advective and conductive heat flow in hydrothermal systems
 
-Elco Luijendijk, McGill university & Goettingen Unviersity, 2013-2017
+Elco Luijendijk, McGill university & Goettingen University, 2013-2018
 """
 
 __author__ = 'Elco Luijendijk'
@@ -9,6 +9,9 @@ __author__ = 'Elco Luijendijk'
 ###############
 # load modules
 ###############
+
+import matplotlib
+matplotlib.use('Agg')
 
 import time
 import os
@@ -20,7 +23,6 @@ import itertools
 
 import numpy as np
 import pandas as pd
-import matplotlib
 
 # escript/Finley modules:
 import esys.escript as es
@@ -130,9 +132,7 @@ def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
                cellsize_air, cellsize_fault, cellsize_fine, cellsize_base):
 
     """
-
     create a mesh for the model of the bewowawe hydrothermal system
-
     """
 
     ###############################
@@ -252,9 +252,7 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
                                cellsize_fine, cellsize_base):
 
     """
-
-    create a mesh for the model of the bewowawe hydrothermal system
-
+    Create a mesh for the model of the beowawe hydrothermal system, including exhumation
     """
 
     ###############################
@@ -366,9 +364,7 @@ def setup_mesh_with_exhumation_v2(width, x_flt_surface, fault_width, fault_angle
                                   cellsize_fine, cellsize_base, fault_buffer_zone):
 
     """
-
-    create a mesh for the model of the bewowawe hydrothermal system
-
+    Create a mesh for the model of the bewowawe hydrothermal system, including exhumation
     """
 
     ###############################
@@ -394,7 +390,8 @@ def setup_mesh_with_exhumation_v2(width, x_flt_surface, fault_width, fault_angle
     xys = [[[0, z_air], [width, z_air]]]
 
     for xf, zf in zip(x_flt, z_flt):
-        xys.append([[0, zf], [xf - fault_buffer_zone, zf], [xf, zf], [xf + fault_width, zf], [xf + fault_buffer_zone * 2, zf],  [width, zf]])
+        xys.append([[0, zf], [xf - fault_buffer_zone, zf], [xf, zf], [xf + fault_width, zf],
+                    [xf + fault_buffer_zone * 2, zf],  [width, zf]])
 
     points = []
     for xyi in xys:
@@ -446,7 +443,8 @@ def setup_mesh_with_exhumation_v2(width, x_flt_surface, fault_width, fault_angle
         curve_local_fault_buffer_right = pc.CurveLoop(hline[3], vline[4], -hline_below[3], -vline[3])
         curve_local_right = pc.CurveLoop(hline[4], vline[5], -hline_below[4], -vline[4])
 
-        curves += [curve_local_left, curve_local_fault_buffer_left, curve_local_fault, curve_local_fault_buffer_right, curve_local_right]
+        curves += [curve_local_left, curve_local_fault_buffer_left, curve_local_fault,
+                   curve_local_fault_buffer_right, curve_local_right]
 
     surfaces = [pc.PlaneSurface(curve) for curve in curves]
 
@@ -476,7 +474,6 @@ def setup_mesh_2faults(width, x_flt_surface, fault_width, fault_angle, z_air,
     """
     create a mesh for a hydrothermal model containing 2 faults
     and one shallow aquifer
-
     """
 
     ###############################
@@ -621,7 +618,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     vapour_correction=True):
 
     """
-
+    Full single model run of the heat conduction and advection model
     """
     
     day = 24.0 * 60.0 * 60.0
@@ -709,6 +706,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
         # set up advective flow field in faults and aquifers
         q_vector = es.Vector((0, 0), es.Function(mesh))
+        xyze = q_vector.getFunctionSpace().getX()
 
         # add flux in faults
         for h, fault_zone, fault_angle, q_fault_zone in \
@@ -740,7 +738,9 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 q_vector[0] += aquifer_loc * aquifer_flux
 
         # make sure only flow in subsurface
-        q_vector = q_vector * subsurface
+        subsurface_ele = es.whereNonPositive(xyze[1] - surface_level)
+
+        q_vector = q_vector * subsurface_ele
 
         ###############################################
         # model transient response to fluid convection
@@ -872,10 +872,23 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
                 print '\texhumation, new surface level at %0.2f' % surface_level
                 subsurface = es.whereNonPositive(xyz[1] - surface_level)
+                subsurface_ele = es.whereNonPositive(xyze[1] - surface_level)
+                subsurface_ele_10m = es.whereNonPositive(xyze[1] - surface_level) \
+                                     * es.wherePositive(xyze[1] - surface_level + 10)
                 air = es.wherePositive(xyz[1] - surface_level)
+                air_ele = es.wherePositive(xyze[1] - surface_level)
                 surface = es.whereZero(xyz[1] - surface_level)
 
-                q_vector = q_vector * subsurface
+                #q_vector = q_vector * subsurface
+                q_vector_old = q_vector.copy()
+                q_vector[0] = q_vector[0] * subsurface_ele
+                q_vector[1] = q_vector[1] * subsurface_ele
+
+                print '\tmax qv above surface = ', es.sup(air_ele * q_vector[1]) * year
+                print '\tmax qv below surface = ', es.sup(subsurface_ele * q_vector[1]) * year
+                print '\tmax qv 10m below surface = ', es.sup(subsurface_ele_10m * q_vector[1]) * year
+                dd = q_vector[1] - q_vector_old[1]
+                print '\tdifference old and new qv = ', dd * year
 
                 # populate K, c and rho scalar fields
                 K_var = subsurface * K_b + air * K_air
@@ -959,7 +972,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
             # store output
             Ts.append(T)
-            q_vectors.append(q_vector)
+            q_vectors.append(q_vector.copy())
 
             if vapour_correction is True:
                 boiling_temps.append(boiling_temp)
@@ -979,7 +992,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 def model_run(mp):
 
     """
-    setup and run a single model
+    setup mesh and parameters, and run a single model experiment
 
     :param mp:
     :return:
@@ -1372,7 +1385,7 @@ def model_run(mp):
             U_conc = dfhs['U'].values
             Th_conc = dfhs['Th'].values
             sphere_radius = dfhs['sphere_radius'].values
-            sample_names = dfhs['sample']
+            sample_names = dfhs['sample'].tolist()
             ngrains = len(AHe_sample_distances)
 
         ind_surface = np.where(xyz_array[:, 1] == 0)[0]
@@ -1531,6 +1544,14 @@ def model_run(mp):
 
                     # find AHe grain data
                     grain_inds = np.where(AHe_relative_sample_distances == rel_distance)[0]
+                    print 'AHe grains:'
+                    print grain_inds
+                    #print dfhs
+                    #for g in grain_inds:
+                    #    print sample_names[g]
+                    print 'distance to fault: ', rel_distance
+                    print 'x coord of fault: ', x_flt_timestep
+                    print 'absolute distance for layer at z= %0.2f , x = %0.2f m' % (target_depth, distance)
 
                     for grain_ind in grain_inds:
 
@@ -1553,6 +1574,13 @@ def model_run(mp):
                         he_age_i_corr = he_age_i / Ft_i
                         #if mp.report_corrected_AHe_ages is True:
 
+                        My = 1e6 * 365 * 24 * 60 * 60.0
+
+                        print 'min, mean, max T = %0.2f, %0.2f, %0.2f C' % (T_he.min() - 273.15,
+                                                                            T_he.mean() - 273.15,
+                                                                            T_he.max() - 273.15)
+                        print 'modeled AHe age uncorr = %0.2f Ma' % (he_age_i[-1] / My)
+                        print 'modeled AHe age corr = %0.2f Ma' % (he_age_i_corr[-1] / My)
 
                         # copy AHe ages back into array with same length as the
                         # runtime and temperature arrays
@@ -1606,7 +1634,7 @@ def model_run(mp):
                                                       AHe_relative_sample_distances,
                                                       age_i[-1], age_i_corr[-1]):
                     print '\t%s, %0.1f m, %i, %0.2f My, %0.2f My' \
-                          % (sample_name, distance, i, age / My, age_corr / My)
+                          % (sample_name, rel_distance, i, age / My, age_corr / My)
 
     print 'surface T: ', T * surface
 
@@ -1637,16 +1665,30 @@ if __name__ == "__main__":
     # run a single model scenario
     output = model_run(mp)
 
-    (runtimes, xyz_array, surface_levels,
+    #(runtimes, xyz_array, surface_levels,
+    # T_init_array, T_array, boiling_temp_array,
+    # xyz_array_exc, exceed_boiling_temp_array,
+    # xyz_element_array,
+    # qh_array, qv_array,
+    # fault_fluxes, durations, xzs, Tzs,
+    # Ahe_ages_all, Ahe_ages_corr_all, xs_Ahe_all, target_depths,
+    # AHe_ages_samples_all) = output
+
+    (runtimes, xyz_array, surface_levels, x_flt, z_flt,
      T_init_array, T_array, boiling_temp_array,
      xyz_array_exc, exceed_boiling_temp_array,
      xyz_element_array,
      qh_array, qv_array,
      fault_fluxes, durations, xzs, Tzs,
      Ahe_ages_all, Ahe_ages_corr_all, xs_Ahe_all, target_depths,
-     AHe_ages_samples_all) = output
+     AHe_ages_samples_all, AHe_ages_samples_all_corr) = output
 
     # crop output to only the output timesteps, to limit filesize
+    if np.sum(np.array(mp.N_outputs)) > len(Tzs[0]):
+        msg = 'error, the number of requested output timesteps is higher than the number of model timesteps'
+        msg += 'reduce the N_outputs parameter in the model_parameters.py file'
+        raise IndexError(msg)
+
     output_steps = []
     for duration, N_output in zip(mp.durations, mp.N_outputs):
         nt = int(duration / mp.dt)
@@ -1670,14 +1712,20 @@ if __name__ == "__main__":
     if mp.calculate_he_ages is True and mp.model_AHe_samples is True:
         AHe_ages_samples_cropped = [AHe_i[output_steps]
                                     for AHe_i in AHe_ages_samples_all]
+        AHe_ages_samples_cropped_corr = [AHe_i[output_steps]
+                                    for AHe_i in AHe_ages_samples_all_corr]
     else:
         AHe_ages_samples_cropped = None
+        AHe_ages_samples_cropped_corr = None
 
     N_output_steps = len(output_steps)
 
     # find surface temperatures
     T_surface = []
     x_surface = []
+
+    # option to simplify finding surface temp:
+    snap_target_depths = True
 
     for j in range(N_output_steps):
 
@@ -1689,7 +1737,17 @@ if __name__ == "__main__":
             T_surface_i = Tzs[surface_ind][j]
             x_coords_i = xzs[surface_ind]
 
+        elif snap_target_depths is True:
+            diff = target_depths - surface_elev
+            surface_ind = np.argmin(diff)
+            T_surface_i = Tzs[surface_ind][j]
+            x_coords_i = xzs[surface_ind]
+
         else:
+            # interpolating surface temperature or AHe ages is very buggy, raising an error for now
+            msg = 'error, cannot find the surface for calculating surface temperature over time'
+            msg += 'trying to find elevation %0.0f in list target_depths: %s' % (surface_elev, target_depths)
+            raise IndexError(msg)
             # interpolate AHe age from nearest surfaces
             diff = target_depths - surface_elev
             ind_low = np.where(diff < 0)[0][-1]
@@ -1702,7 +1760,7 @@ if __name__ == "__main__":
                            + fraction * Tzs[ind_high][j])
 
             x_coords_i = (1.0-fraction) * xzs[ind_low] \
-                         + fraction * xzs[ind_high]
+                          + fraction * xzs[ind_high]
 
         T_surface.append(T_surface_i)
         x_surface.append(x_coords_i)
@@ -1723,8 +1781,19 @@ if __name__ == "__main__":
                 ages_raw = AHe_ages_cropped[surface_ind][i]
                 ages_raw_corr = AHe_ages_corr_cropped[surface_ind][i]
                 x_coords = xzs[surface_ind]
+            elif snap_target_depths is True:
+                diff = target_depths - surface_elev
+                surface_ind = np.argmin(diff)
+                ages_raw = AHe_ages_cropped[surface_ind][i]
+                ages_raw_corr = AHe_ages_corr_cropped[surface_ind][i]
+                x_coords = xzs[surface_ind]
 
             else:
+                # interpolating surface temperature or AHe ages is very buggy, raising an error for now
+                msg = 'error, cannot find the surface for calculating surface temperature over time'
+                msg += 'trying to find elevation %0.0f in list target_depths: %s' % (surface_elev, target_depths)
+                raise IndexError(msg)
+
                 # interpolate AHe age from nearest surfaces
                 diff = target_depths - surface_elev
                 ind_low = np.where(diff < 0)[0][-1]
@@ -1754,6 +1823,7 @@ if __name__ == "__main__":
 
         # add surface AHe data to output
         AHe_ages_samples_surface = []
+        AHe_ages_samples_surface_corr = []
 
         for i in range(N_output_steps):
             surface_elev = surface_levels[i]
@@ -1761,7 +1831,14 @@ if __name__ == "__main__":
             if surface_elev in target_depths:
                 surface_ind = np.where(target_depths == surface_elev)[0][0]
                 ages_raw = AHe_ages_samples_cropped[surface_ind][i]
+                ages_raw_corr = AHe_ages_samples_cropped_corr[surface_ind][i]
+
                 #x_coords = xzs[surface_ind]
+            elif snap_target_depths is True:
+                diff = target_depths - surface_elev
+                surface_ind = np.argmin(diff)
+                ages_raw = AHe_ages_samples_cropped[surface_ind][i]
+                ages_raw_corr = AHe_ages_samples_cropped_corr[surface_ind][i]
 
             else:
                 # interpolate AHe age from nearest surfaces
@@ -1777,9 +1854,11 @@ if __name__ == "__main__":
 
             # add surface AHe data to output
             AHe_ages_samples_surface.append(ages_raw)
+            AHe_ages_samples_surface_corr.append(ages_raw_corr)
 
     else:
         AHe_ages_samples_surface = None
+        AHe_ages_samples_surface_corr = None
 
     if mp.model_AHe_samples is True:
 
@@ -1788,9 +1867,9 @@ if __name__ == "__main__":
     else:
         AHe_data_file = None
 
-
     output_selected = \
         [runtimes, runtimes[output_steps], xyz_array, surface_levels,
+         mp.fault_xs[0], mp.fault_bottoms[0],
          T_init_array,
          T_array[output_steps], boiling_temp_array[output_steps],
          xyz_array_exc, exceed_boiling_temp_array[output_steps],
@@ -1800,7 +1879,10 @@ if __name__ == "__main__":
          xzs, Tzs_cropped, x_surface, T_surface,
          AHe_ages_cropped, AHe_ages_corr_cropped, xs_Ahe_all, target_depths,
          AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
-         AHe_ages_samples_surface, AHe_data_file]
+         AHe_ages_samples_surface, AHe_ages_samples_surface_corr, AHe_data_file]
+
+#             borehole_xlocs, borehole_zlocs, borehole_depths,
+#             borehole_temp_measured, borehole_temps_modeled
 
     #output_folder = os.path.join(folder, 'model_output')
     output_folder = os.path.join(scriptdir, mp.output_folder)

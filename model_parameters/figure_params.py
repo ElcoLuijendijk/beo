@@ -47,6 +47,9 @@ show_vapour = True
 # marker size and color for AHe data:
 marker_size = 4
 AHe_color = 'blue'
+#AHe_color = 'None'
+show_AHe_data = False
+
 
 # add a legend or not
 add_legend = True

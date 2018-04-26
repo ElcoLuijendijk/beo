@@ -1,15 +1,18 @@
-__author__ = 'elco'
+__author__ = 'Elco Luijendijk'
 
 """
 simple 2D model of advective heat flow
 
-Elco Luijendijk, Goettingen University, 2015
+Elco Luijendijk, Goettingen University, 2015-2017
 
 """
 
 ###############
 # load modules
 ###############
+
+import matplotlib
+matplotlib.use('Agg')
 
 import os
 import pickle
@@ -121,20 +124,47 @@ for fn in files:
         else:
             print 'reading output data, new version of code with corrected ' \
                   'AHe data'
-            [runtimes_all, runtimes, xyz_array, surface_levels,
-             x_loc_fault, z_loc_fault,
+            [runtimes_all, runtimes, xyz_array,
+             surface_levels, x_loc_fault, z_loc_fault,
              T_init_array, T_array, boiling_temp_array,
-             xyz_array_exc, exceed_boiling_temp_array,
-             xyz_element_array,
-             qh_array, qv_array,
-             fault_fluxes, durations,
-             xzs, Tzs, x_surface, T_surface,
+             xyz_array_exc, exceed_boiling_temp_array, xyz_element_array,
+             qh_array, qv_array, fault_fluxes,
+             durations, xzs, Tzs,
+             x_surface, T_surface,
              Ahe_ages_all, Ahe_ages_all_corr, xs_Ahe_all, Ahe_depths,
              AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
              AHe_ages_samples_surface, AHe_ages_samples_surface_corr, AHe_data_file,
-             borehole_xlocs, borehole_zlocs,
-             borehole_depths, borehole_temp_measured, borehole_temps_modeled] \
+             borehole_xlocs, borehole_zlocs, borehole_depths,
+             borehole_temp_measured, borehole_temps_modeled] \
                 = output_data
+
+#4            [runtimes, runtimes[output_steps], xyz_array, surface_levels,
+#1             T_init_array,
+#2             T_array[output_steps], boiling_temp_array[output_steps],
+#2             xyz_array_exc, exceed_boiling_temp_array[output_steps],
+#1             xyz_element_array,
+#2             qh_array[output_steps], qv_array[output_steps],
+#2             fault_fluxes, durations,
+#4             xzs, Tzs_cropped, x_surface, T_surface,
+#4             AHe_ages_cropped, AHe_ages_corr_cropped, xs_Ahe_all, target_depths,
+#3             AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
+#2             AHe_ages_samples_surface, AHe_data_file]
+
+        # 3  runtimes, runtimes[output_steps], xyz_array,
+        # 1 surface_levels[output_steps],
+        # 2 x_loc_fault, z_loc_fault,
+        # 1 T_init_array,
+        # 2 T_array, boiling_temp_array[output_steps],
+        # 2 xyz_array_exc, exceed_boiling_temp_array[output_steps],
+        # 1 xyz_element_array,
+        # 2 qh_array[output_steps], qv_array[output_steps],
+        # 2 fault_fluxes, durations,
+        # 4 xzs, Tzs_cropped, x_surface, T_surface,
+        # 4 AHe_ages_cropped, AHe_ages_corr_cropped, xs_Ahe_all, target_depths,
+        # 3 AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
+        # 3 AHe_ages_samples_surface, AHe_ages_samples_surface_corr, AHe_data_file,
+        # 2 borehole_xlocs, borehole_zlocs,
+        # 3 borehole_depths, borehole_temp_measured, borehole_temps_modeled]
 
     except ValueError:
         msg = 'error, could not read file %s' % fn
@@ -192,7 +222,6 @@ for fn in files:
             panels = [fig.add_subplot(gs[1, i]) for i in range(ncols)]
             tpanels = [fig.add_subplot(gs[0, i]) for i in range(ncols)]
 
-
         gs.update(wspace=0.05, hspace=0.2)
 
         if Ahe_ages_all is not None:
@@ -243,7 +272,7 @@ for fn in files:
             for p in panels:
                 p.scatter(xyz_array[:, 0], xyz_array[:, 1], s=0.25, color='black')
 
-        for p, qhi, qvi in zip(panels, qh_array, qv_array):
+        for p, qhi, qvi in zip(panels, qh_array[fp.timeslices], qv_array[fp.timeslices]):
             print 'adding arrows'
             #xq, yq, qhg = interpolate_data(xyz_element_array[::fp.skip_arrows],
             #                               qhi[::fp.skip_arrows] * year,
@@ -254,7 +283,7 @@ for fn in files:
 
             # set arrow scale
             #va = (qhg ** 2 + qvg ** 2) ** 0.5
-            va = ((qhi*year)**2 + (qvi*year)**2) ** 0.5
+            va = ((qhi * year)**2 + (qvi * year)**2) ** 0.5
             scale = np.abs(va).max() * fp.scale_multiplier
             print 'quiver scale = %0.2e' % scale
 
@@ -342,21 +371,22 @@ for fn in files:
 
                 AHe_data_file = AHe_data_file[AHe_data_file['profile'] == profile_no]
 
-            xr = AHe_data_file['distance_to_fault'].values
-            y = AHe_data_file['AHe_age_corr'].values
-            yerr = AHe_data_file['AHe_age_corr_2se'].values
+            if fp.show_AHe_data is True:
+                xr = AHe_data_file['distance_to_fault'].values
+                y = AHe_data_file['AHe_age_corr'].values
+                yerr = AHe_data_file['AHe_age_corr_2se'].values
 
-            for rp, timeslice in zip(rpanels, fp.timeslices):
-                x = x_loc_fault[timeslice] + xr
-                leg_ahe_samples = rp.errorbar(x, y, yerr=yerr,
-                                              marker='o',
-                                              ms=fp.marker_size,
-                                              markeredgecolor='black',
-                                              color=fp.AHe_color,
-                                              linestyle='None')
+                for rp, timeslice in zip(rpanels, fp.timeslices):
+                    x = x_loc_fault[timeslice] + xr
+                    leg_ahe_samples = rp.errorbar(x, y, yerr=yerr,
+                                                  marker='o',
+                                                  ms=fp.marker_size,
+                                                  markeredgecolor='black',
+                                                  color=fp.AHe_color,
+                                                  linestyle='None')
 
-            legs.append(leg_ahe_samples)
-            labels.append('measured AHe ages')
+                legs.append(leg_ahe_samples)
+                labels.append('measured AHe ages')
 
         if fp.add_temperature_panel is True:
 
