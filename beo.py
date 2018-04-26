@@ -333,7 +333,7 @@ for model_run, param_set in enumerate(param_list):
 
     for j in range(n_ts):
         z_surface = surface_levels[output_steps[j]]
-        surface_ind = np.where(z_flt < z_surface)[0][0]
+        surface_ind = np.where(z_flt <= z_surface)[0][0]
         x_flt_step = x_flt[surface_ind]
         x_loc_fault[j] = x_flt_step
         z_loc_fault[j] = z_flt[surface_ind]
@@ -620,7 +620,7 @@ for model_run, param_set in enumerate(param_list):
         AHe_ages_samples_surface = []
         AHe_ages_samples_surface_corr = []
 
-        if mp.calculate_he_ages and mp.model_AHe_samples is True:
+        if Ahe_ages_all is not None and mp.calculate_he_ages and mp.model_AHe_samples is True:
 
             for i in range(N_output_steps):
                 surface_elev = surface_levels[output_steps[i]]
@@ -654,7 +654,7 @@ for model_run, param_set in enumerate(param_list):
                 AHe_ages_samples_surface_corr.append(ages_raw_corr)
 
     # analyze model-data fit of AHe surface samples
-    if mp.model_AHe_samples is True:
+    if Ahe_ages_all is not None and mp.model_AHe_samples is True:
 
         print 'analyzing fit of modeled and measured AHe ages'
 
@@ -746,7 +746,7 @@ for model_run, param_set in enumerate(param_list):
         print 'saving modeled temperatures for boreholes to %s' % fn_new
         dft.to_csv(os.path.join(output_folder, fn_new))
 
-    if mp.save_AHe_ages is True and AHe_ages_surface_all != []:
+    if Ahe_ages_all is not None and mp.save_AHe_ages is True and AHe_ages_surface_all != []:
 
         nxs = np.max(np.array([AHe_ii.shape[0]
                                for AHe_i in AHe_ages_surface_all
@@ -789,7 +789,7 @@ for model_run, param_set in enumerate(param_list):
         print 'saving modeled AHe ages at the surface to %s' % fnh
         dfh.to_csv(os.path.join(output_folder, fnh), index_label='row')
 
-    if mp.model_AHe_samples is True:
+    if Ahe_ages_all is not None and mp.model_AHe_samples is True:
 
         # save AHe ages
         for timestep in range(N_output):

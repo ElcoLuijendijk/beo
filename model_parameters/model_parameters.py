@@ -62,9 +62,12 @@ class ModelParams:
     use_mesh_with_buffer = False
     fault_buffer_zone = 25.0
 
-    # exhumation parameters
+    ## exhumation parameters
+    # add exhumation or not
+    add_exhumation = False
+
     # exhumation rate in m/yr
-    exhumation_rate = 1e-3
+    exhumation_rate = 0.0
 
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
@@ -146,17 +149,17 @@ class ModelParams:
     dt = 1000.0 * year
 
     # duration of each timestep_slice
-    durations = [5e4 * year]
+    durations = [5e3 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
     # set equal to each exhumation step layer
     # in this way one can track the AHe response to each layer that
     # comes to the surface in a longer time period
-    target_zs = [10.0, 5.0, 0.0]
+    target_zs = [0.0]
 
     # U-Th/He params
-    calculate_he_ages = True
+    calculate_he_ages = False
 
     # model-data comparison AHe samples
     model_AHe_samples = True

@@ -1006,56 +1006,66 @@ def model_run(mp):
     # construct rectangular mesh
     ############################
     print 'constructing mesh'
-    #mesh = fl.Rectangle(l0=width, l1=height, n0=nx, n1=ny)
 
     z_surface = 0
     z_base = -mp.total_depth
-    #mesh = setup_mesh(mp.width, mp.fault_xs[0], mp.fault_widths[0],
-    #                  mp.fault_angles[0], mp.air_height,
-    #                  z_surface, mp.z_fine, z_base, mp.cellsize,
-   #                   mp.cellsize_air, mp.cellsize_fault,
-    #                  mp.cellsize_fine, mp.cellsize_base)
 
-    exhumed_thickness = mp.exhumation_rate * (np.sum(np.array(mp.durations)) / mp.year)
-    exhumation_steps = mp.exhumation_steps
+    if mp.add_exhumation is False:
+        print 'construct static mesh without exhumation'
+        mesh = setup_mesh(mp.width, mp.fault_xs[0], mp.fault_widths[0],
+                          mp.fault_angles[0], mp.air_height,
+                          z_surface, mp.z_fine, z_base, mp.cellsize,
+                          mp.cellsize_air, mp.cellsize_fault,
+                          mp.cellsize_fine, mp.cellsize_base)
 
-    min_layer_thickness = mp.min_layer_thickness
-    if exhumed_thickness / exhumation_steps < min_layer_thickness:
-        print 'warning, exhumation levels would be smaller than %0.2f m' % min_layer_thickness
-        exhumation_steps = int(np.ceil(exhumed_thickness) / min_layer_thickness)
-        if exhumation_steps < 1:
-            exhumation_steps = 1
+        x_flt = np.ones(len(mp.target_zs)) * mp.fault_xs[0]
+        z_flt = np.zeros(len(mp.target_zs))
 
-        print 'reducing exhumation steps to %i' % exhumation_steps
+        exhumed_thickness = 0
+        elevation_top = z_surface + exhumed_thickness + mp.air_height
 
-    if exhumed_thickness != 0:
-        # track AHe and temperature in each exhumed layer in the model domain:
-        mp.target_zs = np.linspace(0, exhumed_thickness, exhumation_steps + 1)
+    elif mp.add_exhumation is True:
+        print 'construct dynamic mesh with exhumation'
+        exhumed_thickness = mp.exhumation_rate * (np.sum(np.array(mp.durations)) / mp.year)
+        exhumation_steps = mp.exhumation_steps
 
-    elevation_top = z_surface + exhumed_thickness + mp.air_height
+        min_layer_thickness = mp.min_layer_thickness
+        if exhumed_thickness / exhumation_steps < min_layer_thickness:
+            print 'warning, exhumation levels would be smaller than %0.2f m' % min_layer_thickness
+            exhumation_steps = int(np.ceil(exhumed_thickness) / min_layer_thickness)
+            if exhumation_steps < 1:
+                exhumation_steps = 1
 
-    if mp.use_mesh_with_buffer is False:
-        mesh, x_flt, z_flt = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0],
-                                             mp.fault_widths[0],
-                                             mp.fault_angles[0], elevation_top,
-                                             z_surface + exhumed_thickness, z_surface,
-                                             exhumation_steps,
-                                             mp.z_fine, z_base, mp.cellsize,
-                                             mp.cellsize_air, mp.cellsize_surface, mp.cellsize_fault,
-                                             mp.cellsize_fine, mp.cellsize_base)
-                                             #,mp.fault_widths)
+            print 'reducing exhumation steps to %i' % exhumation_steps
 
-    else:
-        print 'use mesh with a buffer zone with small cell sizes around faults'
-        mesh = setup_mesh_with_exhumation_v2(mp.width, mp.fault_xs[0],
-                                             mp.fault_widths[0],
-                                             mp.fault_angles[0], elevation_top,
-                                             z_surface + exhumed_thickness, z_surface,
-                                             exhumation_steps,
-                                             mp.z_fine, z_base, mp.cellsize,
-                                             mp.cellsize_air, mp.cellsize_fault,
-                                             mp.cellsize_fine, mp.cellsize_base,
-                                             mp.fault_buffer_zone)
+        if exhumed_thickness != 0:
+            # track AHe and temperature in each exhumed layer in the model domain:
+            mp.target_zs = np.linspace(0, exhumed_thickness, exhumation_steps + 1)
+
+        elevation_top = z_surface + exhumed_thickness + mp.air_height
+
+        if mp.use_mesh_with_buffer is False:
+            mesh, x_flt, z_flt = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0],
+                                                 mp.fault_widths[0],
+                                                 mp.fault_angles[0], elevation_top,
+                                                 z_surface + exhumed_thickness, z_surface,
+                                                 exhumation_steps,
+                                                 mp.z_fine, z_base, mp.cellsize,
+                                                 mp.cellsize_air, mp.cellsize_surface, mp.cellsize_fault,
+                                                 mp.cellsize_fine, mp.cellsize_base)
+                                                 #,mp.fault_widths)
+
+        else:
+            print 'use mesh with a buffer zone with small cell sizes around faults'
+            mesh = setup_mesh_with_exhumation_v2(mp.width, mp.fault_xs[0],
+                                                 mp.fault_widths[0],
+                                                 mp.fault_angles[0], elevation_top,
+                                                 z_surface + exhumed_thickness, z_surface,
+                                                 exhumation_steps,
+                                                 mp.z_fine, z_base, mp.cellsize,
+                                                 mp.cellsize_air, mp.cellsize_fault,
+                                                 mp.cellsize_fine, mp.cellsize_base,
+                                                 mp.fault_buffer_zone)
 
     ###############################################################
     # convert input params to escript variables
