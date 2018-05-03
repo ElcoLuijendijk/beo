@@ -162,12 +162,12 @@ class ModelParams:
     calculate_he_ages = False
 
     # model-data comparison AHe samples
-    model_AHe_samples = True
-    AHe_data_file = 'model_parameters/AHe_data_test.csv'
+    model_AHe_samples = False
+    AHe_data_file = 'model_parameters/AHe_data.csv'
     profile_number = 1
 
     #save the AHe ages at the surface to a separate file
-    save_AHe_ages = True
+    save_AHe_ages = False
 
     # method to calculate helium diffusivity, use Wolf1996, Farley2000 or RDAAM
     AHe_method = 'Farley2000'

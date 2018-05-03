@@ -17,27 +17,27 @@ figure_resolution = 150
 fig_format = 'png'
 
 # limits of x and y axis of figure
-xlim = [3500, 5500]
-ylim = [-2000, 100]
+xlim = [4800, 5200]
+ylim = [-300, 100]
 
 # add an extra panel on the right with the modeled temperatures
-add_temperature_panel = True
+add_temperature_panel = False
 relative_size_temp_panel = 0.5
 
 # grid size for interpolating model results
-dx = 10.0
-dy = 10.0
+dx = 5.0
+dy = 2.0
 
 # timeslices to show
 # timeslices = [0] make a figure of the first timestep
 # timeslices = [-1] make a figure of the last timestep
-timeslices = [5, 10, -1]
+timeslices = [1, -1]
 
-# scale for flow arrows, usually 5 is a good value
-scale_multiplier = 5.0
+# scale for flow arrows, usually 5 is a good value, note higher value is smaller arrows (!)
+scale_multiplier = 15.0
 
 # show only one in every x flow arrows:
-skip_arrows = 40
+skip_arrows = 5
 
 arrow_transparency = 0.75
 
@@ -48,7 +48,7 @@ show_vapour = True
 marker_size = 4
 AHe_color = 'blue'
 #AHe_color = 'None'
-show_AHe_data = False
+show_AHe_data = True
 
 
 # add a legend or not
@@ -74,7 +74,8 @@ show_mesh = False
 linestyles = ['-', '-', '-', '-']
 
 # colors for the modeled surface/borehole temperature
-colors = ['green', 'orange', 'red', 'yellow']
+#colors = ['green', 'orange', 'red', 'yellow']
+colors = ['black', 'black', 'black', 'black']
 
 # colors for the temperature contours:
 cmap = matplotlib.cm.get_cmap('coolwarm')
