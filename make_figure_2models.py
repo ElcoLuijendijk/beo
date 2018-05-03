@@ -3,7 +3,7 @@ __author__ = 'elco'
 """
 simple 2D model of advective heat flow
 
-Elco Luijendijk, Goettingen University, 2015
+Elco Luijendijk, Goettingen University, 2018
 
 """
 
@@ -18,6 +18,7 @@ import itertools
 import numpy as np
 import matplotlib.pyplot as pl
 import matplotlib.mlab
+import matplotlib.cm
 
 import useful_functions
 
@@ -51,38 +52,58 @@ def simpleaxis(ax, removeh=True):
     return
 
 
+# some constants:
 degree_symbol = unichr(176)
 day = 24.0 * 60.0 * 60.0
 year = 365.25 * day
 My = year * 1e6
 
+
+######################################################
+# figure parameters, change these to adjust the figure
+######################################################
+
+# show temperature difference compared to initial model run without advection/fluid flow:
+# if False: sshow temperatures
+show_temperature_difference = True
+
+# interval between temperature contours
 cnt_int = 10.0
 
+# colormap to use for temperature contours:
+cmap = matplotlib.cm.coolwarm
+
+# resolution of temperature raster
 dx = 10.0
 dy = 10.0
 
-# add extra row with zoom-in of model results
+# add optional extra row with zoom-in of model results
 add_zoom_panel = False
 
 # extent for zoom panel
 xlim = [1500, 3500]
 ylim = [-2000, 100]
 
-# timesteps to select for output
-#timeslices = [2, 20, 100]
-timeslices = [0]
+# timesteps to select for output. -1 denotes the last timestep
+timeslices = [-1]
 
-# input files
-files = ['model_output/T_field_model_run_14_(-3000.0, 0.03).pck',
-         'model_output/T_field_model_run_32_(-6000.0, 0.03).pck']
+# beo output files
+files = ['model_output/results_model_run_0_[[-4000.0]]_beowawe_26-4-2018.pck',
+         'model_output/results_model_run_0_[[-4000.0]]_beowawe_26-4-2018.pck']
 
+# labels for each panel
 labels = ['flow path depth = 3000 m',
           'flow path depth = 6000 m',
           ]
 
+# size of figure in inches:
 xsize = 8
 golden_ratio = (1.0 + np.sqrt(5))/2.0
 ysize = xsize / golden_ratio
+
+################
+# start of code
+################
 if add_zoom_panel is True:
     ysize = xsize
 
@@ -125,13 +146,31 @@ for i, panel, tpanel, zpanel, fn in zip(itertools.count(), panels, tpanels,
 
     #fn = 'model_output/T_field_duration_500.pck'
     print 'loading data from %s' % fn
-    fin = open(fn, 'r')
+    try:
+        fin = open(fn, 'r')
+    except IOError, msg:
+        print 'error, cannot read input files. Adjust line containing files = above ' \
+              'to point to two beo .pck output files'
+        raise IOError(msg)
+
     output_data = pickle.load(fin)
     fin.close()
 
-    [runtimes, xyz_array, T_steady, T_array, xyz_element_array,
-     qh_array, qv_array,
-     fault_fluxes, durations, xzs, Tzs, AHe_data] = output_data
+   # [runtimes, xyz_array, T_steady, T_array, xyz_element_array,
+   #  qh_array, qv_array,
+   #  fault_fluxes, durations, xzs, Tzs, AHe_data] = output_data
+    [runtimes_all, runtimes, xyz_array,
+     surface_levels, x_loc_fault, z_loc_fault,
+     T_init_array, T_array, boiling_temp_array,
+     xyz_array_exc, exceed_boiling_temp_array, xyz_element_array,
+     qh_array, qv_array, fault_fluxes,
+     durations, xzs, Tzs,
+     x_surface, T_surface,
+     Ahe_ages_all, Ahe_ages_all_corr, xs_Ahe_all, Ahe_depths,
+     AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
+     AHe_ages_samples_surface, AHe_ages_samples_surface_corr, AHe_data_file,
+     borehole_xlocs, borehole_zlocs, borehole_depths,
+     borehole_temp_measured, borehole_temps_modeled] = output_data
 
     timeslice = -1
     print 'making a figure of model run %s' % fn
@@ -145,18 +184,27 @@ for i, panel, tpanel, zpanel, fn in zip(itertools.count(), panels, tpanels,
 
     # temperature field contours and values:
     T_slice = T_array[timeslice]
-    Ta = T_slice - T_steady
+
+    if show_temperature_difference is True:
+        Ta = T_slice - T_init_array
+    else:
+        Ta = T_slice
 
     vmin = Ta.min()
     vmax = Ta.max()
 
     xg, yg, zg = interpolate_data(xyz_array, Ta, dx, dy)
-    cnts = np.arange(vmin, vmax+cnt_int, cnt_int)
-    leg_cn = panel.contourf(xg, yg, zg, cnts)
+
+    if show_temperature_difference is True:
+        vminp = 0 - cnt_int / 2.0
+    else:
+        vminp = np.floor(vmin / cnt_int) * cnt_int
+
+    cnts = np.arange(vminp, vmax+cnt_int, cnt_int)
+    leg_cn = panel.contourf(xg, yg, zg, cnts, cmap=cmap)
 
     if add_zoom_panel is True:
         leg_cn = zpanel.contourf(xg, yg, zg, cnts)
-
 
     print 'adding arrows'
     qhi = qh_array[timeslice]
@@ -233,6 +281,7 @@ for p, tp, zp in zip(panels[1:], tpanels[1:], zpanels[1:]):
         zp.set_yticklabels([])
 
 for tp in tpanels[:]:
+    tp.set_xlim(0, xyz_array[:, 0].max())
     tp.set_xticklabels([])
     tp.set_ylim(0, Tzs[0].max() * 1.1)
     tp.yaxis.grid(True)
