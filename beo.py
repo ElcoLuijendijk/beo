@@ -352,6 +352,11 @@ for model_run, param_set in enumerate(param_list):
                                                        mp.borehole_names,
                                                        mp.borehole_xs):
 
+            if borehole not in dft['borehole']:
+                msg = 'error, could not find borehole %s in the borehole temperature data file %s' \
+                      % (borehole, mp.temperature_file)
+                raise IndexError(msg)
+
             ind = dft['borehole'] == borehole
             dfti = dft.loc[ind]
 
