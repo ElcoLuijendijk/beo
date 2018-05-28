@@ -83,14 +83,18 @@ files.sort(key=os.path.getmtime)
 files = files[::-1]
 
 print 'output files, from newest to oldest:'
-for i, file in enumerate(files):
-    print i, file
+for i, fn in enumerate(files):
+    print i, fn
 
-print 'enter a number to select a file, ' \
+print 'enter a number to select a file, two numbers separated by - for a series of figures, ' \
       'or press enter to make a figure of all files'
 
 a = raw_input()
-if a != '':
+
+if '-' in a:
+    b = a.split('-')
+    files = [files[i] for i in range(int(b[0]), int(b[1]) + 1)]
+elif a != '':
     files = [files[int(a)]]
 
 
@@ -414,14 +418,17 @@ for fn in files:
 
             p.yaxis.grid(True)
 
-            if fp.xlim[0] > xmin:
-                xmin = fp.xlim[0]
-            if fp.xlim[1] < xmax:
-                xmax = fp.xlim[1]
-            if fp.ylim[0] > ymin:
-                ymin = fp.ylim[0]
-            if fp.ylim[1] < ymax:
-                ymax = fp.ylim[1]
+            if fp.xlim is not None:
+                if fp.xlim[0] > xmin:
+                    xmin = fp.xlim[0]
+                if fp.xlim[1] < xmax:
+                    xmax = fp.xlim[1]
+
+            if fp.ylim is not None:
+                if fp.ylim[0] > ymin:
+                    ymin = fp.ylim[0]
+                if fp.ylim[1] < ymax:
+                    ymax = fp.ylim[1]
 
             p.set_xlim(xmin, xmax)
             p.set_ylim(ymin, ymax)

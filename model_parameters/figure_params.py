@@ -16,9 +16,11 @@ figure_resolution = 150
 # figure format, png, jpg, svg, eps, etc..
 fig_format = 'png'
 
-# limits of x and y axis of figure
-xlim = [4800, 5200]
-ylim = [-300, 100]
+# limits of x and y axis of figure, set xlim = None and ylim = None to show the entire model domain
+xlim = None
+ylim = None
+#xlim = [4800, 5200]
+#ylim = [-300, 100]
 
 # add an extra panel on the right with the modeled temperatures
 add_temperature_panel = False

@@ -129,10 +129,14 @@ def calculate_fault_x(z_flt, fault_angle, x_flt_surface):
 
 def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
                z_surface, z_fine, z_base, cellsize,
-               cellsize_air, cellsize_fault, cellsize_fine, cellsize_base):
+               cellsize_air, cellsize_fault, cellsize_fine, cellsize_base,
+               x_left=0, check_x_bnds=False):
 
     """
     create a mesh for the model of the bewowawe hydrothermal system
+
+    new version, width denotes the extent of the model domain on
+    either side of the fault
     """
 
     ###############################
@@ -144,14 +148,31 @@ def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
     z_flt = np.array([z_surface, z_fine, z_base])
     x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
 
+
+    if check_x_bnds is True:
+        if np.min(x_flt) <= x_left:
+            print 'warning the left hand side of the fault is at %0.2f, ' \
+                  'which is outside the model domain boundary at x=%0.2f' % (np.min(x_flt), x_left)
+            x_left = np.min(x_flt) - fault_width * 2
+            print 'relocating left hand boundary to %0.2f ' % x_left
+
+        if np.max(x_flt) >= width:
+            print 'warning the right hand side of the fault is at %0.2f, ' \
+                  'which is outside the model domain boundary at x=%0.2f' % (np.max(x_flt), width)
+            width = np.max(x_flt) + fault_width * 2
+            print 'relocating right hand boundary to %0.2f ' % width
+
     print 'fault locations in mesh:'
     for x, z in zip(x_flt, z_flt):
         print x, z
 
-    xys = [[0, z_air], [width, z_air],
-           [0, z_surface], [x_flt[0], z_surface], [x_flt[0] + fault_width, z_surface], [width, z_surface],
-           [0, z_fine], [x_flt[1], z_fine], [x_flt[1] + fault_width, z_fine], [width, z_fine],
-           [0, z_base], [x_flt[2], z_base], [x_flt[2] + fault_width, z_base], [width, z_base]]
+    x_left_bnd = np.min(x_flt) - width
+    x_right_bnd = np.max(x_flt) + width
+
+    xys = [[x_left_bnd, z_air], [x_right_bnd, z_air],
+           [x_left_bnd, z_surface], [x_flt[0], z_surface], [x_flt[0] + fault_width, z_surface], [x_right_bnd, z_surface],
+           [x_left_bnd, z_fine], [x_flt[1], z_fine], [x_flt[1] + fault_width, z_fine], [x_right_bnd, z_fine],
+           [x_left_bnd, z_base], [x_flt[2], z_base], [x_flt[2] + fault_width, z_base], [x_right_bnd, z_base]]
 
     #points = create_points(xs,zs)
     points = [pc.Point(x, z) for x, z in xys]
@@ -249,10 +270,14 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
                                z_surface_steps,
                                z_fine, z_base, cellsize,
                                cellsize_air, cellsize_surface, cellsize_fault,
-                               cellsize_fine, cellsize_base):
+                               cellsize_fine, cellsize_base,
+                               x_left=0):
 
     """
     Create a mesh for the model of the beowawe hydrothermal system, including exhumation
+
+    new version, fault at surface is at x=0 by definition, width denotes the width of the model domain on
+    either side of the fault
     """
 
     ###############################
@@ -270,12 +295,27 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
     for x, z in zip(x_flt, z_flt):
         print x, z
 
+    check_x_bnds = False
+    if check_x_bnds is True:
+        if np.min(x_flt) <= x_left:
+            print 'warning the left hand side of the fault is at %0.2f, ' \
+                  'which is outside the model domain boundary at x=%0.2f' % (np.min(x_flt), x_left)
+            x_left = np.min(x_flt) - fault_width * 2
+            print 'relocating left hand boundary to %0.2f ' % x_left
+
+        if np.max(x_flt) >= width:
+            print 'warning the right hand side of the fault is at %0.2f, ' \
+                  'which is outside the model domain boundary at x=%0.2f' % (np.max(x_flt), width)
+            width = np.max(x_flt) + fault_width * 2
+            print 'relocating right hand boundary to %0.2f ' % width
+
+
     #xys = [[0, z_air], [width, z_air],
     #       [0, z_surface], [x_flt[0], z_surface], [x_flt[0] + fault_width, z_surface], [width, z_surface],
     #       [0, z_fine], [x_flt[1], z_fine], [x_flt[1] + fault_width, z_fine], [width, z_fine],
     #       [0, z_base], [x_flt[2], z_base], [x_flt[2] + fault_width, z_base], [width, z_base]]
 
-    xys = [[[0, z_air], [width, z_air]]]
+    xys = [[[x_left, z_air], [width, z_air]]]
 
     for xf, zf in zip(x_flt, z_flt):
         xys.append([[0, zf],
@@ -815,7 +855,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         # solve transient heat flux
         for t in range(nt):
 
-            if t / 10 == t / 10.0:
+            if int(t / 10) == float(t / 10.0) or t == nt - 1:
 
                 end = time.time()
                 comptime = end - start
@@ -823,7 +863,6 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 start = end
 
                 # find closest nodes to the actual surface level
-
                 try:
                     surface_level_mesh_id = np.where(target_depths <= surface_level)[0][-1]
                     surface_level_mesh = target_depths[surface_level_mesh_id]
@@ -832,7 +871,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                     print '\twarning could not find land surface nodes'
 
                 land_surface = es.whereZero(xyz[1] - surface_level_mesh)
-                print 'step %i of %i' % (t, nt)
+                print 'step %i of %i' % (t + 1, nt)
                 print '\tcomputational time for one timestep = %0.3f sec' \
                       % (comptime / 10.0)
                 print '\tactual surface level ', surface_level

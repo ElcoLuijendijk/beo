@@ -26,13 +26,13 @@ class ModelParams:
     # steady state or transient model
     # note that regardless of this setting, the initial condition of transient model is
     # the steady-state solution without any advection
-    steady_state = False
+    steady_state = True
 
     # keep the temperature below the max T in the vapour pressure curve
     vapour_correction = True
 
     # model dimensions
-    width = 10000.0
+    width = 4000.0
     total_depth = 8000.0
     air_height = 40.0
 
@@ -226,7 +226,7 @@ class ModelParams:
     # [[[fault1_segment1_t1, fault1_segment2_t1], [fault2_segment1_t1, fault2_segment2_t1], etc...]
     # note units are m2/sec, ie the integrated flux over the entire width of the
     # fault zone
-    fault_fluxes = [[[-300.0 / year]]]
+    fault_fluxes = [[[-100.0 / year]]]
 
     # aquifers, used for modeling horizontal advective flow
     # use aquifer_top = [None] to not use this:
@@ -294,8 +294,10 @@ class ParameterRanges:
     ###################################################################
 
     # fault_bottoms_s = [[-2000.0], [-2500.0], [-3000.0], [-3500.0], [-4000.0]]
-    fault_bottoms_s = [[-4000.0]]
+    #fault_bottoms_s = [[-4000.0]]
     # thermal_gradient_s = [0.04]
+
+    K_air_s = [10.0, 100.0, 200.0]
 
     # exhumation_rate_s = [1.0e-4]
 
