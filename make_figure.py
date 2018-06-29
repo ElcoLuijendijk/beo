@@ -58,6 +58,11 @@ def interpolate_data(xyz_array, Ti, dx, dy):
     return xg, yg, zg
 
 
+print '-' * 50
+print 'note, to change any options for making figures adjust the figure_params.py file in ' \
+      'the model_parameters directory'
+print '-' * 50
+
 degree_symbol = unichr(176)
 day = 24.0 * 60.0 * 60.0
 year = 365.25 * day
@@ -432,7 +437,9 @@ for fn in files:
 
             p.set_xlim(xmin, xmax)
             p.set_ylim(ymin, ymax)
-            p.set_xticks(p.get_xticks()[:-1])
+            if len(p.get_xticks()) > 3:
+                print 'reducing number of xticks'
+                #p.set_xticks(p.get_xticks()[:-1])
             p.set_xlabel('Distance (m)')
 
         for p, tp in zip(panels[1:], tpanels[1:]):
@@ -480,8 +487,9 @@ for fn in files:
             temp_panel.get_yaxis().tick_left()
             temp_panel.set_xlabel('Borehole\ntemperature (%sC)' % degree_symbol)
             temp_panel.set_yticks(temp_panel.get_yticks()[::2])
-            if ncols > 3:
-                temp_panel.set_xticks(temp_panel.get_xticks()[::2])
+            if ncols > 3 and len(temp_panel.get_xticks()) > 3:
+                print 'reducing number of xticks'
+                #temp_panel.set_xticks(temp_panel.get_xticks()[::2])
 
         for panel in panels:
             panel.set_yticks(panel.get_yticks()[::2])
@@ -494,8 +502,10 @@ for fn in files:
                 rpanel.set_yticks(rpanel.get_yticks()[::2])
 
         for panel, tpanel in zip(panels, tpanels):
-            panel.set_xticks(panel.get_xticks()[::2])
-            tpanel.set_xticks(tpanel.get_xticks()[::2])
+            if len(panel.get_xticks()) > 2:
+                print 'reducing number of xticks'
+                #panel.set_xticks(panel.get_xticks()[::2])
+                #tpanel.set_xticks(tpanel.get_xticks()[::2])
 
         tpanels[0].set_ylabel('Surface\ntemperature (%sC)' % degree_symbol)
 

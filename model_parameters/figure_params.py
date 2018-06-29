@@ -22,10 +22,10 @@ fig_format = 'png'
 height_ratios = [25, 75, 7, 3]
 
 # limits of x and y axis of figure, set xlim = None and ylim = None to show the entire model domain
-#xlim = None
-#ylim = None
-xlim = [-200, 200]
-ylim = [-300, 100]
+xlim = None
+ylim = None
+#xlim = [-200, 200]
+#ylim = [-300, 100]
 
 # add an extra panel on the right with the modeled temperatures
 add_temperature_panel = False
@@ -38,10 +38,10 @@ dy = 2.0
 # timeslices to show
 # timeslices = [0] make a figure of the first timestep
 # timeslices = [-1] make a figure of the last timestep
-timeslices = [1, -1]
+timeslices = [0, 2, -1]
 
 # scale for flow arrows, usually 5 is a good value, note higher value is smaller arrows (!)
-scale_multiplier = 15.0
+scale_multiplier = 25.0
 
 # show only one in every x flow arrows:
 skip_arrows = 5

@@ -211,7 +211,6 @@ def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
     z_flt = np.array([z_surface, z_fine, z_base])
     x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
 
-
     if check_x_bnds is True:
         if np.min(x_flt) <= x_left:
             print 'warning the left hand side of the fault is at %0.2f, ' \
@@ -314,12 +313,17 @@ def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
     d = gmsh.Design(dim=2, element_size=cellsize)
 
     d.setMeshFileName('beowawe_mesh')
-    ps1 = pc.PropertySet("bottomleft", surface_base_left)
-    ps2 = pc.PropertySet("bottommid", surface_flt_base)
-    ps3 = pc.PropertySet("bottomright", surface_base_right)
+    #ps1 = pc.PropertySet("bottomleft", surface_base_left)
+    #ps2 = pc.PropertySet("bottommid", surface_flt_base)
+    #ps3 = pc.PropertySet("bottomright", surface_base_right)
+
+    ps1 = pc.PropertySet("bottomleft", lineh8)
+    ps2 = pc.PropertySet("bottommid", lineh9)
+    ps3 = pc.PropertySet("bottomright", lineh10)
 
     d.addItems(surface_air, surface_flt_fine,
-               surface_fine_left, surface_fine_right,
+               surface_fine_left, surface_fine_right, surface_base_left,
+               surface_flt_base, surface_base_right,
                ps1, ps2, ps3)
 
     mesh = fl.MakeDomain(d, optimizeLabeling=True)
@@ -757,8 +761,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
     if specified_flux is not None:
         print 'solving with specified heat flux bnd'
-        #specified_heat_flux = specified_flux * specified_flux_loc
-        specified_heat_flux = specified_flux
+        specified_heat_flux = specified_flux * specified_flux_loc
+        #specified_heat_flux = specified_flux
 
         hf_pde.setValue(A=A, D=D,
                         r=specified_temperature,
@@ -770,6 +774,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                         r=specified_temperature,
                         q=specified_T_loc)
 
+    print 'finding solution for steady state HF'
     T_steady = hf_pde.getSolution()
     T = T_steady
 
@@ -872,8 +877,9 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         # update bnd cond if spec flux bnd
         if specified_flux is not None:
 
-            print 'adding specified flux bnd'
-            specified_heat_flux = specified_flux * specified_flux_loc * dt
+            print '\tadding specified flux bnd'
+            specified_heat_flux = -specified_flux * specified_flux_loc * dt
+            #specified_heat_flux = specified_flux * specified_flux_loc
 
             #
             hf_pde.setValue(A=A, C=C, D=D, Y=Y,
@@ -936,7 +942,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                     surface_level_mesh = target_depths[surface_level_mesh_id]
                 except:
                     surface_level_mesh = surface_level
-                    print '\twarning could not find land surface nodes'
+                    #print '\twarning could not find land surface nodes'
 
                 land_surface = es.whereZero(xyz[1] - surface_level_mesh)
                 print 'step %i of %i' % (t + 1, nt)
@@ -1054,7 +1060,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 # update bnd cond if spec flux bnd
                 if specified_flux is not None:
 
-                    print 'adding specified flux bnd'
+                    #print 'adding specified flux bnd'
                     specified_heat_flux = specified_flux * specified_flux_loc * dt
 
                     #
@@ -1098,13 +1104,21 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 exceed_max_liquid_T_old =  exceed_boiling_temp
 
             if vapour_correction is True:
-                specified_T_loc = es.wherePositive(top_bnd) \
-                                  + es.wherePositive(bottom_bnd) \
-                                  + exceed_boiling_temp
-                specified_temperature = \
-                    es.wherePositive(top_bnd) * air_temperature \
-                    + es.wherePositive(bottom_bnd) * bottom_temperature \
-                    + exceed_boiling_temp * boiling_temp
+
+                if bottom_temperature is not None:
+                    specified_T_loc = es.wherePositive(top_bnd) \
+                                      + es.wherePositive(bottom_bnd) \
+                                      + exceed_boiling_temp
+                    specified_temperature = \
+                        es.wherePositive(top_bnd) * air_temperature \
+                        + es.wherePositive(bottom_bnd) * bottom_temperature \
+                        + exceed_boiling_temp * boiling_temp
+                else:
+                    specified_T_loc = es.wherePositive(top_bnd) \
+                                      + exceed_boiling_temp
+                    specified_temperature = \
+                        es.wherePositive(top_bnd) * air_temperature \
+                        + exceed_boiling_temp * boiling_temp
 
             # solve PDE for temperature
             T = hf_pde.getSolution()
@@ -1260,15 +1274,22 @@ def model_run(mp):
         specified_flux_loc = None
         specified_flux = None
     else:
+        bottom_temperature = None
         specified_T_loc = es.wherePositive(top_bnd)
+        #specified_T_loc = es.wherePositive(top_bnd) + es.wherePositive(bottom_bnd)
         specified_T = es.wherePositive(top_bnd) * mp.air_temperature
+
         #specified_flux_loc = es.wherePositive(bottom_bnd)
         specified_flux_loc = es.Scalar(0, es.FunctionOnBoundary(mesh))
         specified_flux_loc.setTaggedValue("bottomleft", 1)
         specified_flux_loc.setTaggedValue("bottommid", 1)
         specified_flux_loc.setTaggedValue("bottomright", 1)
+
         #specified_flux = specified_flux_loc * mp.basal_heat_flux
         #specified_flux = mp.basal_heat_flux
+
+        #specified_flux_loc = None
+        #specified_flux = None
 
         specified_flux = es.Scalar(0, es.FunctionOnBoundary(mesh))
         specified_flux.setTaggedValue("bottomleft", mp.basal_heat_flux)
@@ -1312,8 +1333,6 @@ def model_run(mp):
         surface_T = mp.air_temperature + 0.5
         K_air = calculate_surface_heat_transfer_coeff(mp.rho_air, mp.c_air, mp.ra,
                                                       mp.dz, surface_T, mp.air_temperature)
-
-
     else:
         K_air = mp.K_air
     K_var = subsurface * K_b + air * K_air

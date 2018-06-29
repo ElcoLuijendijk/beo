@@ -52,7 +52,7 @@ class ModelParams:
     cellsize_fine = 100.0
 
     # in fault zone:
-    cellsize_fault = 5.0
+    cellsize_fault = 2.0
 
     # cellsize at the lower left and right corners:
     cellsize_base = 1000.0
@@ -90,12 +90,14 @@ class ModelParams:
     # temperature bnd conditions
     air_temperature = 10.0
 
-    # new version: calculate bottom T using a fixed geothermal gradient./r
-    thermal_gradient = 0.04
+    # calculate bottom T using a fixed geothermal gradient.
+    # use None is you want to use a specified basal heat flux instead
+    thermal_gradient = None
+    #thermal_gradient = 0.04
 
     # bottom flux bnd condition, set to None if T bnd is used
-    basal_heat_flux = None
-    #basal_heat_flux = 65e-3
+    #basal_heat_flux = None
+    basal_heat_flux = 100e-3
 
     # elevation of layers either side of the fault
     # structured like this:
@@ -225,7 +227,7 @@ class ModelParams:
     fault_xs = [0]
 
     # fault width (m)
-    fault_widths = [20.0]
+    fault_widths = [10.0]
 
     # angle of the fault zone (degrees), dip of normal faults ~60-70 degrees
     fault_angles = [-65.0]
