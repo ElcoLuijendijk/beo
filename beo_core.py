@@ -317,9 +317,9 @@ def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
     #ps2 = pc.PropertySet("bottommid", surface_flt_base)
     #ps3 = pc.PropertySet("bottomright", surface_base_right)
 
-    ps1 = pc.PropertySet("bottomleft", lineh8)
-    ps2 = pc.PropertySet("bottommid", lineh9)
-    ps3 = pc.PropertySet("bottomright", lineh10)
+    ps1 = pc.PropertySet("bottom", lineh8)
+    ps2 = pc.PropertySet("bottom", lineh9)
+    ps3 = pc.PropertySet("bottom", lineh10)
 
     d.addItems(surface_air, surface_flt_fine,
                surface_fine_left, surface_fine_right, surface_base_left,
@@ -364,6 +364,9 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
     for x, z in zip(x_flt, z_flt):
         print x, z
 
+    x_left_bnd = np.min(x_flt) - width
+    x_right_bnd = np.max(x_flt) + width
+
     check_x_bnds = False
     if check_x_bnds is True:
         if np.min(x_flt) <= x_left:
@@ -384,13 +387,13 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
     #       [0, z_fine], [x_flt[1], z_fine], [x_flt[1] + fault_width, z_fine], [width, z_fine],
     #       [0, z_base], [x_flt[2], z_base], [x_flt[2] + fault_width, z_base], [width, z_base]]
 
-    xys = [[[x_left, z_air], [width, z_air]]]
+    xys = [[[x_left_bnd, z_air], [x_right_bnd, z_air]]]
 
     for xf, zf in zip(x_flt, z_flt):
-        xys.append([[0, zf],
+        xys.append([[x_left_bnd, zf],
                     [xf - fault_width / 2.0, zf],
                     [xf + fault_width / 2.0 + 0.02, zf],
-                    [width, zf]])
+                    [x_right_bnd, zf]])
 
     points = []
     for xyi in xys:
@@ -457,6 +460,11 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
 
     d.addItems(*surfaces)
 
+    for hlinei in hlines[-1]:
+        ps = pc.PropertySet("bottom", hlinei)
+
+    d.addItems(ps)
+
     mesh = fl.MakeDomain(d, optimizeLabeling=True)
 
     mesh.write('mesh.fly')
@@ -501,6 +509,8 @@ def setup_mesh_with_exhumation_v2(width, x_flt_surface, fault_width, fault_angle
     for xf, zf in zip(x_flt, z_flt):
         xys.append([[0, zf], [xf - fault_buffer_zone, zf], [xf, zf], [xf + fault_width, zf],
                     [xf + fault_buffer_zone * 2, zf],  [width, zf]])
+
+    print 'xy points: ', xys
 
     points = []
     for xyi in xys:
@@ -1011,7 +1021,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 #print 'recalculating K air for surface temperature of %0.2e' % surface_T
 
                 xysa, Tsa = convert_to_array(surface * T)
-                ind_s = xysa[:, 1] == surface_level
+                xysa3, sc = convert_to_array(surface)
+                ind_s = sc == 1
                 xa1 = xysa[:, 0][ind_s]
                 Tsa1 = Tsa[ind_s]
                 a = np.argsort(xa1)
@@ -1121,8 +1132,10 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                         + exceed_boiling_temp * boiling_temp
 
             # solve PDE for temperature
+            #pdb.set_trace()
+            print '\tsolving for T'
             T = hf_pde.getSolution()
-
+            print '\tnew T ', T
             # update PDE coefficients
             if solve_as_steady_state is False:
                 Y = rho_var * c_var * T
@@ -1281,9 +1294,9 @@ def model_run(mp):
 
         #specified_flux_loc = es.wherePositive(bottom_bnd)
         specified_flux_loc = es.Scalar(0, es.FunctionOnBoundary(mesh))
-        specified_flux_loc.setTaggedValue("bottomleft", 1)
-        specified_flux_loc.setTaggedValue("bottommid", 1)
-        specified_flux_loc.setTaggedValue("bottomright", 1)
+        specified_flux_loc.setTaggedValue("bottom", 1)
+        specified_flux_loc.setTaggedValue("bottom", 1)
+        specified_flux_loc.setTaggedValue("bottom", 1)
 
         #specified_flux = specified_flux_loc * mp.basal_heat_flux
         #specified_flux = mp.basal_heat_flux
@@ -1292,9 +1305,9 @@ def model_run(mp):
         #specified_flux = None
 
         specified_flux = es.Scalar(0, es.FunctionOnBoundary(mesh))
-        specified_flux.setTaggedValue("bottomleft", mp.basal_heat_flux)
-        specified_flux.setTaggedValue("bottommid", mp.basal_heat_flux)
-        specified_flux.setTaggedValue("bottomright", mp.basal_heat_flux)
+        specified_flux.setTaggedValue("bottom", mp.basal_heat_flux)
+        specified_flux.setTaggedValue("bottom", mp.basal_heat_flux)
+        specified_flux.setTaggedValue("bottom", mp.basal_heat_flux)
 
     # populate porosity and K_solid values
     fault_x = calculate_fault_x(xyz[1], mp.fault_angles[0], mp.fault_xs[0])

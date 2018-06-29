@@ -235,31 +235,37 @@ for model_run, param_set in enumerate(param_list):
     #            df.loc[model_run, a[0]] = a[1]
 
     print 'running single model'
-    try:
+
+    bare_run = True
+    if bare_run is True:
         output = beo_core.model_run(Parameters)
-    except Exception, msg:
-        print '!' * 10
-        print 'error running model run %i' % model_run
-        print msg
-        print '!' * 10
 
-        for j in range(n_ts):
+    else:
+        try:
+            output = beo_core.model_run(Parameters)
+        except Exception, msg:
+            print '!' * 10
+            print 'error running model run %i' % model_run
+            print msg
+            print '!' * 10
 
-            output_number = model_run * n_ts + j
+            for j in range(n_ts):
 
-            #k = output_steps[j]
+                output_number = model_run * n_ts + j
 
-            for a in attribute_dict:
-                if a[0] in df.columns:
-                    if type(a[1]) is list or type(a[1]) is np.ndarray:
-                        df.loc[output_number, a[0]] = str(a[1])
-                    else:
-                        df.loc[output_number, a[0]] = a[1]
+                #k = output_steps[j]
 
-            df.loc[output_number, 'model_error'] = str(msg)
+                for a in attribute_dict:
+                    if a[0] in df.columns:
+                        if type(a[1]) is list or type(a[1]) is np.ndarray:
+                            df.loc[output_number, a[0]] = str(a[1])
+                        else:
+                            df.loc[output_number, a[0]] = a[1]
 
-        continue
-        
+                df.loc[output_number, 'model_error'] = str(msg)
+
+            continue
+
     (runtimes, xyz_array, surface_levels, x_flt, z_flt,
      T_init_array, T_array, boiling_temp_array,
      xyz_array_exc, exceed_boiling_temp_array,

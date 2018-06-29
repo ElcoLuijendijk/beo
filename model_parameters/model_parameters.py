@@ -52,7 +52,7 @@ class ModelParams:
     cellsize_fine = 100.0
 
     # in fault zone:
-    cellsize_fault = 2.0
+    cellsize_fault = 5.0
 
     # cellsize at the lower left and right corners:
     cellsize_base = 1000.0
@@ -64,15 +64,15 @@ class ModelParams:
 
     ## exhumation parameters
     # add exhumation or not
-    add_exhumation = False
+    add_exhumation = True
 
     # exhumation rate in m/yr
-    exhumation_rate = 0.0
+    exhumation_rate = 1e-3
 
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
     # but this also slows the model down somewhat
-    exhumation_steps = 10
+    exhumation_steps = 5
 
     # minimum layer thickness, if the exhumation steps result in surfaces that
     # are less than the min thickness apart, the number of steps is reduced
@@ -92,12 +92,12 @@ class ModelParams:
 
     # calculate bottom T using a fixed geothermal gradient.
     # use None is you want to use a specified basal heat flux instead
-    thermal_gradient = None
-    #thermal_gradient = 0.04
+    #thermal_gradient = None
+    thermal_gradient = 0.04
 
     # bottom flux bnd condition, set to None if T bnd is used
-    #basal_heat_flux = None
-    basal_heat_flux = 100e-3
+    basal_heat_flux = None
+    #basal_heat_flux = 100e-3
 
     # elevation of layers either side of the fault
     # structured like this:
@@ -167,7 +167,7 @@ class ModelParams:
     dt = 500.0 * year
 
     # duration of each timestep_slice
-    durations = [1e4 * year]
+    durations = [5e3 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -224,10 +224,10 @@ class ModelParams:
     ## fault data for multiple faults:
 
     # x location of fault (m):
-    fault_xs = [0]
+    fault_xs = [5000]
 
     # fault width (m)
-    fault_widths = [10.0]
+    fault_widths = [20.0]
 
     # angle of the fault zone (degrees), dip of normal faults ~60-70 degrees
     fault_angles = [-65.0]
