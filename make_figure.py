@@ -206,7 +206,7 @@ for fn in files:
         import matplotlib.gridspec as gridspec
         nrows = 4
         ncols = len(fp.timeslices)
-        height_ratios = [25, 75, 17, 3]
+        height_ratios = fp.height_ratios
         width_ratios = [2] * ncols
 
         if fp.add_temperature_panel is True:
@@ -265,7 +265,7 @@ for fn in files:
                 nind = ind == False
                 leg_vp = p.scatter(xyz_array_exc[:, 0][ind],
                                    xyz_array_exc[:, 1][ind],
-                                   s=1, color='gray', alpha=0.3)
+                                   s=1, color='gray', alpha=0.3, zorder=201)
                 #leg_vp = panels[-1].scatter(xyz_array[:, 0][nind],
                 # xyz_array[:, 1][nind], s=1, color='gray')
 
@@ -526,6 +526,8 @@ for fn in files:
 
         fn_local1 = os.path.split(fn_fig)[-1]
         fn_local2 = os.path.join('model_output', fn_local1)
+
+        #gs.tight_layout(fig)
 
         print 'saving %s' % fn_fig
         fig.savefig(fn_local2, dpi=fp.figure_resolution)

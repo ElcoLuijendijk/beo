@@ -154,7 +154,6 @@ param_list = scenario_parameter_combinations
 # read default model parameter file
 Parameters = mp()
 
-
 # get attributes
 attributes = inspect.getmembers(
     Parameters, lambda attribute: not (inspect.isroutine(attribute)))

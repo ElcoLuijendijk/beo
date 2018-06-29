@@ -16,11 +16,16 @@ figure_resolution = 150
 # figure format, png, jpg, svg, eps, etc..
 fig_format = 'png'
 
+# ratios of the different rows in the figure, relative sizes (numbers dont matter only the differences
+# [top panel, main panel, space between main panel and colorbar, colorbar]
+# adjust this to move the legend upwards, reduce the empty space between the colorbar and main panel, etc...
+height_ratios = [25, 75, 7, 3]
+
 # limits of x and y axis of figure, set xlim = None and ylim = None to show the entire model domain
-xlim = None
-ylim = None
-#xlim = [4800, 5200]
-#ylim = [-300, 100]
+#xlim = None
+#ylim = None
+xlim = [-200, 200]
+ylim = [-300, 100]
 
 # add an extra panel on the right with the modeled temperatures
 add_temperature_panel = False
@@ -55,7 +60,7 @@ show_AHe_data = True
 
 # add a legend or not
 add_legend = True
-legend_font_size = 'x-small'
+legend_font_size = 'medium'
 
 # interval temperature contours
 cnt_int = 10.0

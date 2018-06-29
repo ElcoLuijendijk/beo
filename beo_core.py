@@ -31,6 +31,8 @@ import esys.pycad as pc
 import esys.pycad.gmsh as gmsh
 import esys.escript.linearPDEs as linearPDEs
 
+import esys.weipa
+
 # helium diffusion algorithm by Meesters and Dunai (2003)
 import lib.helium_diffusion_models as he
 
@@ -42,7 +44,7 @@ def calculate_vapour_pressure(T,
                               c4=-3.1597):
 
     """
-    calculate the vapour pressure curve and check whether there should be
+    Calculate the vapour pressure curve and check whether there should be
     vapour or not in the model domain
 
     based on a 3rd order polyonmial fit to vapour curve data by the NIST
@@ -63,7 +65,7 @@ def calculate_boiling_temp(P,
                       c3=103.28,
                       c4=179.99):
     """
-    find the maximum temperature for a given pressure at which there is one
+    Find the maximum temperature for a given pressure at which there is one
     liquid phase only
 
     based on a 3rd order polyonmial fit to vapour curve data by the NIST
@@ -85,7 +87,7 @@ def calculate_boiling_temp(P,
 def convert_to_array(u, no_coords=False):
 
     """
-    return the x,y coordinates and the value of escript variable u as
+    Return the x,y coordinates and the value of escript variable u as
     a numpy array
     """
 
@@ -107,8 +109,9 @@ def convert_to_array(u, no_coords=False):
 def interpolate_data(xyz_array, Ti, dx, dy):
 
     """
-
+    Interpolate irragular data to a regular grid
     """
+
     xi = np.arange(xyz_array[:, 0].min(), xyz_array[:, 0].max() + dx, dx)
     yi = np.arange(xyz_array[:, 1].min(), xyz_array[:, 1].max() + dy, dy)
     xg, yg = np.meshgrid(xi, yi)
@@ -120,7 +123,67 @@ def interpolate_data(xyz_array, Ti, dx, dy):
     return xg, yg, zg
 
 
+def Magnus_eq(T):
+    """
+    Calculate the saturation vapour pressure in air using the improved Magnus equation
+
+    See Alduchov and Eskridge (1996) Journal of applied Meteorology 35 (4)
+
+    """
+
+    try:
+        P = 0.61094 * np.exp(17.625 * T / (T + 243.04))
+    except:
+        P = 0.61094 * es.exp(17.625 * T / (T + 243.04))
+
+    return P * 1000.0
+
+
+def calculate_heat_transfer_coeff_sensible_hf(rho, c, ra, dz):
+    """
+    Calculate the heat transfer coefficient for sensible heat flux at the surface
+    """
+
+    Ksi = rho * c / ra * dz
+
+    return Ksi
+
+
+def calculate_heat_transfer_coeff_latent_hf(Ts, Ta, rho, dz, ra,
+                                            L=2.264e6, Pa=1.0e5, RH_air=1.0):
+    """
+    Calculate the heat transfer coefficient for latent heat flux at the land surface
+    """
+
+    esa = Magnus_eq(Ta)
+    qa_sat = 0.622 * esa / Pa
+    qa = qa_sat * RH_air
+
+    ess = Magnus_eq(Ts)
+    qs = 0.622 * ess / Pa
+
+    Kl = rho * L * dz / ra * (qs - qa) / (Ts - Ta)
+
+    return Kl
+
+
+def calculate_surface_heat_transfer_coeff(rho, c, ra, dz, Ts, Ta):
+    """
+    Calculate the heat transfer coefficient of air at the land surface
+
+    """
+
+    Ks = calculate_heat_transfer_coeff_sensible_hf(rho, c, ra, dz)
+    Kl = calculate_heat_transfer_coeff_latent_hf(Ts, Ta, rho, dz, ra)
+    Kt = Ks + Kl
+
+    return Kt
+
+
 def calculate_fault_x(z_flt, fault_angle, x_flt_surface):
+    """
+    Calculate the x coordinate of a fault with a given angle and intersection with the surface
+    """
 
     x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
 
@@ -133,7 +196,7 @@ def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
                x_left=0, check_x_bnds=False):
 
     """
-    create a mesh for the model of the bewowawe hydrothermal system
+    Create a mesh for the model of the bewowawe hydrothermal system
 
     new version, width denotes the extent of the model domain on
     either side of the fault
@@ -168,6 +231,8 @@ def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
 
     x_left_bnd = np.min(x_flt) - width
     x_right_bnd = np.max(x_flt) + width
+
+    print 'left and right hand bnd of mesh: ', x_left_bnd, x_right_bnd
 
     xys = [[x_left_bnd, z_air], [x_right_bnd, z_air],
            [x_left_bnd, z_surface], [x_flt[0], z_surface], [x_flt[0] + fault_width, z_surface], [x_right_bnd, z_surface],
@@ -512,7 +577,7 @@ def setup_mesh_2faults(width, x_flt_surface, fault_width, fault_angle, z_air,
 
 
     """
-    create a mesh for a hydrothermal model containing 2 faults
+    Create a mesh for a hydrothermal model containing 2 faults
     and one shallow aquifer
     """
 
@@ -655,7 +720,10 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     target_depths=None,
                                     K_b=None, c_b=None, rho_b=None,
                                     K_air=None, c_air=None, rho_air=None,
-                                    vapour_correction=True):
+                                    vapour_correction=True,
+                                    variable_K_air=False, ra=80.0, reference_z_ra=1.8,
+                                    screen_output_interval=5,
+                                    debug=False):
 
     """
     Full single model run of the heat conduction and advection model
@@ -855,7 +923,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         # solve transient heat flux
         for t in range(nt):
 
-            if int(t / 10) == float(t / 10.0) or t == nt - 1:
+            if int(t / screen_output_interval) == float(t / screen_output_interval) or t == nt - 1:
 
                 end = time.time()
                 comptime = end - start
@@ -884,25 +952,26 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                     print '\tcould not find land surface nodes'
 
                 if vapour_correction is True:
-                    vapour_pressure = calculate_vapour_pressure(T)
-                    vapour = subsurface * es.whereNegative(P - vapour_pressure + P_buffer)
-                    #vapour = es.whereNegative(P - vapour_pressure)
-
-                    xmin_vapour = es.inf(vapour * xyz[0] + es.whereZero(vapour) * 999999.9)
-                    xmax_vapour = es.sup(vapour * xyz[0])
-                    ymin_vapour = -es.sup(-(vapour * xyz[1]))
-                    ymax_vapour = es.sup(vapour * xyz[1])
-
                     if es.sup(vapour) > 0:
                         print '\tvapour present in: ', es.integrate(vapour), ' m^2'
                         print '\t\tfrom x = ', xmin_vapour, ' to x = ', \
                             xmax_vapour
                         print '\t\tand from y = ', ymin_vapour, ' to y = ', \
                             ymax_vapour
-                        print '\tmax. liquid T at the surface = ', \
-                            es.sup(boiling_temp * land_surface)
+                        # print '\tmax. liquid T at the surface = ', \
+                        #    es.sup(boiling_temp * land_surface)
                     else:
                         print '\tno vapour present'
+
+            if vapour_correction is True:
+                vapour_pressure = calculate_vapour_pressure(T)
+                vapour = subsurface * es.whereNegative(P - vapour_pressure + P_buffer)
+                #vapour = es.whereNegative(P - vapour_pressure)
+
+                xmin_vapour = es.inf(vapour * xyz[0] + es.whereZero(vapour) * 999999.9)
+                xmax_vapour = es.sup(vapour * xyz[0])
+                ymin_vapour = -es.sup(-(vapour * xyz[1]))
+                ymax_vapour = es.sup(vapour * xyz[1])
 
             surface_level = surface_level_init - t_total / year \
                                                  * exhumation_rate
@@ -929,7 +998,49 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 dd = q_vector[1] - q_vector_old[1]
                 print '\tdifference old and new qv = ', dd * year
 
-                # populate K, c and rho scalar fields
+            # populate K, c and rho scalar fields
+            if variable_K_air is True:
+                # base K_air on surface temperature of nodes below. this may be a bit tricky....
+                surface_T = es.sup(surface * T)
+                #print 'recalculating K air for surface temperature of %0.2e' % surface_T
+
+                xysa, Tsa = convert_to_array(surface * T)
+                ind_s = xysa[:, 1] == surface_level
+                xa1 = xysa[:, 0][ind_s]
+                Tsa1 = Tsa[ind_s]
+                a = np.argsort(xa1)
+                xa2 = xa1[a]
+                Tsa2 = Tsa1[a]
+
+                int_table = Tsa2
+
+                # dummy for testing
+                #Tsa_select = Tsa[xysa[:, 1] == surface_level]
+                #int_table = np.linspace(0, 50, len(Tsa_select))
+
+                numslices = len(int_table) - 1
+                minval = es.inf(xyz[0])
+                maxval = es.sup(xyz[0])
+                step = es.sup(maxval - minval) / numslices
+                toobig = int_table.max() * 1.5
+
+                surface_T_int = es.interpolateTable(int_table, xyz[0], minval, step, toobig)
+
+                print '\tinterpolated surface T ', surface_T_int
+
+                if debug is True:
+                    print 'save as csv file?'
+
+                    if raw_input() == 'y':
+
+                        es.saveDataCSV('debug/interpolated_surface_T.csv', x=xyz[0], y=xyz[1], surface_T=surface_T_int)
+
+                K_air = calculate_surface_heat_transfer_coeff(rho_air, c_air, ra,
+                                                              reference_z_ra, surface_T_int, air_temperature)
+                print '\tcalculated K air ', K_air
+
+            if variable_K_air is True or (exhumation_rate != 0 and surface_level in target_depths):
+
                 K_var = subsurface * K_b + air * K_air
                 c_var = subsurface * c_b + air * c_air
                 rho_var = subsurface * rho_b + air * rho_air
@@ -1130,12 +1241,12 @@ def model_run(mp):
             es.SolverOptions.DIRECT)
 
     # find which nodes are on top & bottom boundaries
-    surface = es.whereZero(xyz[1])
     top_bnd = es.whereZero(xyz[1] - es.sup(xyz[1]))
     bottom_bnd = es.whereZero(xyz[1] - es.inf(xyz[1]))
 
     # find which nodes are in the subsurface
     surface_level = exhumed_thickness
+    surface = es.whereZero(xyz[1] - surface_level)
     subsurface = es.whereNonPositive(xyz[1] - surface_level)
     air = es.wherePositive(xyz[1] - surface_level)
 
@@ -1185,7 +1296,6 @@ def model_run(mp):
         porosity = porosity * es.whereNonPositive(ind_layer_r * indr) \
                   + es.wherePositive(ind_layer_r * indr) * mp.porosities[i]
 
-
     print 'matrix thermal conductivity: ', K_solid
     print 'porosity: ', porosity
 
@@ -1196,7 +1306,17 @@ def model_run(mp):
     C1 = (mp.rho_f * mp.c_f) / (rho_b * c_b)
 
     # populate K, c and rho scalar fields
-    K_var = subsurface * K_b + air * mp.K_air
+    if mp.variable_K_air is True:
+        # base K_air on surface temperature of underlying nodes
+        # assume a small difference in initial air and land temperature (otherwise the eq. doesnt work)
+        surface_T = mp.air_temperature + 0.5
+        K_air = calculate_surface_heat_transfer_coeff(mp.rho_air, mp.c_air, mp.ra,
+                                                      mp.dz, surface_T, mp.air_temperature)
+
+
+    else:
+        K_air = mp.K_air
+    K_var = subsurface * K_b + air * K_air
     c_var = subsurface * c_b + air * mp.c_air
     rho_var = subsurface * rho_b + air * mp.rho_air
 
@@ -1347,8 +1467,9 @@ def model_run(mp):
             surface_level_init=surface_level, exhumation_rate=mp.exhumation_rate,
             target_depths=mp.target_zs,
             K_b=K_b, c_b=c_b, rho_b=rho_b,
-            K_air=mp.K_air, c_air=mp.c_air, rho_air=mp.rho_air,
-            vapour_correction=mp.vapour_correction)
+            K_air=K_air, c_air=mp.c_air, rho_air=mp.rho_air,
+            vapour_correction=mp.vapour_correction,
+            variable_K_air=mp.variable_K_air, ra=mp.ra, reference_z_ra=mp.dz)
 
     print 'T after thermal recovery ', Ts[-1]
     print 'done modeling'

@@ -32,7 +32,7 @@ class ModelParams:
     vapour_correction = True
 
     # model dimensions
-    width = 4000.0
+    width = 2000.0
     total_depth = 8000.0
     air_height = 40.0
 
@@ -91,7 +91,7 @@ class ModelParams:
     air_temperature = 10.0
 
     # new version: calculate bottom T using a fixed geothermal gradient./r
-    thermal_gradient = 0.03
+    thermal_gradient = 0.04
 
     # bottom flux bnd condition, set to None if T bnd is used
     basal_heat_flux = None
@@ -123,10 +123,8 @@ class ModelParams:
     # the other parameters are constant
     K_solids = [4.44, 2.26, 1.58, 1.6, 2.0]
 
-    # wikipedia: thermal properties air
-    # heat transfer coefficient = 10- 100 W / (m2 K))
-    # heat capacity = 1000 J kg-1 K-1
-    # density = 1.29 kg m-3
+    # thermal properties air, solid matrix and porewater:
+    # note K_air is not used if variable_K_air is set to True
     K_air = 100.0
     K_water = 0.58
 
@@ -138,6 +136,24 @@ class ModelParams:
     c_f = 4000.
     c_s = 900.
 
+    ## variable heat transfer coefficient for air
+    variable_K_air = True
+
+    ## parameters to estimate heat transfer coefficient of air:
+    # aerodynamic resistance, see Liu et al (2007), Hydrology and Earth System Sciences 11 (2)
+    ra = 80
+    # measurement height for aerodynamic resistance
+    dz = 1.8
+
+    # specific latent heat of vaporisation
+    #spec_latent_heat = 2.264e6
+
+    # air pressure
+    #air_pressure = 1.0e5
+
+    # relative humdity
+    #RH_air = 1.0
+
     # timesteps
     # number of output steps
     # this is not used when exhumation > 0, in this case output is generated
@@ -146,10 +162,10 @@ class ModelParams:
     N_outputs = [5]
 
     # size of a single timestep
-    dt = 1000.0 * year
+    dt = 500.0 * year
 
     # duration of each timestep_slice
-    durations = [5e3 * year]
+    durations = [1e4 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -206,7 +222,7 @@ class ModelParams:
     ## fault data for multiple faults:
 
     # x location of fault (m):
-    fault_xs = [5000]
+    fault_xs = [0]
 
     # fault width (m)
     fault_widths = [20.0]
@@ -215,7 +231,7 @@ class ModelParams:
     fault_angles = [-65.0]
 
     # elevation of bottom of fault
-    fault_bottoms = [-4000.0]
+    fault_bottoms = [-5000.0]
 
     # different segments of the fault, list of the top bnd of each segments starting from the bottom
     # nested list: [[segment_top1_fault1, segment_top2_fault1], [segment_top1_fault2, segment_top2_fault2], etc...]
@@ -226,7 +242,7 @@ class ModelParams:
     # [[[fault1_segment1_t1, fault1_segment2_t1], [fault2_segment1_t1, fault2_segment2_t1], etc...]
     # note units are m2/sec, ie the integrated flux over the entire width of the
     # fault zone
-    fault_fluxes = [[[-100.0 / year]]]
+    fault_fluxes = [[[-400.0 / year]]]
 
     # aquifers, used for modeling horizontal advective flow
     # use aquifer_top = [None] to not use this:
@@ -297,7 +313,10 @@ class ParameterRanges:
     #fault_bottoms_s = [[-4000.0]]
     # thermal_gradient_s = [0.04]
 
-    K_air_s = [10.0, 100.0, 200.0]
+    #K_air_s = [10.0, 100.0, 200.0]
+
+    # variable aerodynamic resistance, see Liu et al (2007). porbably the most important param for surface heat flux
+    ra_s = [80.0]
 
     # exhumation_rate_s = [1.0e-4]
 

@@ -7,11 +7,11 @@ author: Elco Luijendijk, elco.luijendijk@geo.uni-goettingen.de
 # Table of contents
 
 1. [Introduction](#introduction)
-2. [Installing & running ](#install)
-3. [Required modules](#modules)
-4. [Model input & output](#input)
-5. [Making figures](#figures)
-6. [Model Background](#background)
+2. [Installing & running](#Installing & running)
+3. [Required modules](#Required modules)
+4. [Model input & output](#Model input & output)
+5. [Making figures](#Making figures)
+6. [Model Background](#Model Background)
 7. [Explanation of model parameters](#params)
 
 
@@ -52,7 +52,7 @@ python beo.py model_parameters/model_parameters.py
 where ``model_parameters/model_parameters.py`` is a file containing all model parameters. An example file called ``model_parameters.py`` is located in the directory ``model_parameters``.
 
 
-# Required modules <a name="modules"></a>
+# Required modules <a name="Required modules"></a>
 
 * numpy:  http://www.numpy.org/
 * For creating figures (optional):
@@ -65,7 +65,7 @@ These modules are available as standalone packages. For mac and windows an easy 
 Beo was tested on Ubuntu 14.04 and 16.04 
 
 
-# Model input & output <a name="input"></a>
+# Model input & output <a name="Model input & output"></a>
 
 ## Input:
 
@@ -89,7 +89,7 @@ There are two options for running multiple model runs. The default is a sensitiv
 * In addition, Beo saves a comma separated file containing the model parameters and a summary of the results for each model run and each timestep in the same directory.
 
 
-# Making figures <a name="figures"></a>
+# Making figures <a name="Making figures"></a>
 
 Currently there are two Python scripts that will generate figures of the model output:
 
@@ -100,7 +100,7 @@ Currently there are two Python scripts that will generate figures of the model o
 
 
 
-# Model Background <a name="background"></a>
+# Model Background <a name="Model Background"></a>
 
 ## Heat transport
 
@@ -175,7 +175,36 @@ $A = \kappa$
 $C = \rho_f c_f \vec{q}$
 
 
-# Explanation of model parameters <a name="params"></a>
+## Surface heat flux
+
+We based the value of the thermal conductivity of air on literature values of the sensible and latent heat flux, which tend to dominate heat transfer at the land surface. Following Bateni and Entekhabi [Bateni and Entekhabi, 2012] the sensible heat flux H (W m-2) at the land surface is given by:
+
+$$H = rho c / ra (Ta – Ts)$$
+
+Where ρ is density (kg m-3), c is the specific heat of air (J kg-1 K-1), ra is the aerodynamic resistance (s m-1), Ta is the air temperature at a reference level and Ts is the surface temperature. Rewriting this to the conductive heat flow equation gives a value for the effective thermal conductivity (Ks) between the surface and the reference level z:
+
+$$Ks = ρ c / ra \Delta z$$
+
+Where $\Delta$z is the difference between the surface and the reference level (m). Following for instance Liu et al. [Liu et al., 2007] the aerodynamic resistance (ra) varies between 10 and 150 s m-1 at a reference level of 1.8 m above the surface.  
+
+The latent heat flux is given by (Bateni…):
+
+$$LE = rho L / ra (q_s – q_a)$$
+
+where LE is the latent heat flux (W m-2), rho is the density of air (kg m-3), L is the specific latent heat of vaporisation (J kg-1), which is 334000 J kg-1 (wikipedia….), q_s is the saturated specific humidity at the surface temperature (kg kg-1), q_a is the humidity of the air (kg kg-1).
+
+The saturated specific humidity (q_s) was calculated as (Monteith 1981 in Elkathabi …):
+
+$$q_s = 0.622 e_s / P_a$$
+
+where e_s is saturated air vapor pressure (Pa), P_a is surface air pressure (Pa). The saturated air vapor pressure was calculated using the Arden Buck equation (Buck 1996, see wikipedia):
+
+$$ $$
+
+Air pressure was assumed to be 1e5 Pa. 
+
+
+# Explanation of model parameters <a name="Explanation of model parameters"></a>
 
 The parameters that control Beo are stored in a python file called ``model_parameters.py`` in the class ModelParams.  The following section describes each of the model parameters.
 
