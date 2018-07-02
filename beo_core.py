@@ -339,7 +339,7 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
                                z_surface_steps,
                                z_fine, z_base, cellsize,
                                cellsize_air, cellsize_surface, cellsize_fault,
-                               cellsize_fine, cellsize_base,
+                               cellsize_fine, cellsize_base, target_zs,
                                x_left=0):
 
     """
@@ -355,7 +355,11 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
 
     # calculate fault positions
     # TODO: enable multiple faults, right now only one fault in model domain
-    zs_surface = np.linspace(z_surface_initial, z_surface_final, z_surface_steps + 1)
+    #zs_surface = np.linspace(z_surface_initial, z_surface_final, z_surface_steps + 1)
+    #mp.target_zs = np.linspace(0, exhumed_thickness, exhumation_steps + 1)
+
+    zs_surface = target_zs[::-1]
+
     z_flt = np.concatenate((zs_surface, np.array([z_fine, z_base])))
     #z_flt = np.array([z_surface, z_fine, z_base])
     x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
@@ -1189,17 +1193,34 @@ def model_run(mp):
 
     if mp.add_exhumation is False:
         print 'construct static mesh without exhumation'
-        mesh = setup_mesh(mp.width, mp.fault_xs[0], mp.fault_widths[0],
-                          mp.fault_angles[0], mp.air_height,
-                          z_surface, mp.z_fine, z_base, mp.cellsize,
-                          mp.cellsize_air, mp.cellsize_fault,
-                          mp.cellsize_fine, mp.cellsize_base)
+        #mesh = setup_mesh(mp.width, mp.fault_xs[0], mp.fault_widths[0],
+        #                  mp.fault_angles[0], mp.air_height,
+        #                  z_surface, mp.z_fine, z_base, mp.cellsize,
+        #                  mp.cellsize_air, mp.cellsize_fault,
+        #                  mp.cellsize_fine, mp.cellsize_base)
+
+        # make sure to set exhumation rate to 0, will get errors in code otherwise...
+        mp.exhumation_rate = 0.0
+
+        elevation_top = z_surface + mp.air_height
+        exhumation_steps = 0
+        exhumed_thickness = 0
+
+        mesh, x_flt, z_flt = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0],
+                                             mp.fault_widths[0],
+                                             mp.fault_angles[0], elevation_top,
+                                             z_surface, z_surface,
+                                             exhumation_steps,
+                                             mp.z_fine, z_base, mp.cellsize,
+                                             mp.cellsize_air, mp.cellsize_surface, mp.cellsize_fault,
+                                             mp.cellsize_fine, mp.cellsize_base, mp.target_zs)
+                                             #,mp.fault_widths)
 
         x_flt = np.ones(len(mp.target_zs)) * mp.fault_xs[0]
         z_flt = np.zeros(len(mp.target_zs))
 
-        exhumed_thickness = 0
-        elevation_top = z_surface + exhumed_thickness + mp.air_height
+        #exhumed_thickness = 0
+        #elevation_top = z_surface + exhumed_thickness + mp.air_height
 
     elif mp.add_exhumation is True:
         print 'construct dynamic mesh with exhumation'
@@ -1229,7 +1250,7 @@ def model_run(mp):
                                                  exhumation_steps,
                                                  mp.z_fine, z_base, mp.cellsize,
                                                  mp.cellsize_air, mp.cellsize_surface, mp.cellsize_fault,
-                                                 mp.cellsize_fine, mp.cellsize_base)
+                                                 mp.cellsize_fine, mp.cellsize_base, mp.target_zs)
                                                  #,mp.fault_widths)
 
         else:
@@ -1503,7 +1524,7 @@ def model_run(mp):
             vapour_correction=mp.vapour_correction,
             variable_K_air=mp.variable_K_air, ra=mp.ra, reference_z_ra=mp.dz)
 
-    print 'T after thermal recovery ', Ts[-1]
+    print 'T after model runs: ', Ts[-1]
     print 'done modeling'
 
     # convert modeled T field and vectors to arrays
@@ -1536,6 +1557,7 @@ def model_run(mp):
     ##############################################################
     xzs = []
     Tzs = []
+    Tzs_diff = []
     nt, a = T_array.shape
 
     z_tolerance = 0.01
@@ -1559,6 +1581,14 @@ def model_run(mp):
 
         xzs.append(xz)
         Tzs.append(Tzs_array)
+
+        Tzs_diff_array = np.zeros_like(Tzs_array)
+        # find temperature difference with initial steady-state temperatures
+        #pdb.set_trace()
+        for i in range(nt):
+            Tzs_diff_array[i, :] = Tzs_array[i, :] - T_init_array[ind]
+
+        Tzs_diff.append(Tzs_diff_array)
 
     ##########################################
     # calculate helium ages at surface outcrop
@@ -1845,7 +1875,7 @@ def model_run(mp):
               xyz_array_exc, exceed_boiling_temp_array,
               xyz_element_array,
               qh_array, qv_array,
-              fault_fluxes_m_per_sec, mp.durations, xzs, Tzs,
+              fault_fluxes_m_per_sec, mp.durations, xzs, Tzs, Tzs_diff,
               Ahe_ages_all, Ahe_ages_corr_all, xs_Ahe_all, mp.target_zs,
               AHe_ages_samples_all, AHe_ages_samples_all_corr]
 
@@ -1881,7 +1911,7 @@ if __name__ == "__main__":
      xyz_array_exc, exceed_boiling_temp_array,
      xyz_element_array,
      qh_array, qv_array,
-     fault_fluxes, durations, xzs, Tzs,
+     fault_fluxes, durations, xzs, Tzs, Tzs_diff,
      Ahe_ages_all, Ahe_ages_corr_all, xs_Ahe_all, target_depths,
      AHe_ages_samples_all, AHe_ages_samples_all_corr) = output
 

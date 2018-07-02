@@ -174,7 +174,8 @@ class ModelParams:
     # set equal to each exhumation step layer
     # in this way one can track the AHe response to each layer that
     # comes to the surface in a longer time period
-    target_zs = [0.0]
+    # note, values should go from low/bottom to high/top
+    target_zs = [-200.0, 0.0]
 
     # U-Th/He params
     calculate_he_ages = False
@@ -281,6 +282,9 @@ class ModelParams:
     # into account the changing position of the fault surface over time
     # due to exhumation
     borehole_xs = [-250.0]
+
+    # temperature changes to report, report area in depth slices with temperature changes > x degrees
+    T_change_report = [10.0, 25.0, 50.0]
 
 
 class ParameterRanges:

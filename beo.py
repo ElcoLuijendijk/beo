@@ -271,7 +271,7 @@ for model_run, param_set in enumerate(param_list):
      xyz_array_exc, exceed_boiling_temp_array,
      xyz_element_array, qh_array, qv_array,
      fault_fluxes, durations,
-     xzs, Tzs,
+     xzs, Tzs, Tzs_diff,
      Ahe_ages_all, Ahe_ages_corr_all, xs_Ahe_all,
      target_depths,
      AHe_ages_samples_all, AHe_ages_samples_all_corr) = output
@@ -295,6 +295,7 @@ for model_run, param_set in enumerate(param_list):
     n_ts = len(output_steps)
 
     Tzs_cropped = [Tzi[output_steps] for Tzi in Tzs]
+    Tzs_diff_cropped = [Tzi[output_steps] for Tzi in Tzs_diff]
 
     if Ahe_ages_all is not None:
         AHe_ages_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_all]
@@ -445,11 +446,29 @@ for model_run, param_set in enumerate(param_list):
 
         T_change = T_array[j] - T_init_array
         df.loc[output_number, 'T_change_avg'] = T_change.mean()
+        df.loc[output_number, 'T_change_max'] = T_change.max()
+        df.loc[output_number, 'T_change_min'] = T_change.min()
 
         n_depths = len(target_depths)
 
         for i in range(n_depths):
             df.loc[output_number, 'max_temperature_layer_%i' % i] = Tzs_cropped[i][j].max()
+
+            for Tc in mp.T_change_report:
+
+                if Tzs_diff_cropped[i][j].max() >= Tc:
+                    ind = Tzs_diff_cropped[i][j] >= Tc
+                    xc = xzs[i][ind]
+                    Tx_min = xc.min()
+                    Tx_max = xc.max()
+                    Tx = Tx_max - Tx_min
+
+                else:
+                    Tx = 0
+
+                #pdb.set_trace()
+
+                df.loc[output_number, 'area_T_change_exc_%0.2e_layer_%i' % (Tc, i)] = Tx
 
         # add output T at surface
         surface_elev = surface_levels[output_steps[j]]
