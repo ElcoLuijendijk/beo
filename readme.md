@@ -90,3 +90,6 @@ Currently there are two Python scripts that will generate figures of the model o
 * ``make_figure_2models.py`` will make a figure with two panels containing the modeled temperatures and (U-Th)/He data for two model runs. THe model runs are specified in the script itself, for example like this: ``files = ['model_output/T_field_model_run_14_(-3000.0, 0.03).pck', 'model_output/T_field_model_run_32_(-6000.0, 0.03).pck']``. There are a number of parameters in line 62 to 103 in this script itself that you can adjust how the resulting figure looks. The figure is saved to the ``model_output`` directory.
 
 
+# Manual
+
+You can find a manual for beo in the directory doc: [manual](https://bitbucket.org/elcopone/beo/src/master/doc/). The manual contains more background on the model, explanation of how surface heat flow is modeled and a detailed list and explanation of the model paramameters
