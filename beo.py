@@ -358,7 +358,7 @@ for model_run, param_set in enumerate(param_list):
                                                        mp.borehole_names,
                                                        mp.borehole_xs):
 
-            if borehole not in dft['borehole']:
+            if borehole not in dft['borehole'].values:
                 msg = 'error, could not find borehole %s in the borehole temperature data file %s' \
                       % (borehole, mp.temperature_file)
                 raise IndexError(msg)
@@ -466,9 +466,7 @@ for model_run, param_set in enumerate(param_list):
                 else:
                     Tx = 0
 
-                #pdb.set_trace()
-
-                df.loc[output_number, 'area_T_change_exc_%0.2e_layer_%i' % (Tc, i)] = Tx
+                df.loc[output_number, 'area_T_change_exc_%0.1f_layer_%i' % (Tc, i)] = Tx
 
         # add output T at surface
         surface_elev = surface_levels[output_steps[j]]

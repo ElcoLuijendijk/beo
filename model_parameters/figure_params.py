@@ -28,7 +28,7 @@ ylim = None
 #ylim = [-300, 100]
 
 # add an extra panel on the right with the modeled temperatures
-add_temperature_panel = False
+add_temperature_panel = True
 relative_size_temp_panel = 0.5
 
 # grid size for interpolating model results
@@ -61,6 +61,7 @@ show_AHe_data = True
 # add a legend or not
 add_legend = True
 legend_font_size = 'medium'
+n_columns_legend = 2
 
 # interval temperature contours
 cnt_int = 10.0
@@ -69,6 +70,9 @@ cnt_int = 10.0
 # set to cnt_range = None to use the min and max values of the data
 #cnt_range = [10.0, 200.0]
 cnt_range = None
+
+# number of columns that the colorbar covers
+ncols_colorbar = 1
 
 # option to show corrected or uncorrected AHe ages
 show_corrected_AHe_ages = True

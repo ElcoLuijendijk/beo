@@ -236,10 +236,7 @@ for fn in files:
         if Ahe_ages_all is not None:
             rpanels = [tp.twinx() for tp in tpanels]
 
-        if ncols <= 3:
-            cpanel = fig.add_subplot(gs[-1, 0])
-        else:
-            cpanel = fig.add_subplot(gs[-1, :-2])
+        cpanel = fig.add_subplot(gs[-1, 0:fp.ncols_colorbar])
         cpanel.set_xticks([])
         cpanel.set_yticks([])
 
@@ -528,7 +525,8 @@ for fn in files:
         if fp.add_legend is True:
             leg = leg_panel.legend(legs, labels, frameon=False,
                                    fontsize=fp.legend_font_size,
-                                   loc='upper center')
+                                   loc='upper right',
+                                   ncol=fp.n_columns_legend)
             #leg = fig.legend(legs, labels, frameon=False,
             #                 loc='lower right', fontsize=fp.legend_font_size)
 
