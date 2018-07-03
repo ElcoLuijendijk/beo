@@ -38,7 +38,7 @@ dy = 2.0
 # timeslices to show
 # timeslices = [0] make a figure of the first timestep
 # timeslices = [-1] make a figure of the last timestep
-timeslices = [0, 2, -1]
+timeslices = [0, 1, 3, -1]
 
 # scale for flow arrows, usually 5 is a good value, note higher value is smaller arrows (!)
 scale_multiplier = 25.0
@@ -60,7 +60,9 @@ show_AHe_data = True
 
 # add a legend or not
 add_legend = True
-legend_font_size = 'medium'
+# font size for legend, choose 'x-small', 'small' or 'medium'
+legend_font_size = 'small'
+# number of columns for legend entries
 n_columns_legend = 2
 
 # interval temperature contours

@@ -184,6 +184,18 @@ for fn in files:
 
     if go is True:
 
+        # check if timeslices are really present
+        nt = len(T_array)
+        if nt == 1:
+            fp.timeslices = [0]
+
+        fnew = []
+        for f in fp.timeslices:
+            if f >= nt:
+                f = nt - 1
+            fnew.append(f)
+            fp.timeslices = fnew
+
         print 'making a figure of model run %s' % fn
         print 'at timeslices ', fp.timeslices
         print 'total number of saved timeslices = %i' % len(T_array)
@@ -210,7 +222,7 @@ for fn in files:
 
         import matplotlib.gridspec as gridspec
         nrows = 4
-        ncols = len(fp.timeslices)
+        ncols = len(Tas)
         height_ratios = fp.height_ratios
         width_ratios = [2] * ncols
 
@@ -258,7 +270,7 @@ for fn in files:
             #p.scatter(xyz_array[:, 0], xyz_array[:, 1], s=0.1, color='gray')
             #c=Ta, **kwargs)
 
-        if fp.show_vapour is True:
+        if fp.show_vapour is True and exceed_boiling_temp_array is not None:
             print 'showing location of water vapour'
             for p, bt in zip(panels, exceed_boiling_temp_array[fp.timeslices]):
                 #ind = bt >= Ta
@@ -470,9 +482,12 @@ for fn in files:
                 rp.spines['top'].set_visible(False)
                 rp.get_xaxis().tick_bottom()
 
-        for tp, dt in zip(tpanels, runtimes[fp.timeslices]):
-            dti = dt
-            title = '%0.0f years' % (dti / year)
+        titles = []
+
+        for dti in runtimes[fp.timeslices]:
+            titles += ['%0.0f years' % (dti / year)]
+
+        for tp, title in zip(tpanels, titles):
             tp.set_title(title)
 
         if fp.add_temperature_panel is True:

@@ -26,7 +26,11 @@ class ModelParams:
     # steady state or transient model
     # note that regardless of this setting, the initial condition of transient model is
     # the steady-state solution without any advection
-    steady_state = True
+    steady_state = False
+
+    # iterations for steady-state runs
+    # these are needed if either vapour correction or variable K air are used
+    n_iterations_steady_state = 10
 
     # keep the temperature below the max T in the vapour pressure curve
     vapour_correction = True
@@ -60,7 +64,7 @@ class ModelParams:
     # new: buffer zone around fault with the same cell size as the fault
     # this is to reduce model instability
     use_mesh_with_buffer = False
-    fault_buffer_zone = 25.0
+    fault_buffer_zone = 20.0
 
     ## exhumation parameters
     # add exhumation or not
@@ -92,11 +96,11 @@ class ModelParams:
 
     # calculate bottom T using a fixed geothermal gradient.
     # use None is you want to use a specified basal heat flux instead
-    #thermal_gradient = None
-    thermal_gradient = 0.04
+    thermal_gradient = None
+    #thermal_gradient = 0.04
 
     # bottom flux bnd condition, set to None if T bnd is used
-    basal_heat_flux = None
+    basal_heat_flux = 65e-3
     #basal_heat_flux = 100e-3
 
     # elevation of layers either side of the fault
@@ -110,20 +114,15 @@ class ModelParams:
     # leave depth of first layer at arbitrarily high value to make sure the entire
     # model domain is covered
     # note that currently only 1 fault is taken into account...
-    #85-18
-    layer_bottom = [[-20000.0, -20250.0],
-                    [-810.0, -1060.0],
-                    [-530.0, -780.0],
-                    [-440.0, -690.0],
-                    [-210.0, -460.0]]
+    layer_bottom = [[-20000, -20000]]
 
     # porosity for each layer
-    porosities = [0.08, 0.05, 0.25, 0.17, 0.05]
+    porosities = [0.1]
 
     # thermal parameters
     # note that only thermal conductivity is varied between layers,
     # the other parameters are constant
-    K_solids = [4.44, 2.26, 1.58, 1.6, 2.0]
+    K_solids = [3.0]
 
     # thermal properties air, solid matrix and porewater:
     # note K_air is not used if variable_K_air is set to True
@@ -147,15 +146,6 @@ class ModelParams:
     # measurement height for aerodynamic resistance
     dz = 1.8
 
-    # specific latent heat of vaporisation
-    #spec_latent_heat = 2.264e6
-
-    # air pressure
-    #air_pressure = 1.0e5
-
-    # relative humdity
-    #RH_air = 1.0
-
     # timesteps
     # number of output steps
     # this is not used when exhumation > 0, in this case output is generated
@@ -167,7 +157,7 @@ class ModelParams:
     dt = 500.0 * year
 
     # duration of each timestep_slice
-    durations = [5e3 * year]
+    durations = [1e4 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -175,13 +165,14 @@ class ModelParams:
     # in this way one can track the AHe response to each layer that
     # comes to the surface in a longer time period
     # note, values should go from low/bottom to high/top
-    target_zs = [-200.0, 0.0]
+    # warning: the lowest value in target_zs should always be higher than z_fine
+    target_zs = [-1000, 0.0]
 
     # U-Th/He params
-    calculate_he_ages = False
+    calculate_he_ages = True
 
     # model-data comparison AHe samples
-    model_AHe_samples = False
+    model_AHe_samples = True
     AHe_data_file = 'model_parameters/AHe_data.csv'
     profile_number = 1
 
@@ -228,7 +219,7 @@ class ModelParams:
     fault_xs = [5000]
 
     # fault width (m)
-    fault_widths = [20.0]
+    fault_widths = [40.0]
 
     # angle of the fault zone (degrees), dip of normal faults ~60-70 degrees
     fault_angles = [-65.0]
@@ -245,7 +236,7 @@ class ModelParams:
     # [[[fault1_segment1_t1, fault1_segment2_t1], [fault2_segment1_t1, fault2_segment2_t1], etc...]
     # note units are m2/sec, ie the integrated flux over the entire width of the
     # fault zone
-    fault_fluxes = [[[-400.0 / year]]]
+    fault_fluxes = [[[-200.0 / year]]]
 
     # aquifers, used for modeling horizontal advective flow
     # use aquifer_top = [None] to not use this:
@@ -268,7 +259,7 @@ class ModelParams:
     # option to calculate temperature data for one or several boreholes
     # note that there seems to be a bug in the output timesteps for the temperature calculation
     # avoid using this for now...
-    analyse_borehole_temp = False
+    analyse_borehole_temp = True
 
     # file that contains temperature data
     temperature_file = 'model_parameters/temperature_data.csv'
@@ -303,8 +294,7 @@ class ParameterRanges:
 
     # option whether to vary one model parameter at a time
     # (ie for a sensitivtiy analysis)
-    # or to run all parameter combinations, using the parameter ranges specified
-    # in the parameter_ranges.py file
+    # or to run all parameter combinations, using the parameter ranges specified below
     parameter_combinations = False
 
     # option to add a first base run with unchanged parameters to the lsit of model
@@ -316,13 +306,17 @@ class ParameterRanges:
     ###################################################################
 
     # fault_bottoms_s = [[-2000.0], [-2500.0], [-3000.0], [-3500.0], [-4000.0]]
-    #fault_bottoms_s = [[-4000.0]]
+
+    fault_bottoms_s = [[-4000.0]]
+
     # thermal_gradient_s = [0.04]
 
     #K_air_s = [10.0, 100.0, 200.0]
 
+    #durations_s = [[1e6 * year]]
+
     # variable aerodynamic resistance, see Liu et al (2007). porbably the most important param for surface heat flux
-    ra_s = [80.0]
+    #ra_s = [80.0]
 
     # exhumation_rate_s = [1.0e-4]
 

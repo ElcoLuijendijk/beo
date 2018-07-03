@@ -236,8 +236,12 @@ for model_run, param_set in enumerate(param_list):
 
     print 'running single model'
 
-    bare_run = True
-    if bare_run is True:
+    if mp.steady_state is True and mp.add_exhumation is True:
+        msg = 'Error, both steady-state and exhumation are set to True. Please change your model parameters file'
+        raise ValueError(msg)
+
+    no_exceptions = True
+    if no_exceptions is True:
         output = beo_core.model_run(Parameters)
 
     else:
@@ -277,11 +281,11 @@ for model_run, param_set in enumerate(param_list):
      AHe_ages_samples_all, AHe_ages_samples_all_corr) = output
 
     # crop output to only the output timesteps, to limit filesize
-    output_steps = []
+    output_steps = [0]
     for duration, N_output in zip(mp.durations, mp.N_outputs):
         nt = int(duration / mp.dt)
 
-        output_steps_i = list(np.linspace(0, nt-1, N_output).astype(int))
+        output_steps_i = list(np.linspace(0, nt-1, N_output).astype(int) + 1)
         output_steps += output_steps_i
 
     # select data for output steps only
@@ -292,7 +296,11 @@ for model_run, param_set in enumerate(param_list):
     #          'a new surface level is reached'
     #    output_steps = [i for i, s in enumerate(surface_levels) if s in target_depths]
 
-    n_ts = len(output_steps)
+    if mp.steady_state is False:
+        n_ts = len(output_steps)
+    else:
+        n_ts = 2
+        output_steps = np.array([0, -1])
 
     Tzs_cropped = [Tzi[output_steps] for Tzi in Tzs]
     Tzs_diff_cropped = [Tzi[output_steps] for Tzi in Tzs_diff]
@@ -352,7 +360,6 @@ for model_run, param_set in enumerate(param_list):
         borehole_zlocs = np.zeros_like(borehole_xlocs)
         borehole_depths = []
         borehole_temp_measured = []
-
 
         for borehole_number, borehole, xloc_raw in zip(itertools.count(),
                                                        mp.borehole_names,
@@ -724,13 +731,20 @@ for model_run, param_set in enumerate(param_list):
 
     # option to save corrected ages for figure output
 
+    #
+    if exceed_boiling_temp_array is not None:
+        exceed_boiling_temp_array_cropped = exceed_boiling_temp_array[output_steps]
+        boiling_temp_array_cropped = boiling_temp_array[output_steps]
+    else:
+        exceed_boiling_temp_array_cropped = None
+        boiling_temp_array_cropped = None
 
     # gather and save model output
     output_selected = \
         [runtimes, runtimes[output_steps], xyz_array,
          surface_levels[output_steps], x_loc_fault, z_loc_fault,
-         T_init_array, T_array, boiling_temp_array[output_steps],
-         xyz_array_exc, exceed_boiling_temp_array[output_steps], xyz_element_array,
+         T_init_array, T_array, boiling_temp_array_cropped,
+         xyz_array_exc, exceed_boiling_temp_array_cropped, xyz_element_array,
          qh_array[output_steps], qv_array[output_steps], fault_fluxes,
          durations, xzs, Tzs_cropped,
          x_surface, T_surface, AHe_ages_cropped,

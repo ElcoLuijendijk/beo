@@ -317,9 +317,9 @@ def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
     #ps2 = pc.PropertySet("bottommid", surface_flt_base)
     #ps3 = pc.PropertySet("bottomright", surface_base_right)
 
-    ps1 = pc.PropertySet("bottom", lineh8)
-    ps2 = pc.PropertySet("bottom", lineh9)
-    ps3 = pc.PropertySet("bottom", lineh10)
+    ps1 = pc.PropertySet("bottomleft", lineh8)
+    ps2 = pc.PropertySet("bottommid", lineh9)
+    ps3 = pc.PropertySet("bottomright", lineh10)
 
     d.addItems(surface_air, surface_flt_fine,
                surface_fine_left, surface_fine_right, surface_base_left,
@@ -361,6 +361,7 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
     zs_surface = target_zs[::-1]
 
     z_flt = np.concatenate((zs_surface, np.array([z_fine, z_base])))
+
     #z_flt = np.array([z_surface, z_fine, z_base])
     x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
 
@@ -464,10 +465,10 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
 
     d.addItems(*surfaces)
 
-    for hlinei in hlines[-1]:
-        ps = pc.PropertySet("bottom", hlinei)
-
-    d.addItems(ps)
+    labels = ["bottomleft", "bottommid", "bottomright"]
+    for hlinei, label in zip(hlines[-1], labels):
+        ps = pc.PropertySet(label, hlinei)
+        d.addItems(ps)
 
     mesh = fl.MakeDomain(d, optimizeLabeling=True)
 
@@ -741,6 +742,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     vapour_correction=True,
                                     variable_K_air=False, ra=80.0, reference_z_ra=1.8,
                                     screen_output_interval=5,
+                                    steady_state_iterations=10,
                                     debug=False):
 
     """
@@ -795,12 +797,12 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
     print 'modeled steady state temperatures ', T_steady
 
     print 'starting transient heat flow calculations'
-    runtimes = []
+    runtimes = [0.0]
     t_total = 0
-    q_vectors = []
-    Ts = []
-    surface_levels = []
+    q_vectors = [es.Vector((0, 0), es.Function(mesh))]
+    Ts = [T_steady]
     surface_level = surface_level_init
+    surface_levels = [surface_level]
 
     depth = -(xyz[1] - surface_level)
     subsurface = es.whereNonPositive(xyz[1] - surface_level)
@@ -820,11 +822,17 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         ymin_vapour = -es.sup(-(vapour * xyz[1]))
         ymax_vapour = es.sup(vapour * xyz[1])
 
-        boiling_temps = []
-        exceed_boiling_temps = []
+        exceed_boiling_temp = \
+            subsurface * es.wherePositive(T - boiling_temp)
+
+        boiling_temps = [boiling_temp]
+        exceed_boiling_temps = [exceed_boiling_temp]
 
         if es.sup(vapour) >= 1:
             print 'warning, vapour present at initial steady-state P-T conditions'
+    else:
+        boiling_temps = None
+        exceed_boiling_temps = None
 
     for time_period, fault_flux, duration in zip(itertools.count(), fault_fluxes, durations):
 
@@ -892,7 +900,10 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         if specified_flux is not None:
 
             print '\tadding specified flux bnd'
-            specified_heat_flux = -specified_flux * specified_flux_loc * dt
+            if solve_as_steady_state is False:
+                specified_heat_flux = specified_flux * specified_flux_loc * dt
+            else:
+                specified_heat_flux = specified_flux * specified_flux_loc
             #specified_heat_flux = specified_flux * specified_flux_loc
 
             #
@@ -937,8 +948,14 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
         start = time.time()
 
-        #if solve_as_steady_state is True:
-        #    nt = 1
+        if solve_as_steady_state is True:
+
+            if variable_K_air is True or vapour_correction is True:
+                nt = steady_state_iterations
+                print 'running steady-state model with %i iterations for variable K air or vapour correction' % nt
+            else:
+                nt = 1
+                print 'running steady-state model without iterations'
 
         # solve transient heat flux
         for t in range(nt):
@@ -996,7 +1013,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             surface_level = surface_level_init - t_total / year \
                                                  * exhumation_rate
 
-            if exhumation_rate != 0 and surface_level in target_depths:
+            if exhumation_rate != 0 and surface_level in target_depths and solve_as_steady_state is False:
 
                 print '\texhumation, new surface level at %0.2f' % surface_level
                 subsurface = es.whereNonPositive(xyz[1] - surface_level)
@@ -1006,6 +1023,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 air = es.wherePositive(xyz[1] - surface_level)
                 air_ele = es.wherePositive(xyze[1] - surface_level)
                 surface = es.whereZero(xyz[1] - surface_level)
+                surface_ele = es.whereZero(xyze[1] - surface_level)
 
                 #q_vector = q_vector * subsurface
                 q_vector_old = q_vector.copy()
@@ -1013,6 +1031,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 q_vector[1] = q_vector[1] * subsurface_ele
 
                 print '\tmax qv above surface = ', es.sup(air_ele * q_vector[1]) * year
+                print '\tmax qv at surface = ', es.sup(surface_ele * q_vector[1]) * year
                 print '\tmax qv below surface = ', es.sup(subsurface_ele * q_vector[1]) * year
                 print '\tmax qv 10m below surface = ', es.sup(subsurface_ele_10m * q_vector[1]) * year
                 dd = q_vector[1] - q_vector_old[1]
@@ -1066,18 +1085,28 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 c_var = subsurface * c_b + air * c_air
                 rho_var = subsurface * rho_b + air * rho_air
 
-                # reset heatflow PDE coefficients
-                A = dt * K_var * es.kronecker(mesh)
-                C = dt * rho_f * c_f * q_vector
-                D = rho_var * c_var
-                Y = rho_var * c_var * T
+                if solve_as_steady_state is False:
+                    # reset heatflow PDE coefficients
+                    A = dt * K_var * es.kronecker(mesh)
+                    C = dt * rho_f * c_f * q_vector
+                    D = rho_var * c_var
+                    Y = rho_var * c_var * T
+
+                else:
+                    # set PDE coefficients, steady-state flow equation
+                    A = K_var * es.kronecker(mesh)
+                    C = rho_f * c_f * q_vector
+                    D = 0
+                    Y = 0
 
                 # update bnd cond if spec flux bnd
                 if specified_flux is not None:
 
                     #print 'adding specified flux bnd'
-                    specified_heat_flux = specified_flux * specified_flux_loc * dt
-
+                    if solve_as_steady_state is False:
+                        specified_heat_flux = specified_flux * specified_flux_loc * dt
+                    else:
+                        specified_heat_flux = specified_flux * specified_flux_loc
                     #
                     hf_pde.setValue(A=A, C=C, D=D, Y=Y,
                                     r=specified_temperature,
@@ -1135,11 +1164,15 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                         es.wherePositive(top_bnd) * air_temperature \
                         + exceed_boiling_temp * boiling_temp
 
+                hf_pde.setValue(A=A, C=C, D=D, Y=Y,
+                                r=specified_temperature,
+                                q=specified_T_loc)
+
             # solve PDE for temperature
-            #pdb.set_trace()
             print '\tsolving for T'
             T = hf_pde.getSolution()
             print '\tnew T ', T
+
             # update PDE coefficients
             if solve_as_steady_state is False:
                 Y = rho_var * c_var * T
@@ -1148,6 +1181,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                 q=specified_T_loc)
 
             t_total += dt
+            if solve_as_steady_state is True:
+                t_total = 0.0
 
             surface_levels.append(surface_level)
 
@@ -1190,6 +1225,20 @@ def model_run(mp):
 
     z_surface = 0
     z_base = -mp.total_depth
+
+    try:
+        assert np.min(np.array(mp.target_zs)) > mp.z_fine
+    except AssertionError:
+        msg = 'error, the lowest value of the model parameter target_z should always be higher than z_fine'
+        msg += ', otherwise the grid algorithm does not work.\n'
+        msg += 'target_zs = %s\n' % str(mp.target_zs)
+        msg += 'z_fine = %0.1f\n' % mp.z_fine
+        #raise AssertionError(msg)
+        mp.z_fine = np.min(np.array(mp.target_zs)) - mp.cellsize_fine
+
+        msg += 'lowering z_fine to %0.1f' % mp.z_fine
+
+        print msg
 
     if mp.add_exhumation is False:
         print 'construct static mesh without exhumation'
@@ -1238,7 +1287,11 @@ def model_run(mp):
 
         if exhumed_thickness != 0:
             # track AHe and temperature in each exhumed layer in the model domain:
+
+            #test1 = np.concatenate((np.array(mp.target_zs), np.linspace(0, exhumed_thickness, exhumation_steps + 1)))
+            #test2 = np.unique(test1)
             mp.target_zs = np.linspace(0, exhumed_thickness, exhumation_steps + 1)
+            #mp.target_zs = test2
 
         elevation_top = z_surface + exhumed_thickness + mp.air_height
 
@@ -1315,9 +1368,9 @@ def model_run(mp):
 
         #specified_flux_loc = es.wherePositive(bottom_bnd)
         specified_flux_loc = es.Scalar(0, es.FunctionOnBoundary(mesh))
-        specified_flux_loc.setTaggedValue("bottom", 1)
-        specified_flux_loc.setTaggedValue("bottom", 1)
-        specified_flux_loc.setTaggedValue("bottom", 1)
+        specified_flux_loc.setTaggedValue("bottomleft", 1)
+        specified_flux_loc.setTaggedValue("bottommid", 1)
+        specified_flux_loc.setTaggedValue("bottomright", 1)
 
         #specified_flux = specified_flux_loc * mp.basal_heat_flux
         #specified_flux = mp.basal_heat_flux
@@ -1326,9 +1379,9 @@ def model_run(mp):
         #specified_flux = None
 
         specified_flux = es.Scalar(0, es.FunctionOnBoundary(mesh))
-        specified_flux.setTaggedValue("bottom", mp.basal_heat_flux)
-        specified_flux.setTaggedValue("bottom", mp.basal_heat_flux)
-        specified_flux.setTaggedValue("bottom", mp.basal_heat_flux)
+        specified_flux.setTaggedValue("bottomleft", mp.basal_heat_flux)
+        specified_flux.setTaggedValue("bottommid", mp.basal_heat_flux)
+        specified_flux.setTaggedValue("bottomright", mp.basal_heat_flux)
 
     # populate porosity and K_solid values
     fault_x = calculate_fault_x(xyz[1], mp.fault_angles[0], mp.fault_xs[0])
@@ -1522,9 +1575,11 @@ def model_run(mp):
             K_b=K_b, c_b=c_b, rho_b=rho_b,
             K_air=K_air, c_air=mp.c_air, rho_air=mp.rho_air,
             vapour_correction=mp.vapour_correction,
-            variable_K_air=mp.variable_K_air, ra=mp.ra, reference_z_ra=mp.dz)
+            variable_K_air=mp.variable_K_air, ra=mp.ra, reference_z_ra=mp.dz,
+            steady_state_iterations=mp.n_iterations_steady_state)
 
     print 'T after model runs: ', Ts[-1]
+    print 'number of saved temperature fields = %i' % (len(Ts))
     print 'done modeling'
 
     # convert modeled T field and vectors to arrays
@@ -1541,16 +1596,22 @@ def model_run(mp):
     qh_array = np.array(qh_list)
     qv_array = np.array(qv_list)
 
-    xyz_array_bt, b0 = convert_to_array(boiling_temps[-1])
-    boiling_temp_list = [convert_to_array(maxT, no_coords=True) for maxT in boiling_temps]
-    boiling_temp_array = np.array(boiling_temp_list)
+    if boiling_temps is not None:
+        xyz_array_bt, b0 = convert_to_array(boiling_temps[-1])
+        boiling_temp_list = [convert_to_array(maxT, no_coords=True) for maxT in boiling_temps]
+        boiling_temp_array = np.array(boiling_temp_list)
 
-    if np.max(xyz_array_bt - xyz_array_bt) > 0:
-        print 'warning, node coords for boiling and T parameter are not the same'
+        if np.max(xyz_array_bt - xyz_array_bt) > 0:
+            print 'warning, node coords for boiling and T parameter are not the same'
 
-    xyz_array_exc, bte_last = convert_to_array(exceed_boiling_temps[-1])
-    bt_list = [convert_to_array(bt, no_coords=True) for bt in exceed_boiling_temps]
-    exceed_boiling_temp_array = np.array(bt_list)
+        xyz_array_exc, bte_last = convert_to_array(exceed_boiling_temps[-1])
+        bt_list = [convert_to_array(bt, no_coords=True) for bt in exceed_boiling_temps]
+        exceed_boiling_temp_array = np.array(bt_list)
+
+    else:
+        boiling_temp_array = None
+        xyz_array_exc = None
+        exceed_boiling_temp_array = None
 
     ##############################################################
     # calculate temperature at depth slices (surface or otherwise)
@@ -1584,7 +1645,6 @@ def model_run(mp):
 
         Tzs_diff_array = np.zeros_like(Tzs_array)
         # find temperature difference with initial steady-state temperatures
-        #pdb.set_trace()
         for i in range(nt):
             Tzs_diff_array[i, :] = Tzs_array[i, :] - T_init_array[ind]
 
@@ -1643,7 +1703,7 @@ def model_run(mp):
 
         for target_depth in mp.target_zs:
 
-            print '\tfor surface level = %0.2f m' % target_depth
+            print 'modeling AHe for samples at surface level = %0.2f m' % target_depth
             #target_depth = 0
             nt = len(Ts)
 
@@ -1662,7 +1722,7 @@ def model_run(mp):
             for xii in range(nx):
 
                 # reduce the number of timesteps for the AHe algorithm
-                runtimes_filtered = runtimes[::mp.AHe_timestep_reduction]
+                runtimes_filtered = runtimes[1::mp.AHe_timestep_reduction]
                 T_filtered = \
                     T_array[:, ind_surface[xii]][::mp.AHe_timestep_reduction]
 
@@ -1720,7 +1780,7 @@ def model_run(mp):
             # calculate ages of AHe samples
             ###############################
             if mp.model_AHe_samples is True:
-                print '\tfor %i AHe samples' % (len(AHe_relative_sample_distances))
+                print 'modeling the ages for %i AHe samples' % (len(AHe_relative_sample_distances))
                 unique_dist = np.unique(AHe_relative_sample_distances)
 
                 for rel_distance in unique_dist:
@@ -1743,7 +1803,7 @@ def model_run(mp):
                     for xii in (ind_node_left, ind_node_right):
 
                         # reduce the number of timesteps for the AHe algorithm
-                        runtimes_filtered = runtimes[::mp.AHe_timestep_reduction]
+                        runtimes_filtered = runtimes[1::mp.AHe_timestep_reduction]
                         T_filtered = \
                             T_array[:, ind_surface[xii]][::mp.AHe_timestep_reduction]
 
@@ -1776,13 +1836,12 @@ def model_run(mp):
 
                     # find AHe grain data
                     grain_inds = np.where(AHe_relative_sample_distances == rel_distance)[0]
-                    print 'AHe grains:'
-                    print grain_inds
+                    print 'AHe grains: ', grain_inds
                     #print dfhs
                     #for g in grain_inds:
                     #    print sample_names[g]
-                    print 'distance to fault: ', rel_distance
-                    print 'x coord of fault: ', x_flt_timestep
+                    print 'distance to fault (m): ', rel_distance
+                    print 'x coord of fault (m): ', x_flt_timestep
                     print 'absolute distance for layer at z= %0.2f , x = %0.2f m' % (target_depth, distance)
 
                     for grain_ind in grain_inds:
