@@ -240,7 +240,7 @@ for model_run, param_set in enumerate(param_list):
         msg = 'Error, both steady-state and exhumation are set to True. Please change your model parameters file'
         raise ValueError(msg)
 
-    no_exceptions = True
+    no_exceptions = False
     if no_exceptions is True:
         output = beo_core.model_run(Parameters)
 
