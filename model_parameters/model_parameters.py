@@ -41,10 +41,10 @@ class ModelParams:
     air_height = 40.0
 
     # depth to fine discretization near surface:
-    z_fine = -500
+    z_fine = -200
 
     # default cellsize
-    cellsize = 200.0
+    cellsize = 100.0
 
     # cellsize in the air layer:
     cellsize_air = 10.0
@@ -56,7 +56,7 @@ class ModelParams:
     cellsize_fine = 100.0
 
     # in fault zone:
-    cellsize_fault = 5.0
+    cellsize_fault = 2.5
 
     # cellsize at the lower left and right corners:
     cellsize_base = 1000.0
@@ -71,12 +71,12 @@ class ModelParams:
     add_exhumation = True
 
     # exhumation rate in m/yr
-    exhumation_rate = 1e-3
+    exhumation_rate = 1e-5
 
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
     # but this also slows the model down somewhat
-    exhumation_steps = 5
+    exhumation_steps = 10
 
     # minimum layer thickness, if the exhumation steps result in surfaces that
     # are less than the min thickness apart, the number of steps is reduced
@@ -157,7 +157,7 @@ class ModelParams:
     dt = 500.0 * year
 
     # duration of each timestep_slice
-    durations = [1e4 * year]
+    durations = [2e5 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -166,7 +166,7 @@ class ModelParams:
     # comes to the surface in a longer time period
     # note, values should go from low/bottom to high/top
     # warning: the lowest value in target_zs should always be higher than z_fine
-    target_zs = [-1000, 0.0]
+    target_zs = [0, 0.0]
 
     # U-Th/He params
     calculate_he_ages = True
@@ -307,7 +307,7 @@ class ParameterRanges:
 
     # fault_bottoms_s = [[-2000.0], [-2500.0], [-3000.0], [-3500.0], [-4000.0]]
 
-    fault_bottoms_s = [[-4000.0]]
+    fault_bottoms_s = [[-5000.0]]
 
     # thermal_gradient_s = [0.04]
 

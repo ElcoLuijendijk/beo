@@ -20,6 +20,7 @@ import pickle
 import pdb
 import datetime
 import itertools
+import pdb
 
 import numpy as np
 import pandas as pd
@@ -1722,7 +1723,7 @@ def model_run(mp):
             for xii in range(nx):
 
                 # reduce the number of timesteps for the AHe algorithm
-                runtimes_filtered = runtimes[1::mp.AHe_timestep_reduction]
+                runtimes_filtered = runtimes[::mp.AHe_timestep_reduction]
                 T_filtered = \
                     T_array[:, ind_surface[xii]][::mp.AHe_timestep_reduction]
 
@@ -1736,8 +1737,8 @@ def model_run(mp):
 
                 #t_he = np.concatenate((t_prov[:], t_prov[-1] + runtimes))
                 #T_he = np.concatenate((T_prov[:], T_array[:, ind_surface[xii]]))
-                t_he = np.concatenate((t_prov[:], t_prov[-1] + runtimes_filtered))
-                T_he = np.concatenate((T_prov[:], T_filtered))
+                t_he = np.concatenate((t_prov[:], t_prov[-1] + runtimes_filtered[1:]))
+                T_he = np.concatenate((T_prov[:], T_filtered[1:]))
 
                 nt_prov = len(t_prov)
                 #T_he *= 2
@@ -1745,6 +1746,12 @@ def model_run(mp):
                 T_he += mp.Kelvin
 
                 # calculate the AHe age:
+                try:
+                    assert len(t_he) == len(T_he)
+                except:
+                    print 'warning, length temperature and time arrays for AHe model are not equal'
+                    pdb.set_trace()
+
                 he_age_i = he.calculate_he_age_meesters_dunai_2002(
                     t_he, T_he,
                     mp.radius, mp.U238, mp.Th232,
@@ -1756,8 +1763,7 @@ def model_run(mp):
                 # copy AHe ages back into array with same length as the
                 # runtime and temperature arrays
                 he_ages_run_filtered = he_age_i[nt_prov:]
-                he_ages_unfiltered = np.interp(runtimes, runtimes_filtered,
-                                               he_ages_run_filtered)
+                he_ages_unfiltered = np.interp(runtimes, runtimes_filtered[1:], he_ages_run_filtered)
                 he_ages_surface[:, xii] = he_ages_unfiltered
 
             # get surface locs and T
@@ -1803,7 +1809,7 @@ def model_run(mp):
                     for xii in (ind_node_left, ind_node_right):
 
                         # reduce the number of timesteps for the AHe algorithm
-                        runtimes_filtered = runtimes[1::mp.AHe_timestep_reduction]
+                        runtimes_filtered = runtimes[::mp.AHe_timestep_reduction]
                         T_filtered = \
                             T_array[:, ind_surface[xii]][::mp.AHe_timestep_reduction]
 
@@ -1817,8 +1823,8 @@ def model_run(mp):
                                           T_array[:, ind_surface[xii]][-1])
 
                         t_he = np.concatenate((t_prov[:],
-                                               t_prov[-1] + runtimes_filtered))
-                        T_he = np.concatenate((T_prov[:], T_filtered))
+                                               t_prov[-1] + runtimes_filtered[1:]))
+                        T_he = np.concatenate((T_prov[:], T_filtered[1:]))
 
                         nt_prov = len(t_prov)
 
@@ -1845,6 +1851,12 @@ def model_run(mp):
                     print 'absolute distance for layer at z= %0.2f , x = %0.2f m' % (target_depth, distance)
 
                     for grain_ind in grain_inds:
+
+                        try:
+                            assert len(t_he) == len(T_he)
+                        except:
+                            print 'warning, length temperature and time arrays for AHe model are not equal'
+                            pdb.set_trace()
 
                         # calculate AHe ages of two nearest nodes
                         he_age_i = \
@@ -1877,12 +1889,12 @@ def model_run(mp):
                         # runtime and temperature arrays
 
                         he_ages_run_filtered = he_age_i[nt_prov:]
-                        he_ages_unfiltered = np.interp(runtimes, runtimes_filtered,
+                        he_ages_unfiltered = np.interp(runtimes, runtimes_filtered[1:],
                                                        he_ages_run_filtered)
                         he_ages_grains[:, grain_ind] = he_ages_unfiltered
 
                         he_ages_run_filtered = he_age_i_corr[nt_prov:]
-                        he_ages_unfiltered = np.interp(runtimes, runtimes_filtered,
+                        he_ages_unfiltered = np.interp(runtimes, runtimes_filtered[1:],
                                                        he_ages_run_filtered)
                         he_ages_grains_corr[:, grain_ind] = he_ages_unfiltered
 
