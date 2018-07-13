@@ -239,6 +239,10 @@ def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
            [x_left_bnd, z_fine], [x_flt[1], z_fine], [x_flt[1] + fault_width, z_fine], [x_right_bnd, z_fine],
            [x_left_bnd, z_base], [x_flt[2], z_base], [x_flt[2] + fault_width, z_base], [x_right_bnd, z_base]]
 
+    print 'corner points in mesh: '
+    for xysi in xys:
+        print xysi
+
     #points = create_points(xs,zs)
     points = [pc.Point(x, z) for x, z in xys]
 
@@ -334,7 +338,7 @@ def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
     return mesh
 
 
-def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
+def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle, fault_bottom,
                                z_air,
                                z_surface_initial, z_surface_final,
                                z_surface_steps,
@@ -400,6 +404,13 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
                     [xf - fault_width / 2.0, zf],
                     [xf + fault_width / 2.0 + 0.02, zf],
                     [x_right_bnd, zf]])
+    #xys.append([[x_left_bnd, z_base], [x_right_bnd, z_base]])
+
+    print 'corner points in mesh: '
+
+    print 'corner points in mesh: '
+    for xysi in xys:
+        print xysi
 
     points = []
     for xyi in xys:
@@ -439,6 +450,9 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
                        pc.Line(point[2], point[3])]
         hlines.append(hline_local)
 
+    #hlines.append([pc.Line(points[-1][0], points[-1][1])])
+
+
     # vertical lines:
     vlines = [[pc.Line(points[0][0], points[1][0]), pc.Line(points[0][1], points[1][3])]]
     for point, point_below in zip(points[1:], points[2:]):
@@ -447,6 +461,9 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
                        pc.Line(point[2], point_below[2]),
                        pc.Line(point[3], point_below[3])]
         vlines.append(vline_local)
+
+    # bottom lines
+    #vlines.append([pc.Line(points[-2][0], points[-1][0]), pc.Line(points[-2][3], points[-1][1])])
 
     curves = [pc.CurveLoop(hlines[0][0], vlines[0][1],
                            -hlines[1][2], -hlines[1][1], -hlines[1][0],
@@ -458,6 +475,8 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
 
         curves += [curve_local_left, curve_local_fault, curve_local_right]
 
+    #curve_bottom = [pc.CurveLoop(hlines[-2][0], hlines[-2][1], hlines[-2][2], vlines[-1][1], -hlines[-1][0], -vlines[-1][0])]
+
     surfaces = [pc.PlaneSurface(curve) for curve in curves]
 
     d = gmsh.Design(dim=2, element_size=cellsize)
@@ -467,6 +486,7 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
     d.addItems(*surfaces)
 
     labels = ["bottomleft", "bottommid", "bottomright"]
+    # labels = ["bottom"]
     for hlinei, label in zip(hlines[-1], labels):
         ps = pc.PropertySet(label, hlinei)
         d.addItems(ps)
@@ -475,7 +495,179 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle,
 
     mesh.write('mesh.fly')
 
-    return mesh, x_flt[:-2], z_flt[:-2]
+    return mesh, x_flt[:-2], z_flt[:-2], labels
+
+
+def setup_mesh_with_exhumation_new(width, x_flt_surface, fault_width, fault_angle, fault_bottom,
+                                   z_air,
+                                   z_surface_initial, z_surface_final,
+                                   z_surface_steps,
+                                   z_fine, z_base, cellsize,
+                                   cellsize_air, cellsize_surface, cellsize_fault,
+                                   cellsize_fine, cellsize_base, target_zs,
+                                   x_left=0):
+
+    """
+    Create a mesh for the model of the beowawe hydrothermal system, including exhumation
+
+    new version, fault at surface is at x=0 by definition, width denotes the width of the model domain on
+    either side of the fault
+    """
+
+    ###############################
+    # use gmsh to construct domain
+    ##############################
+
+    # calculate fault positions
+    # TODO: enable multiple faults, right now only one fault in model domain
+    #zs_surface = np.linspace(z_surface_initial, z_surface_final, z_surface_steps + 1)
+    #mp.target_zs = np.linspace(0, exhumed_thickness, exhumation_steps + 1)
+
+    zs_surface = target_zs[::-1]
+
+    z_flt = np.concatenate((zs_surface, np.array([z_fine, fault_bottom])))
+
+    #z_flt = np.array([z_surface, z_fine, z_base])
+    x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
+
+    print 'x, z coords of fault locations in mesh:'
+    for x, z in zip(x_flt, z_flt):
+        print x, z
+
+    x_left_bnd = np.min(x_flt) - width
+    x_right_bnd = np.max(x_flt) + width
+
+    check_x_bnds = False
+    if check_x_bnds is True:
+        if np.min(x_flt) <= x_left:
+            print 'warning the left hand side of the fault is at %0.2f, ' \
+                  'which is outside the model domain boundary at x=%0.2f' % (np.min(x_flt), x_left)
+            x_left = np.min(x_flt) - fault_width * 2
+            print 'relocating left hand boundary to %0.2f ' % x_left
+
+        if np.max(x_flt) >= width:
+            print 'warning the right hand side of the fault is at %0.2f, ' \
+                  'which is outside the model domain boundary at x=%0.2f' % (np.max(x_flt), width)
+            width = np.max(x_flt) + fault_width * 2
+            print 'relocating right hand boundary to %0.2f ' % width
+
+
+    #xys = [[0, z_air], [width, z_air],
+    #       [0, z_surface], [x_flt[0], z_surface], [x_flt[0] + fault_width, z_surface], [width, z_surface],
+    #       [0, z_fine], [x_flt[1], z_fine], [x_flt[1] + fault_width, z_fine], [width, z_fine],
+    #       [0, z_base], [x_flt[2], z_base], [x_flt[2] + fault_width, z_base], [width, z_base]]
+
+    xys = [[[x_left_bnd, z_air], [x_right_bnd, z_air]]]
+
+    for xf, zf in zip(x_flt, z_flt):
+        xys.append([[x_left_bnd, zf],
+                    [xf - fault_width / 2.0, zf],
+                    [xf + fault_width / 2.0 + 0.02, zf],
+                    [x_right_bnd, zf]])
+    xys.append([[x_left_bnd, z_base], [x_right_bnd, z_base]])
+
+    print 'corner points in mesh: '
+    for xysi in xys:
+        print xysi
+
+    points = []
+    for xyi in xys:
+        points_local = [pc.Point(x, z) for x, z in xyi]
+        points.append(points_local)
+
+    # fine cellsize in air layer:
+    for point in points[0]:
+        point.setLocalScale(cellsize_air / cellsize)
+
+    # and at top surface:
+    for point in points[1]:
+        point.setLocalScale(cellsize_air / cellsize)
+
+    # small cellsize in surface layers
+    for point_i in points[2:-3]:
+        for p in point_i:
+            p.setLocalScale(cellsize_surface / cellsize)
+
+    # and small cellsize in layer close to surface
+    for point in points[-3]:
+        point.setLocalScale(cellsize_fine / cellsize)
+
+    # small cellsize in fault:
+    for point in points[1:-1]:
+        point[1].setLocalScale(cellsize_fault / cellsize)
+        point[2].setLocalScale(cellsize_fault / cellsize)
+
+    points[-2][0].setLocalScale(cellsize_base / cellsize)
+    points[-2][-1].setLocalScale(cellsize_base / cellsize)
+
+    points[-1][0].setLocalScale(cellsize_base / cellsize)
+    points[-1][-1].setLocalScale(cellsize_base / cellsize)
+
+    # horizontal lines:
+    hlines = [[pc.Line(points[0][0], points[0][1])]]
+    for point in points[1:-1]:
+        hline_local = [pc.Line(point[0], point[1]),
+                       pc.Line(point[1], point[2]),
+                       pc.Line(point[2], point[3])]
+        hlines.append(hline_local)
+
+    hlines.append([pc.Line(points[-1][0], points[-1][1])])
+
+
+    # vertical lines:
+    vlines = [[pc.Line(points[0][0], points[1][0]), pc.Line(points[0][1], points[1][3])]]
+    for point, point_below in zip(points[1:-2], points[2:]):
+        vline_local = [pc.Line(point[0], point_below[0]),
+                       pc.Line(point[1], point_below[1]),
+                       pc.Line(point[2], point_below[2]),
+                       pc.Line(point[3], point_below[3])]
+        vlines.append(vline_local)
+
+    # bottom lines
+    vlines.append([pc.Line(points[-2][0], points[-1][0]), pc.Line(points[-2][3], points[-1][1])])
+
+    curves = [pc.CurveLoop(hlines[0][0], vlines[0][1],
+                           -hlines[1][2], -hlines[1][1], -hlines[1][0],
+                           -vlines[0][0])]
+    for hline, hline_below, vline in zip(hlines[1:-2], hlines[2:-1], vlines[1:]):
+        curve_local_left = pc.CurveLoop(hline[0], vline[1], -hline_below[0], -vline[0])
+        curve_local_fault = pc.CurveLoop(hline[1], vline[2], -hline_below[1], -vline[1])
+        curve_local_right = pc.CurveLoop(hline[2], vline[3], -hline_below[2], -vline[2])
+
+        curves += [curve_local_left, curve_local_fault, curve_local_right]
+
+    curve_bottom = pc.CurveLoop(hlines[-2][0], hlines[-2][1], hlines[-2][2], vlines[-1][1], -hlines[-1][0], -vlines[-1][0])
+
+    curves.append(curve_bottom)
+
+    surfaces = [pc.PlaneSurface(curve) for curve in curves]
+
+    d = gmsh.Design(dim=2, element_size=cellsize)
+
+    d.setMeshFileName('beowawe_mesh')
+
+    d.addItems(*surfaces)
+
+    #labels = ["bottomleft", "bottommid", "bottomright"]
+    #for hlinei, label in zip(hlines[-1], labels):
+    #    ps = pc.PropertySet(label, hlinei)
+    #    d.addItems(ps)
+
+    #labels = ["bottomleft", "bottommid", "bottomright"]
+    #for hlinei, label in zip(hlines[-1], labels):
+    #    ps = pc.PropertySet(label, hlinei)
+    #    d.addItems(ps)
+
+    labels = ["bottom"]
+    for hlinei, label in zip(hlines[-1], labels):
+        ps = pc.PropertySet(label, hlinei)
+        d.addItems(ps)
+
+    mesh = fl.MakeDomain(d, optimizeLabeling=True)
+
+    mesh.write('mesh.stl')
+
+    return mesh, x_flt[:-2], z_flt[:-2], labels
 
 
 def setup_mesh_with_exhumation_v2(width, x_flt_surface, fault_width, fault_angle,
@@ -581,7 +773,7 @@ def setup_mesh_with_exhumation_v2(width, x_flt_surface, fault_width, fault_angle
 
     mesh = fl.MakeDomain(d, optimizeLabeling=True)
 
-    mesh.write('mesh.fly')
+    mesh.write('mesh.stl')
 
     return mesh
 
@@ -978,6 +1170,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
                 land_surface = es.whereZero(xyz[1] - surface_level_mesh)
                 print 'step %i of %i' % (t + 1, nt)
+                print '\truntime = %0.2e yrs' % (t_total / year)
                 print '\tcomputational time for one timestep = %0.3f sec' \
                       % (comptime / 10.0)
                 print '\tactual surface level ', surface_level
@@ -1256,14 +1449,15 @@ def model_run(mp):
         exhumation_steps = 0
         exhumed_thickness = 0
 
-        mesh, x_flt, z_flt = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0],
-                                             mp.fault_widths[0],
-                                             mp.fault_angles[0], elevation_top,
-                                             z_surface, z_surface,
-                                             exhumation_steps,
-                                             mp.z_fine, z_base, mp.cellsize,
-                                             mp.cellsize_air, mp.cellsize_surface, mp.cellsize_fault,
-                                             mp.cellsize_fine, mp.cellsize_base, mp.target_zs)
+        mesh, x_flt, z_flt, bottom_labels = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0],
+                                                        mp.fault_widths[0],
+                                                        mp.fault_angles[0], mp.fault_bottoms[0] - 500.0,
+                                                        elevation_top,
+                                                        z_surface, z_surface,
+                                                        exhumation_steps,
+                                                        mp.z_fine, z_base, mp.cellsize,
+                                                        mp.cellsize_air, mp.cellsize_surface, mp.cellsize_fault,
+                                                        mp.cellsize_fine, mp.cellsize_base, mp.target_zs)
                                              #,mp.fault_widths)
 
         x_flt = np.ones(len(mp.target_zs)) * mp.fault_xs[0]
@@ -1297,14 +1491,15 @@ def model_run(mp):
         elevation_top = z_surface + exhumed_thickness + mp.air_height
 
         if mp.use_mesh_with_buffer is False:
-            mesh, x_flt, z_flt = setup_mesh_with_exhumation(mp.width, mp.fault_xs[0],
-                                                 mp.fault_widths[0],
-                                                 mp.fault_angles[0], elevation_top,
-                                                 z_surface + exhumed_thickness, z_surface,
-                                                 exhumation_steps,
-                                                 mp.z_fine, z_base, mp.cellsize,
-                                                 mp.cellsize_air, mp.cellsize_surface, mp.cellsize_fault,
-                                                 mp.cellsize_fine, mp.cellsize_base, mp.target_zs)
+            mesh, x_flt, z_flt, bottom_labels = setup_mesh_with_exhumation_new(mp.width, mp.fault_xs[0],
+                                                            mp.fault_widths[0],
+                                                            mp.fault_angles[0], mp.fault_bottoms[0] - 500.0,
+                                                            elevation_top,
+                                                            z_surface + exhumed_thickness, z_surface,
+                                                            exhumation_steps,
+                                                            mp.z_fine, z_base, mp.cellsize,
+                                                            mp.cellsize_air, mp.cellsize_surface, mp.cellsize_fault,
+                                                            mp.cellsize_fine, mp.cellsize_base, mp.target_zs)
                                                  #,mp.fault_widths)
 
         else:
@@ -1369,20 +1564,11 @@ def model_run(mp):
 
         #specified_flux_loc = es.wherePositive(bottom_bnd)
         specified_flux_loc = es.Scalar(0, es.FunctionOnBoundary(mesh))
-        specified_flux_loc.setTaggedValue("bottomleft", 1)
-        specified_flux_loc.setTaggedValue("bottommid", 1)
-        specified_flux_loc.setTaggedValue("bottomright", 1)
-
-        #specified_flux = specified_flux_loc * mp.basal_heat_flux
-        #specified_flux = mp.basal_heat_flux
-
-        #specified_flux_loc = None
-        #specified_flux = None
-
         specified_flux = es.Scalar(0, es.FunctionOnBoundary(mesh))
-        specified_flux.setTaggedValue("bottomleft", mp.basal_heat_flux)
-        specified_flux.setTaggedValue("bottommid", mp.basal_heat_flux)
-        specified_flux.setTaggedValue("bottomright", mp.basal_heat_flux)
+
+        for bottom_label in bottom_labels:
+            specified_flux_loc.setTaggedValue(bottom_label, 1)
+            specified_flux.setTaggedValue(bottom_label, mp.basal_heat_flux)
 
     # populate porosity and K_solid values
     fault_x = calculate_fault_x(xyz[1], mp.fault_angles[0], mp.fault_xs[0])

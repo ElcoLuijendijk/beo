@@ -59,7 +59,7 @@ class ModelParams:
     cellsize_fault = 2.5
 
     # cellsize at the lower left and right corners:
-    cellsize_base = 1000.0
+    cellsize_base = 500.0
 
     # new: buffer zone around fault with the same cell size as the fault
     # this is to reduce model instability
@@ -219,7 +219,7 @@ class ModelParams:
     fault_xs = [5000]
 
     # fault width (m)
-    fault_widths = [40.0]
+    fault_widths = [20.0]
 
     # angle of the fault zone (degrees), dip of normal faults ~60-70 degrees
     fault_angles = [-65.0]
@@ -236,7 +236,7 @@ class ModelParams:
     # [[[fault1_segment1_t1, fault1_segment2_t1], [fault2_segment1_t1, fault2_segment2_t1], etc...]
     # note units are m2/sec, ie the integrated flux over the entire width of the
     # fault zone
-    fault_fluxes = [[[-200.0 / year]]]
+    fault_fluxes = [[[-400.0 / year]]]
 
     # aquifers, used for modeling horizontal advective flow
     # use aquifer_top = [None] to not use this:
