@@ -1516,8 +1516,8 @@ def model_run(mp):
 
         for aquifer_loc, aquifer_bottom, aquifer_top in zip(aquifer_locs, mp.aquifer_bottoms, mp.aquifer_tops):
 
-            #flow_cutoff_level = (aquifer_top + aquifer_bottom) / 2.0
-            flow_cutoff_level = aquifer_top
+            flow_cutoff_level = (aquifer_top + aquifer_bottom) / 2.0
+            #flow_cutoff_level = aquifer_top
 
             fault_int_i = es.wherePositive(fault_zone) * es.wherePositive(xyz[1] - flow_cutoff_level)
             fault_int_locs.append(fault_int_i)
