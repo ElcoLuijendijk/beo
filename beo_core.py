@@ -1975,13 +1975,16 @@ def model_run(mp):
                 print 'modeling the ages for %i AHe samples' % (len(AHe_relative_sample_distances))
                 unique_dist = np.unique(AHe_relative_sample_distances)
 
+                # find two nearest nodes for samples
+                x_nodes_unsorted = xyz_array[:, 0][ind_surface]
+                x_nodes_sort_order = np.argsort(x_nodes_unsorted)
+                x_nodes = x_nodes_unsorted[x_nodes_sort_order]
+
+                fault_ind = np.where(target_depth >= z_flt)[0][0]
+                x_flt_timestep = x_flt[fault_ind]
+
                 for rel_distance in unique_dist:
 
-                    # find two nearest nodes for samples
-                    x_nodes = xyz_array[:, 0][ind_surface]
-
-                    fault_ind = np.where(target_depth >= z_flt)[0][0]
-                    x_flt_timestep = x_flt[fault_ind]
                     distance = x_flt_timestep + rel_distance
 
                     ind_node_left = np.where(x_nodes < distance)[0][-1]
@@ -1994,10 +1997,11 @@ def model_run(mp):
 
                     for xii in (ind_node_left, ind_node_right):
 
+                        x_ind = x_nodes_sort_order[xii]
+
                         # reduce the number of timesteps for the AHe algorithm
                         runtimes_filtered = runtimes[::mp.AHe_timestep_reduction]
-                        T_filtered = \
-                            T_array[:, ind_surface[xii]][::mp.AHe_timestep_reduction]
+                        T_filtered = T_array[:, ind_surface[x_ind]][::mp.AHe_timestep_reduction]
 
                         # make sure the last timestep is also included in the new
                         # temperature and time arrays:
@@ -2006,7 +2010,7 @@ def model_run(mp):
                                 np.append(runtimes_filtered, runtimes[-1:])
                             T_filtered = \
                                 np.append(T_filtered,
-                                          T_array[:, ind_surface[xii]][-1])
+                                          T_array[:, ind_surface[x_ind]][-1])
 
                         t_he = np.concatenate((t_prov[:],
                                                t_prov[-1] + runtimes_filtered[1:]))
@@ -2035,6 +2039,8 @@ def model_run(mp):
                     print 'distance to fault (m): ', rel_distance
                     print 'x coord of fault (m): ', x_flt_timestep
                     print 'absolute distance for layer at z= %0.2f , x = %0.2f m' % (target_depth, distance)
+                    print 'total time = %0.2e yr' % (t_he[-1] / year)
+                    #print 'max temp = %0.1f degr. C' % T_he.max()
 
                     for grain_ind in grain_inds:
 

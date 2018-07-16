@@ -240,7 +240,7 @@ for model_run, param_set in enumerate(param_list):
         msg = 'Error, both steady-state and exhumation are set to True. Please change your model parameters file'
         raise ValueError(msg)
 
-    no_exceptions = False
+    no_exceptions = True
     if no_exceptions is True:
         output = beo_core.model_run(Parameters)
 
@@ -525,45 +525,49 @@ for model_run, param_set in enumerate(param_list):
                 max_age = np.max(ages)
                 ind_min_age = np.argmin(ages)
 
-                col_name = 'elevation_layer%i' % i
-                df.loc[output_number, col_name] = target_depths[i]
+                save_data_all_layers = False
 
-                x_min_age = x_coords_int[ind_min_age]
-                col_name = 'lowest_age_layer%i' % i
-                df.loc[output_number, col_name] = min_age
-                col_name = 'highest_age_layer%i' % i
-                df.loc[output_number, col_name] = max_age
-                col_name = 'x_lowest_age_layer%i' % i
-                df.loc[output_number, col_name] = x_min_age
+                if save_data_all_layers is True:
+                    
+                    col_name = 'elevation_layer%i' % i
+                    df.loc[output_number, col_name] = target_depths[i]
 
-                if dev_age.min() < mp.partial_reset_limit:
-                    ind_partial = np.where(dev_age < mp.partial_reset_limit)[0]
-                    x_partial_min = x_coords_int[ind_partial[0]]
-                    x_partial_max = x_coords_int[ind_partial[-1]]
+                    x_min_age = x_coords_int[ind_min_age]
+                    col_name = 'lowest_age_layer%i' % i
+                    df.loc[output_number, col_name] = min_age
+                    col_name = 'highest_age_layer%i' % i
+                    df.loc[output_number, col_name] = max_age
+                    col_name = 'x_lowest_age_layer%i' % i
+                    df.loc[output_number, col_name] = x_min_age
 
-                    col_name = 'x_min_partial_reset_layer%i' % i
-                    df.loc[output_number, col_name] = x_partial_min
-                    col_name = 'x_max_partial_reset_layer%i' % i
-                    df.loc[output_number, col_name] = x_partial_max
-                else:
-                    col_name = 'x_min_partial_reset_layer%i' % i
-                    df.loc[output_number, col_name] = np.nan
-                    col_name = 'x_max_partial_reset_layer%i' % i
-                    df.loc[output_number, col_name] = np.nan
+                    if dev_age.min() < mp.partial_reset_limit:
+                        ind_partial = np.where(dev_age < mp.partial_reset_limit)[0]
+                        x_partial_min = x_coords_int[ind_partial[0]]
+                        x_partial_max = x_coords_int[ind_partial[-1]]
 
-                if ages.min() < mp.reset_limit:
-                    ind_full = np.where(ages < mp.reset_limit)[0]
-                    x_full_min = x_coords_int[ind_full[0]]
-                    x_full_max = x_coords_int[ind_full[-1]]
-                    col_name = 'x_min_full_reset_layer%i' % i
-                    df.loc[output_number, col_name] = x_full_min
-                    col_name = 'x_max_full_reset_layer%i' % i
-                    df.loc[output_number, col_name] = x_full_max
-                else:
-                    col_name = 'x_min_full_reset_layer%i' % i
-                    df.loc[output_number, col_name] = np.nan
-                    col_name = 'x_max_full_reset_layer%i' % i
-                    df.loc[output_number, col_name] = np.nan
+                        col_name = 'x_min_partial_reset_layer%i' % i
+                        df.loc[output_number, col_name] = x_partial_min
+                        col_name = 'x_max_partial_reset_layer%i' % i
+                        df.loc[output_number, col_name] = x_partial_max
+                    else:
+                        col_name = 'x_min_partial_reset_layer%i' % i
+                        df.loc[output_number, col_name] = np.nan
+                        col_name = 'x_max_partial_reset_layer%i' % i
+                        df.loc[output_number, col_name] = np.nan
+
+                    if ages.min() < mp.reset_limit:
+                        ind_full = np.where(ages < mp.reset_limit)[0]
+                        x_full_min = x_coords_int[ind_full[0]]
+                        x_full_max = x_coords_int[ind_full[-1]]
+                        col_name = 'x_min_full_reset_layer%i' % i
+                        df.loc[output_number, col_name] = x_full_min
+                        col_name = 'x_max_full_reset_layer%i' % i
+                        df.loc[output_number, col_name] = x_full_max
+                    else:
+                        col_name = 'x_min_full_reset_layer%i' % i
+                        df.loc[output_number, col_name] = np.nan
+                        col_name = 'x_max_full_reset_layer%i' % i
+                        df.loc[output_number, col_name] = np.nan
 
             # figure out which depth is currently at the surface
             # and calculate the partial and full reset widths for these

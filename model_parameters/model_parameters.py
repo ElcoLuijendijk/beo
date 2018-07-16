@@ -71,7 +71,7 @@ class ModelParams:
     add_exhumation = True
 
     # exhumation rate in m/yr
-    exhumation_rate = 1e-5
+    exhumation_rate = 1e-4
 
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
@@ -96,11 +96,11 @@ class ModelParams:
 
     # calculate bottom T using a fixed geothermal gradient.
     # use None is you want to use a specified basal heat flux instead
-    thermal_gradient = None
+    thermal_gradient = 0.04
     #thermal_gradient = 0.04
 
     # bottom flux bnd condition, set to None if T bnd is used
-    basal_heat_flux = 65e-3
+    basal_heat_flux = None
     #basal_heat_flux = 100e-3
 
     # elevation of layers either side of the fault
@@ -157,7 +157,7 @@ class ModelParams:
     dt = 500.0 * year
 
     # duration of each timestep_slice
-    durations = [2e5 * year]
+    durations = [5e4 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -241,10 +241,10 @@ class ModelParams:
     # aquifers, used for modeling horizontal advective flow
     # use aquifer_top = [None] to not use this:
     # note for multiple aquifers start at the lowest aquifer
-    aquifer_tops = [None]
+    aquifer_tops = [-10]
     #aquifer_tops = [-350.0, -50.0]
-    aquifer_bottoms = [-550.0, -200.0]
-    aquifer_fluxes = [[100.0 / year, -350.0 / year]]
+    aquifer_bottoms = [-200.0]
+    aquifer_fluxes = [[-250.0 / year]]
     # left side of aquifer. right hand bnd is assumed to be the fault zone
     aquifer_left_bnds = [4000.0, 4000.0]
 
