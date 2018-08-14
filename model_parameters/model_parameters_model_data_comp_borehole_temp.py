@@ -1,6 +1,8 @@
 """
 file containing all parameters for Beo.py
 
+this file contains the base parameters for a standard model run
+
 """
 
 __author__ = 'Elco Luijendijk'
@@ -20,8 +22,13 @@ class ModelParams:
     # directory to store model output
     output_folder = 'model_output'
 
+
     #
-    output_fn_adj = 'bw_sens'
+    output_fn_adj = 'beowawe_temp'
+
+    # solver: choose 'DEFAULT', 'DIRECT' or 'GMRES'
+    # GMRES is slower than default, but is more stable
+    solver = 'DEFAULT'
 
     # steady state or transient model
     # note that regardless of this setting, the initial condition of transient model is
@@ -44,7 +51,7 @@ class ModelParams:
     z_fine = -200
 
     # default cellsize
-    cellsize = 100.0
+    cellsize = 250.0
 
     # cellsize in the air layer:
     cellsize_air = 10.0
@@ -167,13 +174,13 @@ class ModelParams:
     # this is not used when exhumation > 0, in this case output is generated
     # once each new surface level is reached
     # the number of surfaces is controlled by the exhumation_steps parameter
-    N_outputs = [10]
+    N_outputs = [21]
 
     # size of a single timestep
-    dt = 1000.0 * year
+    dt = 250.0 * year
 
     # duration of each timestep_slice
-    durations = [2e5 * year]
+    durations = [3e3 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -185,10 +192,10 @@ class ModelParams:
     target_zs = [0.0]
 
     # U-Th/He params
-    calculate_he_ages = True
+    calculate_he_ages = False
 
     # model-data comparison AHe samples
-    model_AHe_samples = True
+    model_AHe_samples = False
     AHe_data_file = 'model_parameters/AHe_data.csv'
     profile_number = 1
 
@@ -202,7 +209,7 @@ class ModelParams:
     # this should be an integer. Ideally this should be 1, but higher numbers
     # significantly speed up the model code
     # !! new parameter (3 march 2017)
-    AHe_timestep_reduction = 1
+    AHe_timestep_reduction = 3
 
     # crystallization age
     t0 = 15.3 * My
@@ -283,7 +290,7 @@ class ModelParams:
 
     # file that contains temperature data
     temperature_file = 'model_parameters/temperature_data.csv'
-    borehole_names = ['85-18']
+    borehole_names = ['85-18', 'Batz']
     report_borehole_xcoords = False
 
     # locations of boreholes for temperature data,
@@ -292,7 +299,7 @@ class ModelParams:
     # the model code automatically calculates the correct position to take
     # into account the changing position of the fault surface over time
     # due to exhumation
-    borehole_xs = [-250.0]
+    borehole_xs = [-20.0, -350]
 
     # temperature changes to report, report area in depth slices with temperature changes > x degrees
     T_change_report = [10.0, 25.0, 50.0]
@@ -319,24 +326,10 @@ class ParameterRanges:
 
     # option to add a first base run with unchanged parameters to the lsit of model
     # runs
-    initial_base_run = False
+    initial_base_run = True
 
     ###################################################################
     # parameters that will be changed in the sensitivity analysis runs:
     ###################################################################
 
-    # fault_bottoms_s = [[-2000.0], [-2500.0], [-3000.0], [-3500.0], [-4000.0]]
-
-    #thermal_gradient_s = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07]
-
-    #durations_s = [[5e5 * year]]
-
-    # variable aerodynamic resistance, see Liu et al (2007). porbably the most important param for surface heat flux
-    #ra_s = [50.0, 80.0, 110.0]
-
-    #exhumation_rate_s = [1.0e-5, 5.0e-5, 1.0e-4, 5.0e-4, 1.0e-3]
-
-    #fault_fluxes_s = [[[[-600.0 / year]]], [[[-500.0 / year]]], [[[-400.0 / year]]], [[[-300.0 / year]]],
-    #                  [[[-200.0 / year]]], [[[-100.0 / year]]]]
-
-    fault_widths_s = [[10.0], [20.0], [30.0], [40.0]]
+    #profile_number_s = [1, 2]

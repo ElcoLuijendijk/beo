@@ -177,21 +177,26 @@ $C = \rho_f c_f \vec{q}$
 
 ## Surface heat flux
 
-We based the value of the thermal conductivity of air on literature values of the sensible and latent heat flux, which tend to dominate heat transfer at the land surface. Following Bateni and Entekhabi [Bateni and Entekhabi, 2012] the sensible heat flux H (W m-2) at the land surface is given by:
 
-$$H = rho c / ra (Ta – Ts)$$
+Temperatures and heat flux at the land surface are controlled by latent and sensible heat flux. Wa approximate latent and sensible heat flux by assigning an artifically high value of thermal conductivity to the layer of air that overlies the land surface in the model domain. Following Bateni and Entekhabi [Bateni and Entekhabi, 2012] the sensible heat flux H (W m-2) at the land surface is given by:
+
+$$H = rho c / r_a (Ta – Ts)$$
 
 Where $\rho$ is density (kg m-3), c is the specific heat of air (J kg-1 K-1), ra is the aerodynamic resistance (s m-1), Ta is the air temperature at a reference level and Ts is the surface temperature. Rewriting this to the conductive heat flow equation gives a value for the effective thermal conductivity (Ks) between the surface and the reference level z:
 
-$$Ks = \rho c / ra \Delta z$$
+$$Ks = \rho c / r_a \Delta z$$
 
-Where $\Delta$z is the difference between the surface and the reference level (m). Following for instance Liu et al. [Liu et al., 2007] the aerodynamic resistance (ra) varies between 10 and 150 s m-1 at a reference level of 1.8 m above the surface.  
+Where $\Delta$z is the difference between the surface and the reference level (m). Following Liu et al. [Liu et al., 2007] the aerodynamic resistance (ra) was set to a value of 80 s m-1 at a reference level of 1.8 m above the surface.  
 
-The latent heat flux is given by (Bateni…):
+Latent heat flux is given by [Bateni and Entekhabi, 2012]:
 
-$$LE = \rho L / ra (q_s – q_a)$$
+$$LE = \rho L / r_a (q_s – q_a)$$
 
-where LE is the latent heat flux (W m-2), rho is the density of air (kg m-3), L is the specific latent heat of vaporisation (J kg-1), which is 334000 J kg-1 (wikipedia….), q_s is the saturated specific humidity at the surface temperature (kg kg-1), q_a is the humidity of the air (kg kg-1).
+where LE is the latent heat flux (W m-2), $\rho$ is the density of air (kg m-3), L is the specific latent heat of vaporisation (J kg-1), which is 334000 J kg-1, q_s is the saturated specific humidity at the surface temperature (kg kg-1), q_a is the humidity of the air (kg kg-1).
+
+Rewriting this yield the heat transfer coefficient for latent heat flux:
+
+$$Kl = \dfrac{\rho  L  \Delta z}{r_a}  \dfrac{q_s - q_a}{T_s - T_a}$$
 
 The saturated specific humidity (q_s) was calculated as (Monteith 1981 in Elkathabi …):
 
@@ -199,9 +204,13 @@ $$q_s = 0.622 e_s / P_a$$
 
 where e_s is saturated air vapor pressure (Pa), P_a is surface air pressure (Pa). The saturated air vapor pressure was calculated using the Magnus equation (Alduchov and Eskridge (1996)):
 
-$$P = 0.61094 \exp \left(\dfrac{17.625 T}{T + 243.04} \right)$$
+$$e_s = 0.61094 \exp \left(\dfrac{17.625 T}{T + 243.04} \right)$$
 
-Air pressure was assumed to be 1e5 Pa. 
+Air pressure was assumed to be $1 \times 10^5$ Pa. 
+
+The thermal conducivity assigned in the air layer is the sum of the heat transfer coefficient for latent heat flux (K_l) and sensible heat flux (K_s).
+
+
 
 
 # Explanation of model parameters <a name="Explanation of model parameters"></a>

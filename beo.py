@@ -412,7 +412,7 @@ for model_run, param_set in enumerate(param_list):
 
                 col_name = 'modeled_T_%s_run_%i_timestep_%i' \
                            % (borehole, model_run, output_steps[j])
-                dft[col_name] = T_mod
+                dft.loc[ind, col_name] = T_mod
 
                 T_error = T_mod - T_obs
                 df.loc[output_number, 'ME_temperature_%s' % borehole] = \

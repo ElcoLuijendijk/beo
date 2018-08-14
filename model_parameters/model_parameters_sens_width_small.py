@@ -21,7 +21,10 @@ class ModelParams:
     output_folder = 'model_output'
 
     #
-    output_fn_adj = 'bw_sens'
+    output_fn_adj = 'bw_sens_fws'
+
+
+    solver = 'DEFAULT'
 
     # steady state or transient model
     # note that regardless of this setting, the initial condition of transient model is
@@ -56,7 +59,7 @@ class ModelParams:
     cellsize_fine = 100.0
 
     # in fault zone:
-    cellsize_fault = 2.5
+    cellsize_fault = 2.0
 
     # cellsize at the lower left and right corners:
     cellsize_base = 500.0
@@ -170,7 +173,7 @@ class ModelParams:
     N_outputs = [10]
 
     # size of a single timestep
-    dt = 1000.0 * year
+    dt = 100.0 * year
 
     # duration of each timestep_slice
     durations = [2e5 * year]
@@ -188,7 +191,7 @@ class ModelParams:
     calculate_he_ages = True
 
     # model-data comparison AHe samples
-    model_AHe_samples = True
+    model_AHe_samples = False
     AHe_data_file = 'model_parameters/AHe_data.csv'
     profile_number = 1
 
@@ -202,7 +205,7 @@ class ModelParams:
     # this should be an integer. Ideally this should be 1, but higher numbers
     # significantly speed up the model code
     # !! new parameter (3 march 2017)
-    AHe_timestep_reduction = 1
+    AHe_timestep_reduction = 3
 
     # crystallization age
     t0 = 15.3 * My
@@ -332,11 +335,11 @@ class ParameterRanges:
     #durations_s = [[5e5 * year]]
 
     # variable aerodynamic resistance, see Liu et al (2007). porbably the most important param for surface heat flux
-    #ra_s = [50.0, 80.0, 110.0]
+    #ra_s = [20.0, 50.0, 80.0, 110.0, 140.0]
 
-    #exhumation_rate_s = [1.0e-5, 5.0e-5, 1.0e-4, 5.0e-4, 1.0e-3]
+    #exhumation_rate_s = [2.5e-5, 7.5e-5, 2.5e-4, 5.0e-4, 7.5e-4]
 
-    fault_fluxes_s = [[[[-600.0 / year]]], [[[-500.0 / year]]], [[[-400.0 / year]]], [[[-300.0 / year]]],
-                      [[[-200.0 / year]]], [[[-100.0 / year]]]]
+    #fault_fluxes_s = [[[[-600.0 / year]]], [[[-500.0 / year]]], [[[-400.0 / year]]], [[[-300.0 / year]]],
+    #                  [[[-200.0 / year]]], [[[-100.0 / year]]]]
 
-    #fault_widths_s = [[10.0], [20.0], [30.0], [40.0]]
+    fault_widths_s = [[10.0]]

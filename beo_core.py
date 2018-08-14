@@ -1172,7 +1172,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 print 'step %i of %i' % (t + 1, nt)
                 print '\truntime = %0.2e yrs' % (t_total / year)
                 print '\tcomputational time for one timestep = %0.3f sec' \
-                      % (comptime / 10.0)
+                      % (comptime / screen_output_interval)
                 print '\tactual surface level ', surface_level
                 print '\tclosest surface in mesh ', surface_level_mesh
                 print '\ttemperature: ', T
@@ -1233,12 +1233,26 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
             # populate K, c and rho scalar fields
             if variable_K_air is True:
+
+                try:
+                    surface_level_mesh_id = np.where(target_depths <= surface_level)[0][-1]
+                    surface_level_mesh = target_depths[surface_level_mesh_id]
+                except:
+                    surface_level_mesh = surface_level
+                    #print '\twarning could not find land surface nodes'
+
+                land_surface = es.whereZero(xyz[1] - surface_level_mesh)
+
                 # base K_air on surface temperature of nodes below. this may be a bit tricky....
-                surface_T = es.sup(surface * T)
+                surface_T = es.sup(land_surface * T)
                 #print 'recalculating K air for surface temperature of %0.2e' % surface_T
 
-                xysa, Tsa = convert_to_array(surface * T)
-                xysa3, sc = convert_to_array(surface)
+                #xysa, Tsa = convert_to_array(surface * T)
+                #xysa3, sc = convert_to_array(surface)
+
+                xysa, Tsa = convert_to_array(land_surface * T)
+                xysa3, sc = convert_to_array(land_surface)
+
                 ind_s = sc == 1
                 xa1 = xysa[:, 0][ind_s]
                 Tsa1 = Tsa[ind_s]
@@ -1528,7 +1542,7 @@ def model_run(mp):
     print 'setting up PDE and boundary conditions'
     hf_pde = linearPDEs.LinearPDE(mesh)
 
-    solver = ''
+    solver = mp.solver
     if solver == 'GMRES':
         print 'using GMRES solver for heat transport PDE'
         hf_pde.getSolverOptions().setSolverMethod(es.SolverOptions.GMRES)

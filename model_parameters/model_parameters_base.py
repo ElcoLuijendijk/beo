@@ -202,7 +202,7 @@ class ModelParams:
     # this should be an integer. Ideally this should be 1, but higher numbers
     # significantly speed up the model code
     # !! new parameter (3 march 2017)
-    AHe_timestep_reduction = 1
+    AHe_timestep_reduction = 3
 
     # crystallization age
     t0 = 15.3 * My
@@ -319,7 +319,7 @@ class ParameterRanges:
 
     # option to add a first base run with unchanged parameters to the lsit of model
     # runs
-    initial_base_run = False
+    initial_base_run = True
 
     ###################################################################
     # parameters that will be changed in the sensitivity analysis runs:
@@ -329,12 +329,12 @@ class ParameterRanges:
 
     #thermal_gradient_s = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07]
 
-    #durations_s = [[5e5 * year]]
+    #durations_s = [[2e5 * year]]
 
     # variable aerodynamic resistance, see Liu et al (2007). porbably the most important param for surface heat flux
-    #ra_s = [50.0, 80.0, 110.0]
+    #ra_s = [20.0, 50.0, 80.0, 110.0, 140.0]
 
-    exhumation_rate_s = [1.0e-5, 5.0e-5, 1.0e-4, 5.0e-4, 1.0e-3]
+    #exhumation_rate_s = [1.0e-5, 5.0e-5, 1.0e-4, 5.0e-4, 1.0e-3]
 
     #fault_fluxes_s = [[[[-600.0 / year]]], [[[-500.0 / year]]], [[[-400.0 / year]]], [[[-300.0 / year]]],
     #                  [[[-200.0 / year]]], [[[-100.0 / year]]]]
