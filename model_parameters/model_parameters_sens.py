@@ -24,7 +24,7 @@ class ModelParams:
     output_fn_adj = 'bw_sens'
 
     solver = 'DEFAULT'
-    
+
     # steady state or transient model
     # note that regardless of this setting, the initial condition of transient model is
     # the steady-state solution without any advection

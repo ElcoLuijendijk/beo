@@ -22,6 +22,7 @@ import itertools
 import numpy as np
 import matplotlib.pyplot as pl
 import matplotlib.mlab
+from matplotlib import ticker
 
 import model_parameters.figure_params as fp
 
@@ -67,6 +68,8 @@ degree_symbol = unichr(176)
 day = 24.0 * 60.0 * 60.0
 year = 365.25 * day
 My = year * 1e6
+
+pl.locator_params(nbins=4)
 
 # timesteps to select for output
 #timeslices = [2, 20, 100]
@@ -535,6 +538,9 @@ for fn in files:
             temp_panel.set_ylim(ymin, ymax)
 
         cb = fig.colorbar(leg_cn, cax=cpanel, orientation='horizontal')
+        tick_locator = ticker.MaxNLocator(nbins=4)
+        cb.locator = tick_locator
+        cb.update_ticks()
         cb.set_label('Temperature (%s C)' % degree_symbol)
 
         if fp.add_legend is True:
