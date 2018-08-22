@@ -216,9 +216,9 @@ for fn in files:
 
         Tas = [T_array[ti] for ti in fp.timeslices]
 
-        pl.locator_params(nbins=3)
-        pl.locator_params(axis='y', nbins=3)
-        pl.locator_params(axis='x', nbins=3)
+        #pl.locator_params(nbins=3)
+        #pl.locator_params(axis='y', nbins=3)
+        #pl.locator_params(axis='x', nbins=3)
 
         #fig, panels = pl.subplots(1, 3, figsize=(8, 6), sharey=True)
         fig = pl.figure(figsize=(fp.xsize, fp.ysize))
@@ -456,7 +456,7 @@ for fn in files:
 
             p.set_xlabel('Distance (m)')
 
-            p.set_xticks(p.get_xticks()[:-1])
+            #p.set_xticks(p.get_xticks()[:-1])
 
         for p, tp in zip(panels[1:], tpanels[1:]):
             p.set_yticklabels([])
@@ -467,7 +467,7 @@ for fn in files:
             tp.set_ylim(0, T_surface[-1].max() * 1.1)
             tp.yaxis.grid(False)
             tp.set_xlim(xmin, xmax)
-            tp.set_xticks(tp.get_xticks()[:-1])
+            #tp.set_xticks(tp.get_xticks()[:-1])
 
         for tp in tpanels[:]:
             tp.spines['top'].set_visible(False)
@@ -532,7 +532,7 @@ for fn in files:
             temp_panel.set_ylim(ymin, ymax)
 
         cb = fig.colorbar(leg_cn, cax=cpanel, orientation='horizontal')
-        tick_locator = ticker.MaxNLocator(nbins=3)
+        tick_locator = ticker.MaxNLocator(nbins=fp.bins_colorbar)
         cb.locator = tick_locator
         cb.update_ticks()
         cb.set_label('Temperature (%s C)' % degree_symbol)
@@ -558,16 +558,15 @@ for fn in files:
 
         for i, p in enumerate(all_panels):
             p.text(0.01, 1.01, string.ascii_lowercase[i],
-                   weight='bold', transform=p.transAxes, ha='left', va='bottom', fontsize='large')
+                   weight='bold', transform=p.transAxes, ha='left', va='bottom', fontsize='medium')
 
         for p in all_panels:
-            xticks = p.get_xticks()
-            if len(xticks) > 3:
-                p.set_xticks(xticks[::2])
 
-            yticks = p.get_yticks()
-            if len(yticks) > 3:
-                p.set_yticks(yticks[::2])
+            locy = ticker.MaxNLocator(nbins=fp.bins_yaxis)  # this locator puts ticks at regular intervals
+            locx = ticker.MaxNLocator(nbins=fp.bins_xaxis)  # this locator puts ticks at regular intervals
+
+            p.xaxis.set_major_locator(locx)
+            p.yaxis.set_major_locator(locy)
 
             #temp_panel.set_yticks(temp_panel.get_yticks()[::2])
 
