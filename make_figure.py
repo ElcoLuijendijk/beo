@@ -14,6 +14,7 @@ Elco Luijendijk, Goettingen University, 2015-2017
 import matplotlib
 matplotlib.use('Agg')
 
+import string
 import os
 import pickle
 import pdb
@@ -69,7 +70,6 @@ day = 24.0 * 60.0 * 60.0
 year = 365.25 * day
 My = year * 1e6
 
-pl.locator_params(nbins=4)
 
 # timesteps to select for output
 #timeslices = [2, 20, 100]
@@ -215,6 +215,10 @@ for fn in files:
         #fp.dy = 10.0
 
         Tas = [T_array[ti] for ti in fp.timeslices]
+
+        pl.locator_params(nbins=3)
+        pl.locator_params(axis='y', nbins=3)
+        pl.locator_params(axis='x', nbins=3)
 
         #fig, panels = pl.subplots(1, 3, figsize=(8, 6), sharey=True)
         fig = pl.figure(figsize=(fp.xsize, fp.ysize))
@@ -433,7 +437,7 @@ for fn in files:
 
         for p in panels:
 
-            p.yaxis.grid(True)
+            p.yaxis.grid(False)
 
             if fp.xlim is not None:
                 if fp.xlim[0] > xmin:
@@ -449,10 +453,10 @@ for fn in files:
 
             p.set_xlim(xmin, xmax)
             p.set_ylim(ymin, ymax)
-            if len(p.get_xticks()) > 3:
-                print 'reducing number of xticks'
-                #p.set_xticks(p.get_xticks()[:-1])
+
             p.set_xlabel('Distance (m)')
+
+            p.set_xticks(p.get_xticks()[:-1])
 
         for p, tp in zip(panels[1:], tpanels[1:]):
             p.set_yticklabels([])
@@ -461,7 +465,7 @@ for fn in files:
         for tp in tpanels[:]:
             tp.set_xticklabels([])
             tp.set_ylim(0, T_surface[-1].max() * 1.1)
-            tp.yaxis.grid(True)
+            tp.yaxis.grid(False)
             tp.set_xlim(xmin, xmax)
             tp.set_xticks(tp.get_xticks()[:-1])
 
@@ -501,26 +505,16 @@ for fn in files:
             temp_panel.spines['right'].set_visible(False)
             temp_panel.get_yaxis().tick_left()
             temp_panel.set_xlabel('Borehole\ntemperature (%sC)' % degree_symbol)
-            temp_panel.set_yticks(temp_panel.get_yticks()[::2])
-            if ncols > 3 and len(temp_panel.get_xticks()) > 3:
-                print 'reducing number of xticks'
-                #temp_panel.set_xticks(temp_panel.get_xticks()[::2])
 
-        for panel in panels:
-            panel.set_yticks(panel.get_yticks()[::2])
+        #for panel in panels:
+        #    panel.set_yticks(panel.get_yticks()[::2])
 
-        for tpanel in tpanels:
-            tpanel.set_yticks(tpanel.get_yticks()[::2])
+        #for tpanel in tpanels:
+        #    tpanel.set_yticks(tpanel.get_yticks()[::2])
 
-        if Ahe_ages_all is not None:
-            for rpanel in rpanels:
-                rpanel.set_yticks(rpanel.get_yticks()[::2])
-
-        for panel, tpanel in zip(panels, tpanels):
-            if len(panel.get_xticks()) > 2:
-                print 'reducing number of xticks'
-                #panel.set_xticks(panel.get_xticks()[::2])
-                #tpanel.set_xticks(tpanel.get_xticks()[::2])
+        #if Ahe_ages_all is not None:
+        #    for rpanel in rpanels:
+        #        rpanel.set_yticks(rpanel.get_yticks()[::2])
 
         tpanels[0].set_ylabel('Surface\ntemperature (%sC)' % degree_symbol)
 
@@ -538,7 +532,7 @@ for fn in files:
             temp_panel.set_ylim(ymin, ymax)
 
         cb = fig.colorbar(leg_cn, cax=cpanel, orientation='horizontal')
-        tick_locator = ticker.MaxNLocator(nbins=4)
+        tick_locator = ticker.MaxNLocator(nbins=3)
         cb.locator = tick_locator
         cb.update_ticks()
         cb.set_label('Temperature (%s C)' % degree_symbol)
@@ -557,6 +551,25 @@ for fn in files:
         fn_local2 = os.path.join('model_output', fn_local1)
 
         #gs.tight_layout(fig)
+
+        all_panels = tpanels + panels
+        if fp.add_temperature_panel is True:
+            all_panels.append(temp_panel)
+
+        for i, p in enumerate(all_panels):
+            p.text(0.01, 1.01, string.ascii_lowercase[i],
+                   weight='bold', transform=p.transAxes, ha='left', va='bottom', fontsize='large')
+
+        for p in all_panels:
+            xticks = p.get_xticks()
+            if len(xticks) > 3:
+                p.set_xticks(xticks[::2])
+
+            yticks = p.get_yticks()
+            if len(yticks) > 3:
+                p.set_yticks(yticks[::2])
+
+            #temp_panel.set_yticks(temp_panel.get_yticks()[::2])
 
         print 'saving %s' % fn_fig
         fig.savefig(fn_local2, dpi=fp.figure_resolution)
