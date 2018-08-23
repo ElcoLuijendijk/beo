@@ -403,15 +403,57 @@ for fn in files:
 
                 for rp, timeslice in zip(rpanels, fp.timeslices):
                     x = x_loc_fault[timeslice] + xr
-                    leg_ahe_samples = rp.errorbar(x, y, yerr=yerr,
-                                                  marker='o',
-                                                  ms=fp.marker_size,
-                                                  markeredgecolor='black',
-                                                  color=fp.AHe_color,
-                                                  linestyle='None')
 
-                legs.append(leg_ahe_samples)
-                labels.append('measured AHe ages')
+                    if fp.show_average_AHe_ages is False:
+                        leg_ahe_samples = rp.errorbar(x, y, yerr=yerr,
+                                                      marker='o',
+                                                      ms=fp.marker_size,
+                                                      markeredgecolor='black',
+                                                      color=fp.AHe_color,
+                                                      linestyle='None')
+                        #legs.append(leg_ahe_samples)
+                        #labels.append('measured AHe ages')
+
+                    else:
+                        leg_ahe_samples_single = rp.scatter(x, y,
+                                                     marker='o',
+                                                     s=4,
+                                                     color='gray',
+                                                     linestyle='None')
+                        sample_ids = np.unique(AHe_data_file['sample'])
+                        avg_ages = []
+                        avg_age_ses = []
+                        avg_dists = []
+                        for sample_id in sample_ids:
+                            ind = AHe_data_file['sample'] == sample_id
+                            avg_age_i = np.mean(AHe_data_file.loc[ind, 'AHe_age_corr'])
+                            avg_age_se_i = np.mean(AHe_data_file.loc[ind, 'AHe_age_corr_2se'])
+                            avg_dist_i = np.mean(AHe_data_file.loc[ind, 'distance_to_fault'])
+
+                            avg_ages.append(avg_age_i)
+                            avg_age_ses.append(avg_age_se_i)
+                            avg_dists.append(avg_dist_i)
+
+                        x = x_loc_fault[timeslice] + np.array(avg_dists)
+                        leg_ahe_samples = rp.errorbar(x, avg_ages, yerr=avg_age_ses,
+                                                      marker='o',
+                                                      ms=fp.marker_size,
+                                                      markerfacecolor='None',
+                                                      markeredgecolor=fp.AHe_color,
+                                                      color=fp.AHe_color,
+                                                      linestyle='None',
+                                                      lw=0.5)
+
+                if fp.show_average_AHe_ages is False:
+                    legs.append(leg_ahe_samples)
+                    labels.append('measured AHe ages')
+
+                else:
+
+                    legs.append(leg_ahe_samples_single)
+                    labels.append('measured AHe ages')
+                    legs.append(leg_ahe_samples)
+                    labels.append('average AHe ages')
 
         if fp.add_temperature_panel is True:
 

@@ -62,6 +62,7 @@ AHe_color = 'blue'
 #AHe_color = 'None'
 show_AHe_data = True
 
+show_average_AHe_ages = True
 
 # add a legend or not
 add_legend = True
