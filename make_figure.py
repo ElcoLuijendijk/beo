@@ -418,14 +418,18 @@ for fn in files:
                         leg_ahe_samples_single = rp.scatter(x, y,
                                                      marker='o',
                                                      s=4,
-                                                     color='gray',
-                                                     linestyle='None')
-                        sample_ids = np.unique(AHe_data_file['sample'])
+                                                     color='gray')
+
+                        sample_names_adj = [s.split(' ')[0] for s in AHe_data_file['sample'].values]
+                        AHe_data_file['sample_names_adj'] = sample_names_adj
+                        sample_ids = np.unique(AHe_data_file['sample_names_adj'])
+
+
                         avg_ages = []
                         avg_age_ses = []
                         avg_dists = []
                         for sample_id in sample_ids:
-                            ind = AHe_data_file['sample'] == sample_id
+                            ind = AHe_data_file['sample_names_adj'] == sample_id
                             avg_age_i = np.mean(AHe_data_file.loc[ind, 'AHe_age_corr'])
                             avg_age_se_i = np.mean(AHe_data_file.loc[ind, 'AHe_age_corr_2se'])
                             avg_dist_i = np.mean(AHe_data_file.loc[ind, 'distance_to_fault'])
@@ -442,7 +446,7 @@ for fn in files:
                                                       markeredgecolor=fp.AHe_color,
                                                       color=fp.AHe_color,
                                                       linestyle='None',
-                                                      lw=0.5)
+                                                      lw=1.0)
 
                 if fp.show_average_AHe_ages is False:
                     legs.append(leg_ahe_samples)
@@ -451,9 +455,9 @@ for fn in files:
                 else:
 
                     legs.append(leg_ahe_samples_single)
-                    labels.append('measured AHe ages')
+                    labels.append('measured single grain AHe ages')
                     legs.append(leg_ahe_samples)
-                    labels.append('average AHe ages')
+                    labels.append('average AHe ages samples')
 
         if fp.add_temperature_panel is True:
 

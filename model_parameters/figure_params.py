@@ -24,8 +24,8 @@ height_ratios = [25, 75, 7, 3]
 # limits of x and y axis of figure, set xlim = None and ylim = None to show the entire model domain
 #xlim = None
 #ylim = None
-xlim = [4250, 5750]
-ylim = [-1400, 100]
+xlim = [4900, 5100]
+ylim = [-200, 10]
 
 # number of labels on x, y axis and colorbar
 bins_xaxis = 3
@@ -33,7 +33,7 @@ bins_yaxis = 3
 bins_colorbar = 3
 
 # add an extra panel on the right with the modeled temperatures
-add_temperature_panel = True
+add_temperature_panel = False
 relative_size_temp_panel = 0.5
 
 # grid size for interpolating model results
@@ -50,6 +50,7 @@ scale_multiplier = 25.0
 
 # show only one in every x flow arrows:
 skip_arrows = 5
+skip_arrows = 5
 
 arrow_transparency = 0.75
 
@@ -57,7 +58,7 @@ arrow_transparency = 0.75
 show_vapour = True
 
 # marker size and color for AHe data:
-marker_size = 4
+marker_size = 7
 AHe_color = 'blue'
 #AHe_color = 'None'
 show_AHe_data = True
