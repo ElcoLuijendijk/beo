@@ -1355,8 +1355,11 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
                 exceed_max_liquid_T_old =  exceed_boiling_temp
 
-            if vapour_correction is True:
+            if vapour_correction is True or exhumation_rate != 0:
 
+                height = xyz[1] - surface_level
+                top_bnd = es.whereNonNegative(height - mp.air_height)
+                
                 if bottom_temperature is not None:
                     specified_T_loc = es.wherePositive(top_bnd) \
                                       + es.wherePositive(bottom_bnd) \
