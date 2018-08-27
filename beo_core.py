@@ -925,7 +925,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     rho_f, c_f,
                                     specified_temperature, specified_flux,
                                     dt,
-                                    top_bnd, bottom_bnd,
+                                    top_bnd, bottom_bnd, air_height,
                                     air_temperature, bottom_temperature,
                                     solve_as_steady_state=True,
                                     surface_level_init=0, exhumation_rate=0,
@@ -1337,7 +1337,6 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                     logP = es.log10(P / 1.0e6)
                     boiling_temp = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
 
-
             # recalculate vapour pressure and max liquid temperature
             if vapour_correction is True:
                 #vapour_pressure = calculate_vapour_pressure(T)
@@ -1358,8 +1357,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             if vapour_correction is True or exhumation_rate != 0:
 
                 height = xyz[1] - surface_level
-                top_bnd = es.whereNonNegative(height - mp.air_height)
-                
+                top_bnd = es.whereNonNegative(height - air_height)
+
                 if bottom_temperature is not None:
                     specified_T_loc = es.wherePositive(top_bnd) \
                                       + es.wherePositive(bottom_bnd) \
@@ -1771,7 +1770,7 @@ def model_run(mp):
             mp.rho_f, mp.c_f,
             specified_T, specified_flux,
             mp.dt,
-            top_bnd, bottom_bnd,
+            top_bnd, bottom_bnd, mp.air_height,
             mp.air_temperature, bottom_temperature,
             solve_as_steady_state=mp.steady_state,
             surface_level_init=surface_level, exhumation_rate=mp.exhumation_rate,

@@ -25,6 +25,8 @@ class ModelParams:
     #
     output_fn_adj = 'beowawe_AHe'
 
+    solver = 'DEFAULT'
+
     # steady state or transient model
     # note that regardless of this setting, the initial condition of transient model is
     # the steady-state solution without any advection
@@ -261,9 +263,9 @@ class ModelParams:
     # use aquifer_top = [None] to not use this:
     # note for multiple aquifers start at the lowest aquifer
     # aquifer_tops = [-350.0, -50.0]
-    aquifer_tops = [-10.0]
+    aquifer_tops = [40.0]
     #aquifer_bottoms = [-550.0, -200.0]
-    aquifer_bottoms = [-200.0]
+    aquifer_bottoms = [-50.0]
     #aquifer_fluxes = [[100.0 / year, -350.0 / year]]
     # sideways flux is 2/3 of total (Olmsted & Rush) = 2/3. * 380.0 = 250 m2/year
     aquifer_fluxes = [[-250.0 / year]]
