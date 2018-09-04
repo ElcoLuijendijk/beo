@@ -283,7 +283,7 @@ for model_run, param_set in enumerate(param_list):
     # crop output to only the output timesteps, to limit filesize
     output_steps = [0]
     for duration, N_output in zip(mp.durations, mp.N_outputs):
-        nt = int(duration / mp.dt)
+        nt = int(duration / mp.dt_stored)
 
         output_steps_i = list(np.linspace(0, nt-1, N_output).astype(int) + 1)
         output_steps += output_steps_i

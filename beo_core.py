@@ -936,6 +936,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     variable_K_air=False, ra=80.0, reference_z_ra=1.8,
                                     screen_output_interval=5,
                                     steady_state_iterations=10,
+                                    store_results_interval=1,
                                     debug=False):
 
     """
@@ -967,6 +968,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
     A = K_var * es.kronecker(mesh)
     C = 0
     D = 0
+
+    store_results_count = 0
 
     if specified_flux is not None:
         print 'solving with specified heat flux bnd'
@@ -1397,17 +1400,21 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             surface_levels.append(surface_level)
 
             # store output
-            Ts.append(T)
-            q_vectors.append(q_vector.copy())
+            store_results_count += 1
+            if store_results_count >= store_results_interval:
+                Ts.append(T)
+                q_vectors.append(q_vector.copy())
 
-            if vapour_correction is True:
-                boiling_temps.append(boiling_temp)
-                exceed_boiling_temps.append(exceed_boiling_temp)
+                if vapour_correction is True:
+                    boiling_temps.append(boiling_temp)
+                    exceed_boiling_temps.append(exceed_boiling_temp)
 
-            #ti = output_steps.index(t)
-            #print 'surface T: ', T * surface
+                #ti = output_steps.index(t)
+                #print 'surface T: ', T * surface
 
-            runtimes.append(t_total)
+                runtimes.append(t_total)
+
+                store_results_count = 0
 
         print 'T after advective heating ', T
 
@@ -1758,6 +1765,11 @@ def model_run(mp):
             aquifer_flux_i = [a / aquifer_thickness for a in aquifer_flux]
             aquifer_fluxes_m_per_sec.append(aquifer_flux_i)
 
+    store_results_interval = mp.dt_stored / mp.dt
+    if float(store_results_interval) != int(store_results_interval):
+        raise ValueError('error, dt_stored divided by dt should be an integer.')
+
+
     # model hydrothermal heating
     runtimes, T_steady, Ts, q_vectors, surface_levels, boiling_temps, exceed_boiling_temps = \
         model_hydrothermal_temperatures(
@@ -1779,7 +1791,8 @@ def model_run(mp):
             K_air=K_air, c_air=mp.c_air, rho_air=mp.rho_air,
             vapour_correction=mp.vapour_correction,
             variable_K_air=mp.variable_K_air, ra=mp.ra, reference_z_ra=mp.dz,
-            steady_state_iterations=mp.n_iterations_steady_state)
+            steady_state_iterations=mp.n_iterations_steady_state,
+            store_results_interval=store_results_interval)
 
     print 'T after model runs: ', Ts[-1]
     print 'number of saved temperature fields = %i' % (len(Ts))
@@ -1908,7 +1921,7 @@ def model_run(mp):
 
             print 'modeling AHe for samples at surface level = %0.2f m' % target_depth
             #target_depth = 0
-            nt = len(Ts)
+            #nt = len(Ts)
 
             #ind_surface1 = xyz_array[:, 1] == target_depth
             z_tolerance = 0.01
@@ -2202,7 +2215,7 @@ if __name__ == "__main__":
 
     output_steps = []
     for duration, N_output in zip(mp.durations, mp.N_outputs):
-        nt = int(duration / mp.dt)
+        nt = int(duration / mp.dt_stored)
 
         output_steps_i = list(np.linspace(0, nt-1, N_output).astype(int))
         output_steps += output_steps_i

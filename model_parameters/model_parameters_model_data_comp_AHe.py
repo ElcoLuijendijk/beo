@@ -23,10 +23,9 @@ class ModelParams:
     output_folder = 'model_output'
 
     #
-    output_fn_adj = 'beowawe_AHe'
+    output_fn_adj = 'beowawe_AHe_profile_3_v2'
 
-    solver = 'DEFAULT'
-
+    solver = 'GMRES'
     # steady state or transient model
     # note that regardless of this setting, the initial condition of transient model is
     # the steady-state solution without any advection
@@ -42,16 +41,16 @@ class ModelParams:
     # model dimensions
     width = 2000.0
     total_depth = 8000.0
-    air_height = 40.0
+    air_height = 10.0
 
     # depth to fine discretization near surface:
-    z_fine = -200
+    z_fine = -150
 
     # default cellsize
-    cellsize = 100.0
+    cellsize = 200.0
 
     # cellsize in the air layer:
-    cellsize_air = 10.0
+    cellsize_air = 5.0
 
     # cellsize at surface layers:
     cellsize_surface = 50.0
@@ -80,7 +79,7 @@ class ModelParams:
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
     # but this also slows the model down somewhat
-    exhumation_steps = 10
+    exhumation_steps = 20
 
     # minimum layer thickness, if the exhumation steps result in surfaces that
     # are less than the min thickness apart, the number of steps is reduced
@@ -166,18 +165,18 @@ class ModelParams:
     # measurement height for aerodynamic resistance
     dz = 1.8
 
-    # timesteps
     # number of output steps
-    # this is not used when exhumation > 0, in this case output is generated
-    # once each new surface level is reached
-    # the number of surfaces is controlled by the exhumation_steps parameter
-    N_outputs = [10]
+    N_outputs = [41]
 
     # size of a single timestep
-    dt = 1000.0 * year
+    dt = 250.0 * year
+
+    # size of timestep to store model results. make this higher than dt if you want to conserve memory, otherwise make
+    # this the same as dt
+    dt_stored = 1000.0 * year
 
     # duration of each timestep_slice
-    durations = [5e5 * year]
+    durations = [2e5 * year]
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -194,7 +193,7 @@ class ModelParams:
     # model-data comparison AHe samples
     model_AHe_samples = True
     AHe_data_file = 'model_parameters/AHe_data.csv'
-    profile_number = 1
+    profile_number = 3
 
     #save the AHe ages at the surface to a separate file
     save_AHe_ages = False
@@ -209,7 +208,7 @@ class ModelParams:
     AHe_timestep_reduction = 3
 
     # crystallization age
-    t0 = 15.3 * My
+    t0 = 15.6 * My
 
     # temperature of apatites after crystallization and before hydrothermal heating
     T0 = 10.0
@@ -239,7 +238,7 @@ class ModelParams:
     fault_xs = [5000.0]
 
     # fault width (m)
-    fault_widths = [20.0]
+    fault_widths = [10.0]
 
     # angle of the fault zone (degrees), dip of normal faults ~60-70 degrees
     fault_angles = [-65.0]
@@ -283,7 +282,7 @@ class ModelParams:
     # option to calculate temperature data for one or several boreholes
     # note that there seems to be a bug in the output timesteps for the temperature calculation
     # avoid using this for now...
-    analyse_borehole_temp = True
+    analyse_borehole_temp = False
 
     # file that contains temperature data
     temperature_file = 'model_parameters/temperature_data.csv'
@@ -299,7 +298,7 @@ class ModelParams:
     borehole_xs = [-250.0]
 
     # temperature changes to report, report area in depth slices with temperature changes > x degrees
-    T_change_report = [10.0, 25.0, 50.0]
+    T_change_report = [10.0]
 
 
 class ParameterRanges:
@@ -329,4 +328,4 @@ class ParameterRanges:
     # parameters that will be changed in the sensitivity analysis runs:
     ###################################################################
 
-    profile_number_s = [1, 2]
+    #profile_number_s = [1, 2]
