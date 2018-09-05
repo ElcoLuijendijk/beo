@@ -18,9 +18,9 @@ import scipy.interpolate
 import numpy as np
 import pandas as pd
 
-from model_parameters.model_parameters import ModelParams
+#from model_parameters.model_parameters import ModelParams
 #import model_parameters.parameter_ranges as pr
-from model_parameters.model_parameters import ParameterRanges as pr
+#from model_parameters.model_parameters import ParameterRanges as pr
 
 import beo_core
 
