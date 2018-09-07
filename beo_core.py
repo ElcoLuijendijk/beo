@@ -1397,13 +1397,13 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             if solve_as_steady_state is True:
                 t_total = 0.0
 
-            surface_levels.append(surface_level)
-
             # store output
             store_results_count += 1
             if store_results_count >= store_results_interval:
                 Ts.append(T)
                 q_vectors.append(q_vector.copy())
+
+                surface_levels.append(surface_level)
 
                 if vapour_correction is True:
                     boiling_temps.append(boiling_temp)
