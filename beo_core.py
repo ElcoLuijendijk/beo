@@ -1030,8 +1030,18 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         boiling_temps = None
         exceed_boiling_temps = None
 
+    try:
+        assert len(fault_fluxes) == len(durations)
+    except AssertionError:
+        msg = 'error, the length of the fault_fluxes and durations arrays or list do not match'
+        msg += '\ncheck you model parameters file'
+        raise ValueError(msg)
+
+    n_time_periods = len(durations)
+
     for time_period, fault_flux, duration in zip(itertools.count(), fault_fluxes, durations):
 
+        print 'time period %i of %i' % (time_period + 1, n_time_periods)
         print 'duration of %i' % duration
         print 'fluxes in faults: ', fault_flux
 
@@ -1067,6 +1077,10 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 print 'adding aquifer flux %0.2e to aquifer %i' \
                       % (aquifer_flux, k)
                 q_vector[0] += aquifer_loc * aquifer_flux
+
+        print 'modeled advective flux:'
+        print '\tqh = ', q_vector[0]
+        print '\tqz = ', q_vector[1]
 
         # make sure only flow in subsurface
         subsurface_ele = es.whereNonPositive(xyze[1] - surface_level)
@@ -1328,17 +1342,17 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     r=specified_temperature,
                                     q=specified_T_loc)
 
-                # recalculate fluid pressure
-                xyz = mesh.getX()
-                depth = -(xyz[1] - surface_level)
+            # recalculate fluid pressure
+            xyz = mesh.getX()
+            depth = -(xyz[1] - surface_level)
 
-                if vapour_correction is True:
-                    P_init = fluid_density * g * depth + atmospheric_pressure
-                    P = P_init * es.wherePositive(depth) \
-                        + atmospheric_pressure * es.whereNonPositive(depth)
+            if vapour_correction is True:
+                P_init = fluid_density * g * depth + atmospheric_pressure
+                P = P_init * es.wherePositive(depth) \
+                    + atmospheric_pressure * es.whereNonPositive(depth)
 
-                    logP = es.log10(P / 1.0e6)
-                    boiling_temp = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
+                logP = es.log10(P / 1.0e6)
+                boiling_temp = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
 
             # recalculate vapour pressure and max liquid temperature
             if vapour_correction is True:
@@ -1352,10 +1366,10 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 else:
                     exceed_boiling_temp = \
                         subsurface * es.whereZero(exceed_max_liquid_T_old) \
-                        * es.wherePositive(T - boiling_temp) \
-                        + subsurface * exceed_max_liquid_T_old
+                        * es.wherePositive(T - boiling_temp) #\
+                        #+ subsurface * exceed_max_liquid_T_old
 
-                exceed_max_liquid_T_old =  exceed_boiling_temp
+                exceed_max_liquid_T_old = exceed_boiling_temp
 
             if vapour_correction is True or exhumation_rate != 0:
 
@@ -1669,7 +1683,7 @@ def model_run(mp):
                 in zip(itertools.count(), mp.fault_xs, mp.fault_angles,
                        mp.fault_widths, mp.fault_bottoms, mp.fault_segments):
 
-            fault_segment_tops = [fault_bottom] + fault_segments
+            fault_segment_tops = fault_segments
 
             depth = xyz[1]
             #x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
@@ -1678,7 +1692,8 @@ def model_run(mp):
             fault_right = fault_left + fault_width + 0.02
 
             fault_segments_i = []
-            for segment_top, segment_bottom in zip(fault_segment_tops[1:], fault_segment_tops[:-1]):
+            segment_bottoms = [fault_bottom] + list(fault_segment_tops[:-1])
+            for segment_top, segment_bottom in zip(fault_segment_tops, segment_bottoms):
                 fault_zone_segment = ((subsurface * es.wherePositive(xyz[0] - fault_left))
                           * (subsurface * es.whereNegative(xyz[0] - fault_right))
                           * (subsurface * es.wherePositive(xyz[1] - segment_bottom))
@@ -1743,27 +1758,41 @@ def model_run(mp):
     # convert fault fluxes from m2/sec to m/sec
     # by dividing by fault zone width
     fault_fluxes_m_per_sec = []
-    for fault_width, fault_flux in zip(mp.fault_widths, mp.fault_fluxes):
-        fts = []
-        for fault_flux_ts in fault_flux:
+    for duration, fault_flux_timeslice in zip(mp.durations, mp.fault_fluxes):
+        fts_timeslice = []
+        for fault_width, fault_flux in zip(mp.fault_widths,  fault_flux_timeslice):
+            #fts = []
+            #for fault_flux_ts in fault_flux:
             fseg = []
-            for fault_flux_segment in fault_flux_ts:
+            for fault_flux_segment in fault_flux:
                 fault_flux_i = fault_flux_segment / fault_width
                 fseg.append(fault_flux_i)
-            fts.append(fseg)
-        fault_fluxes_m_per_sec.append(fts)
+                #fts.append(fseg)
+            fts_timeslice.append(fseg)
+        fault_fluxes_m_per_sec.append(fts_timeslice)
 
     # convert aquifer fluxes from m2/sec to m/sec
     aquifer_fluxes_m_per_sec = []
-    for aquifer_top, aquifer_bottom, aquifer_flux in zip(mp.aquifer_tops,
-                                                         mp.aquifer_bottoms,
-                                                         mp.aquifer_fluxes):
-        if aquifer_top is not None:
+    #for aquifer_top, aquifer_bottom, aquifer_flux in zip(mp.aquifer_tops,
+    #                                                     mp.aquifer_bottoms,
+    #                                                     mp.aquifer_fluxes):
+    #    if aquifer_top is not None:
 
-            aquifer_thickness = aquifer_top - aquifer_bottom
+    for duration, aquifer_flux_timeslice in zip(mp.durations, mp.aquifer_fluxes):
 
-            aquifer_flux_i = [a / aquifer_thickness for a in aquifer_flux]
-            aquifer_fluxes_m_per_sec.append(aquifer_flux_i)
+        aquifer_flux_ii = []
+
+        for aquifer_top, aquifer_bottom, aquifer_flux in zip(mp.aquifer_tops,
+                                                             mp.aquifer_bottoms,
+                                                             aquifer_flux_timeslice):
+            if aquifer_top is not None:
+
+                aquifer_thickness = aquifer_top - aquifer_bottom
+
+                aquifer_flux_i = aquifer_flux / aquifer_thickness
+
+            aquifer_flux_ii.append(aquifer_flux_i)
+        aquifer_fluxes_m_per_sec.append(aquifer_flux_ii)
 
     store_results_interval = mp.dt_stored / mp.dt
     if float(store_results_interval) != int(store_results_interval):
@@ -1963,9 +1992,9 @@ def model_run(mp):
                 # calculate the AHe age:
                 try:
                     assert len(t_he) == len(T_he)
-                except:
-                    print 'warning, length temperature and time arrays for AHe model are not equal'
-                    pdb.set_trace()
+                except AssertionError:
+                    msg = 'warning, length temperature and time arrays for AHe model are not equal'
+                    raise ValueError(msg)
 
                 he_age_i = he.calculate_he_age_meesters_dunai_2002(
                     t_he, T_he,
@@ -2075,9 +2104,10 @@ def model_run(mp):
 
                         try:
                             assert len(t_he) == len(T_he)
-                        except:
-                            print 'warning, length temperature and time arrays for AHe model are not equal'
-                            pdb.set_trace()
+                        except AssertionError:
+                            msg = 'warning, length temperature and time arrays for ' \
+                                  'AHe model are not equal'
+                            raise ValueError(msg)
 
                         # calculate AHe ages of two nearest nodes
                         he_age_i = \
@@ -2214,6 +2244,14 @@ if __name__ == "__main__":
         raise IndexError(msg)
 
     output_steps = []
+
+    try:
+        assert len(mp.durations) == len(mp.N_outputs)
+    except AssertionError:
+        msg = 'error, the length of the parameters durations and the N_outputs are not the same in the ' \
+              'input file.'
+        raise ValueError(msg)
+
     for duration, N_output in zip(mp.durations, mp.N_outputs):
         nt = int(duration / mp.dt_stored)
 

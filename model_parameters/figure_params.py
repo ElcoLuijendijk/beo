@@ -25,7 +25,7 @@ height_ratios = [25, 75, 7, 3]
 #xlim = None
 #ylim = None
 xlim = [4900, 5100]
-ylim = [-200, 10]
+ylim = [-200, 50]
 
 # number of labels on x, y axis and colorbar
 bins_xaxis = 3
@@ -43,7 +43,8 @@ dy = 2.0
 # timeslices to show
 # timeslices = [0] make a figure of the first timestep
 # timeslices = [-1] make a figure of the last timestep
-timeslices = [0, 3, -1]
+#timeslices = [0, 3, -1]
+timeslices = 4
 
 # scale for flow arrows, usually 5 is a good value, note higher value is smaller arrows (!)
 scale_multiplier = 25.0
@@ -62,6 +63,8 @@ marker_size = 7
 AHe_color = 'blue'
 #AHe_color = 'None'
 show_AHe_data = True
+# linestyle for AHe data, see matplotlub documentation here for the available options
+AHe_linestyle = ':'
 
 show_average_AHe_ages = True
 
@@ -91,11 +94,11 @@ show_mesh = False
 
 # linestyles for the modeled surface/borehole temperature
 #linestyles = [':', '--', '-', '-.']
-linestyles = ['-', '-', '-', '-']
+linestyles = ['-', '-', '-', '-'] * 10
 
 # colors for the modeled surface/borehole temperature
 #colors = ['green', 'orange', 'red', 'yellow']
-colors = ['black', 'black', 'black', 'black']
+colors = ['black', 'black', 'black', 'black'] * 10
 
 # colors for the temperature contours:
 cmap = matplotlib.cm.get_cmap('coolwarm')

@@ -192,6 +192,10 @@ for fn in files:
         if nt == 1:
             fp.timeslices = [0]
 
+        if type(fp.timeslices) is int:
+            nts = fp.timeslices
+            fp.timeslices = np.linspace(0, nt-1, nts).astype(int)
+
         fnew = []
         for f in fp.timeslices:
             if f >= nt:
@@ -376,12 +380,12 @@ for fn in files:
                     print 'plotting corrected AHe ages'
                     leg_ahe, = rp.plot(AHe_xcoords_surface[timeslice],
                                        AHe_ages_surface_corr[timeslice] / My,
-                                       color=fp.AHe_color, ls=lss[i])
+                                       color=fp.AHe_color, ls=fp.AHe_linestyle)
                 else:
                     print 'plotting uncorrected AHe ages'
                     leg_ahe, = rp.plot(AHe_xcoords_surface[timeslice],
                                        AHe_ages_surface[timeslice] / My,
-                                       color=fp.AHe_color, ls=lss[i])
+                                       color=fp.AHe_color, ls=fp.AHe_linestyle)
 
             legs.append(leg_ahe)
             labels.append('modeled AHe ages')
@@ -465,7 +469,7 @@ for fn in files:
                     zip(borehole_depths, borehole_temps_modeled, borehole_temp_measured):
 
                 leg_bh_temp_meas, = temp_panel.plot(borehole_temp_measured_i, -borehole_depth,
-                                color='gray', lw=1.5)
+                                color='gray', lw=1.5, ls='--')
 
                 for j, timeslice in enumerate(fp.timeslices):
 
@@ -474,7 +478,6 @@ for fn in files:
                                                        lw=1.0,
                                                        ls=lss[j],
                                                        color=fp.colors[j])
-
 
                 legs += [leg_bh_temp_meas]
                 labels += ['measured temperature']
@@ -510,7 +513,8 @@ for fn in files:
 
         for tp in tpanels[:]:
             tp.set_xticklabels([])
-            tp.set_ylim(0, T_surface[-1].max() * 1.1)
+            maxT = np.max(np.hstack(T_surface)) * 1.1
+            tp.set_ylim(0, maxT)
             tp.yaxis.grid(False)
             tp.set_xlim(xmin, xmax)
             #tp.set_xticks(tp.get_xticks()[:-1])

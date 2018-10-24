@@ -240,6 +240,25 @@ for model_run, param_set in enumerate(param_list):
         msg = 'Error, both steady-state and exhumation are set to True. Please change your model parameters file'
         raise ValueError(msg)
 
+    # check if timeslices should be repeated and if yes, extend durations, fault fluxes
+    # and aquifer fluxes arrays
+    if mp.repeat_timeslices is not None and mp.repeat_timeslices > 1:
+
+        try:
+            assert (type(mp.durations) is list
+                    and type(mp.fault_fluxes) is list
+                    and type(mp.aquifer_fluxes) is list
+                    and type(mp.N_outputs) is list)
+        except AssertionError:
+            msg = 'error, make sure the parameters durations, fault_fluxes, ' \
+                  'aquifer_fluxes and N_outputs are lists'
+            raise ValueError(msg)
+
+        mp.durations = mp.durations * mp.repeat_timeslices
+        mp.fault_fluxes = mp.fault_fluxes * mp.repeat_timeslices
+        mp.aquifer_fluxes = mp.aquifer_fluxes * mp.repeat_timeslices
+        mp.N_outputs = mp.N_outputs * mp.repeat_timeslices
+
     no_exceptions = True
     if no_exceptions is True:
         output = beo_core.model_run(Parameters)
@@ -285,11 +304,13 @@ for model_run, param_set in enumerate(param_list):
     for duration, N_output in zip(mp.durations, mp.N_outputs):
         nt = int(duration / mp.dt_stored)
 
-        output_steps_i = list(np.linspace(0, nt-1, N_output).astype(int) + 1)
+        output_steps_i = list(np.linspace(0, nt-1, N_output).astype(int) + 1 + output_steps[-1])
         output_steps += output_steps_i
 
     # select data for output steps only
     output_steps = np.array(output_steps)
+
+    print 'selecting output steps: ', output_steps
 
     #if mp.exhumation_rate != 0:
     #    print 'exhumation, making sure output steps are equal to steps where ' \

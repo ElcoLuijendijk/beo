@@ -299,6 +299,7 @@ Note that only thermal conductivity and porosity are varied between layers, the 
 * ``N_outputs``: list of numbers, number of steps at which output files are generated. this is not used when exhumation > 0, in this case output is generated once each new surface level is reached. the number of surfaces is controlled by the ``exhumation_steps`` parameter
 * ``dt``: number, size of a single timestep (sec)
 * ``durations``: list of numbers, duration of each timestep slice (sec). Note that you can define one or more different timeslices, for instance to first model 500 years of heating and then 1000 years of recovery by setting ``durations = [500.0, 1000.0]``. You can define different fluid fluxes in faults or horizontal aquifers in the parameters ``fault_fluxes`` or ``aquifer_fluxes`` below.
+* ``repeat_timeslices``: integer, number of times the durations, fault_fluxes and aquifer_fluxes are repeated. For instance if you specifiy two timeslices, with a duration of 1000 and 10000 years, with a hydrothermal flux in the first period and no flux in the second period, specifying ``repeat_timeslices = 10`` will repeat this sequence of episodic heating ten times.
 * ``target_zs``: list of numbers,  target depth slices for calculating temperature and U-Th/He. In case of exhumation, this values is overridden and set equal to each exhumation step layer. In this way one can track the AHe response to each layer that comes to the surface in a longer time period. Note, values should go from low/bottom to high/top
 
 
