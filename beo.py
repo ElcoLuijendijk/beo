@@ -299,18 +299,25 @@ for model_run, param_set in enumerate(param_list):
      target_depths,
      AHe_ages_samples_all, AHe_ages_samples_all_corr) = output
 
-    # crop output to only the output timesteps, to limit filesize
     output_steps = [0]
+
     for duration, N_output in zip(mp.durations, mp.N_outputs):
         nt = int(duration / mp.dt_stored)
+        print 'timesteps = %i' % nt
 
-        output_steps_i = list(np.linspace(0, nt-1, N_output).astype(int) + 1 + output_steps[-1])
+        output_steps_i = list(np.linspace(0, nt, N_output + 1).astype(int) + output_steps[-1])[1:]
         output_steps += output_steps_i
+
 
     # select data for output steps only
     output_steps = np.array(output_steps)
 
     print 'selecting output steps: ', output_steps
+
+    times_test = np.arange(0, np.sum(mp.durations) + mp.dt_stored, mp.dt_stored)
+
+    print 'generating time output at steps: '
+    print times_test[output_steps] / year
 
     #if mp.exhumation_rate != 0:
     #    print 'exhumation, making sure output steps are equal to steps where ' \
@@ -719,40 +726,57 @@ for model_run, param_set in enumerate(param_list):
 
         n_grains = len(AHe_ages_samples_surface[0])
 
-        me_ahe = np.zeros(N_output)
-        mae_ahe = np.zeros(N_output)
-        mswd_ahe = np.zeros(N_output)
+        me_ahe = np.zeros(N_output_steps)
+        mae_ahe = np.zeros(N_output_steps)
+        mswd_ahe = np.zeros(N_output_steps)
 
-        me_ahe_corr = np.zeros(N_output)
-        mae_ahe_corr = np.zeros(N_output)
-        mswd_ahe_corr = np.zeros(N_output)
+        me_ahe_corr = np.zeros(N_output_steps)
+        mae_ahe_corr = np.zeros(N_output_steps)
+        mswd_ahe_corr = np.zeros(N_output_steps)
 
-        for timestep in range(N_output):
+        AHe_data_file = dfhs
+
+        for timestep in range(N_output_steps):
 
             output_number2 = model_run * n_ts + timestep
-            profile_loc = dfhs['profile'] == mp.profile_number
-            dfhs2 = dfhs.loc[profile_loc]
 
-            AHe_data_file = dfhs2
+            if mp.profile_number in dfhs['profile'].values:
+                profiles = [mp.profile_number]
+            else:
+                profiles = np.unique(dfhs['profile'])
 
-            diff = dfhs2['AHe_age_uncorr'].values - AHe_ages_samples_surface[timestep] / My
-            diff_corr = dfhs2['AHe_age_corr'].values - AHe_ages_samples_surface_corr[timestep] / My
+            print 'available profiles in AHe data file: ',  np.unique(dfhs['profile'])
+            print 'selected profiles: ', profiles
 
-            me_ahe[timestep] = np.mean(diff)
-            mae_ahe[timestep] = np.mean(np.abs(diff))
-            mswd_ahe[timestep] = np.sum((diff / (0.5 * dfhs2['AHe_age_uncorr_2se'])) ** 2) / (n_grains - 1)
 
-            me_ahe_corr[timestep] = np.mean(diff_corr)
-            mae_ahe_corr[timestep] = np.mean(np.abs(diff_corr))
-            mswd_ahe_corr[timestep] = np.sum((diff_corr / (0.5 * dfhs2['AHe_age_uncorr_2se'])) ** 2) / (n_grains - 1)
+            for profile in profiles:
+                profile_loc = dfhs['profile'] == profile
+                dfhs2 = dfhs.loc[profile_loc]
 
-            df.loc[output_number2, 'mean_error_AHe_samples'] = me_ahe[timestep]
-            df.loc[output_number2, 'mean_abs_error_AHe_samples'] = mae_ahe[timestep]
-            df.loc[output_number2, 'mswd_AHe_samples'] = mswd_ahe[timestep]
 
-            df.loc[output_number2, 'mean_error_AHe_samples_corrected'] = me_ahe_corr[timestep]
-            df.loc[output_number2, 'mean_abs_error_AHe_samples_corrected'] = mae_ahe_corr[timestep]
-            df.loc[output_number2, 'mswd_AHe_samples_corrected'] = mswd_ahe_corr[timestep]
+                if mp.profile_number in dfhs['profile'].values:
+                    diff = dfhs2['AHe_age_uncorr'].values - AHe_ages_samples_surface[timestep] / My
+                    diff_corr = dfhs2['AHe_age_corr'].values - AHe_ages_samples_surface_corr[timestep] / My
+                else:
+                    diff = dfhs2['AHe_age_uncorr'].values - AHe_ages_samples_surface[timestep][profile_loc] / My
+                    diff_corr = dfhs2['AHe_age_corr'].values - AHe_ages_samples_surface_corr[timestep][profile_loc] / My
+
+
+                me_ahe[timestep] = np.mean(diff)
+                mae_ahe[timestep] = np.mean(np.abs(diff))
+                mswd_ahe[timestep] = np.sum((diff / (0.5 * dfhs2['AHe_age_uncorr_2se'])) ** 2) / (n_grains - 1)
+
+                me_ahe_corr[timestep] = np.mean(diff_corr)
+                mae_ahe_corr[timestep] = np.mean(np.abs(diff_corr))
+                mswd_ahe_corr[timestep] = np.sum((diff_corr / (0.5 * dfhs2['AHe_age_uncorr_2se'])) ** 2) / (n_grains - 1)
+
+                df.loc[output_number2, 'mean_error_AHe_samples_profile%s' % (str(profile))] = me_ahe[timestep]
+                df.loc[output_number2, 'mean_abs_error_AHe_samples_profile%s' % (str(profile))] = mae_ahe[timestep]
+                df.loc[output_number2, 'mswd_AHe_samples_profile%s' % (str(profile))] = mswd_ahe[timestep]
+
+                df.loc[output_number2, 'mean_error_AHe_samples_corrected_profile%s' % (str(profile))] = me_ahe_corr[timestep]
+                df.loc[output_number2, 'mean_abs_error_AHe_samples_corrected_profile%s' % (str(profile))] = mae_ahe_corr[timestep]
+                df.loc[output_number2, 'mswd_AHe_samples_corrected_profile%s' % (str(profile))] = mswd_ahe_corr[timestep]
 
     # option to save corrected ages for figure output
 
@@ -866,18 +890,24 @@ for model_run, param_set in enumerate(param_list):
             col_name_corr = 'modeled_AHe_age_corrected_run_%i_timestep_%i' \
                        % (model_run, output_steps[timestep])
 
-            profile_loc = dfhs['profile'] == mp.profile_number
+            if mp.profile_number in dfhs['profile']:
+                profiles = [mp.profile_number]
+            else:
+                profiles = np.unique(dfhs['profile'])
 
-            if True in profile_loc:
-                try:
-                    dfhs.loc[profile_loc, col_name] = AHe_ages_samples_surface[timestep] / My
-                    dfhs.loc[profile_loc, col_name_corr] = AHe_ages_samples_surface_corr[timestep] / My
-                except Exception, msg:
-                    print 'error, something went wrong with saving AHe ' \
-                          'sample data to a .csv file for model run %i ' \
-                          'and timestep %i' % (j, i)
-                    print msg
-                    print 'continuing with next timestep'
+            for profile in profiles:
+                profile_loc = dfhs['profile'] == profile
+
+                if True in profile_loc:
+                    try:
+                        dfhs.loc[profile_loc, col_name] = AHe_ages_samples_surface[timestep] / My
+                        dfhs.loc[profile_loc, col_name_corr] = AHe_ages_samples_surface_corr[timestep] / My
+                    except Exception, msg:
+                        print 'error, something went wrong with saving AHe ' \
+                              'sample data to a .csv file for model run %i ' \
+                              'and timestep %i' % (j, i)
+                        print msg
+                        print 'continuing with next timestep'
 
         output_fn1 = os.path.split(mp.AHe_data_file)[-1]
         output_fn2 = output_fn1[:-4] + '_modeled_%i_runs_%s_%s.csv' \

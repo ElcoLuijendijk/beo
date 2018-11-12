@@ -23,7 +23,7 @@ class ModelParams:
     output_folder = 'model_output'
 
     #
-    output_fn_adj = 'beowawe_AHe_profile_2_episodic'
+    output_fn_adj = 'beowawe_AHe_epi1000yr_6500rec'
 
     solver = 'GMRES'
     # steady state or transient model
@@ -50,7 +50,7 @@ class ModelParams:
     cellsize = 250.0
 
     # cellsize in the air layer:
-    cellsize_air = 10.0
+    cellsize_air = 5.0
 
     # cellsize at surface layers:
     cellsize_surface = 50.0
@@ -79,7 +79,7 @@ class ModelParams:
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
     # but this also slows the model down somewhat
-    exhumation_steps = 50
+    exhumation_steps = 25
 
     # minimum layer thickness, if the exhumation steps result in surfaces that
     # are less than the min thickness apart, the number of steps is reduced
@@ -166,7 +166,7 @@ class ModelParams:
     dz = 1.8
 
     # number of output steps for each timeslice
-    N_outputs = [1, 2]
+    N_outputs = [1, 1]
 
     # size of a single timestep
     dt = 250.0 * year
@@ -176,12 +176,12 @@ class ModelParams:
     dt_stored = 500.0 * year
 
     # duration of each timestep_slice
-    durations = [1e3 * year, 9e3 * year]
-    #durations = [2e3 * year, 8e3 * year]
+    durations = [1e3 * year, 65e2 * year]
+    #durations = [3e5 * year]
 
-    # repeat timesclices x times, use this to model repeated episodic heating eventes
+    # repeat timesclices x times, use this to model repeated episodic heating events
     # set this to zero or None to not use this
-    repeat_timeslices = 30
+    repeat_timeslices = 45
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -198,7 +198,7 @@ class ModelParams:
     # model-data comparison AHe samples
     model_AHe_samples = True
     AHe_data_file = 'model_parameters/AHe_data.csv'
-    profile_number = 2
+    profile_number = 0
 
     #save the AHe ages at the surface to a separate file
     save_AHe_ages = False

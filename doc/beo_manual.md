@@ -178,37 +178,37 @@ $C = \rho_f c_f \vec{q}$
 ## Surface heat flux
 
 
-Temperatures and heat flux at the land surface are controlled by latent and sensible heat flux. Wa approximate latent and sensible heat flux by assigning an artifically high value of thermal conductivity to the layer of air that overlies the land surface in the model domain. Following Bateni and Entekhabi [Bateni and Entekhabi, 2012] the sensible heat flux H (W m-2) at the land surface is given by:
+Temperatures and heat flux at the land surface are controlled by latent and sensible heat flux. Wa approximate latent and sensible heat flux by assigning an artifically high value of thermal conductivity to the layer of air that overlies the land surface in the model domain. Following Bateni and Entekhabi @[2012] the sensible heat flux H (W m-2) at the land surface is given by:
 
-$$H = rho c / r_a (Ta – Ts)$$
+$$H = \rho c / r_a (T_a - T_s)$$
 
-Where $\rho$ is density (kg m-3), c is the specific heat of air (J kg-1 K-1), ra is the aerodynamic resistance (s m-1), Ta is the air temperature at a reference level and Ts is the surface temperature. Rewriting this to the conductive heat flow equation gives a value for the effective thermal conductivity (Ks) between the surface and the reference level z:
+Where $\rho$ is density (kg m^-3^), c is the specific heat of air (J kg^-1^ K^-1^), ra is the aerodynamic resistance (s m^-1^), T~a~ is the air temperature at a reference level and T~s~ is the surface temperature. Rewriting this to the conductive heat flow equation gives a value for the effective thermal conductivity (Ks) between the surface and the reference level z:
 
 $$Ks = \rho c / r_a \Delta z$$
 
-Where $\Delta$z is the difference between the surface and the reference level (m). Following Liu et al. [Liu et al., 2007] the aerodynamic resistance (ra) was set to a value of 80 s m-1 at a reference level of 1.8 m above the surface.  
+Where $\Delta$z is the difference between the surface and the reference level (m). Following Liu et al. [-@Liu2007] the aerodynamic resistance (ra) was set to a value of 80 s m^-1^ at a reference level of 1.8 m above the surface.  
 
-Latent heat flux is given by [Bateni and Entekhabi, 2012]:
+Latent heat flux is given by [@Bateni2012]:
 
-$$LE = \rho L / r_a (q_s – q_a)$$
+$$LE = \rho L / r_a (q_s - q_a)$$
 
-where LE is the latent heat flux (W m-2), $\rho$ is the density of air (kg m-3), L is the specific latent heat of vaporisation (J kg-1), which is 334000 J kg-1, q_s is the saturated specific humidity at the surface temperature (kg kg-1), q_a is the humidity of the air (kg kg-1).
+where LE is the latent heat flux (W m^-2^), $\rho$ is the density of air (kg m^-3^), L is the specific latent heat of vaporisation (J kg^-1^), which is 334000 J kg^-1^, q~s~ is the saturated specific humidity at the surface temperature (kg kg^-1^), q~a~ is the humidity of the air (kg kg^-1^).
 
 Rewriting this yield the heat transfer coefficient for latent heat flux:
 
 $$Kl = \dfrac{\rho  L  \Delta z}{r_a}  \dfrac{q_s - q_a}{T_s - T_a}$$
 
-The saturated specific humidity (q_s) was calculated as (Monteith 1981 in Elkathabi …):
+The saturated specific humidity (q~s~) was calculated as [@Monteith1981]:
 
 $$q_s = 0.622 e_s / P_a$$
 
-where e_s is saturated air vapor pressure (Pa), P_a is surface air pressure (Pa). The saturated air vapor pressure was calculated using the Magnus equation (Alduchov and Eskridge (1996)):
+where e~s~ is saturated air vapor pressure (Pa), P~a~ is surface air pressure (Pa). The saturated air vapor pressure was calculated using the Magnus equation [@Alduchov1996]:
 
 $$e_s = 0.61094 \exp \left(\dfrac{17.625 T}{T + 243.04} \right)$$
 
 Air pressure was assumed to be $1 \times 10^5$ Pa. 
 
-The thermal conducivity assigned in the air layer is the sum of the heat transfer coefficient for latent heat flux (K_l) and sensible heat flux (K_s).
+The thermal conducivity assigned in the air layer is the sum of the heat transfer coefficient for latent heat flux (K~l~) and sensible heat flux (K~s~).
 
 
 
@@ -290,7 +290,7 @@ Note that only thermal conductivity and porosity are varied between layers, the 
 * ``c_f``: number, heat capacity of pore water (J kg K-1)
 * ``c_s``: number, heat capacity of the solid matrix (J kg K-1)
 * ``variable_K_air``: boolean, option to use a fixed thermal conductivity for air or to use a variable thermal conductivity that depends on the surface temperature and that is used to approximate the actual sensible and latent heat flux at the land surface.
-* ``ra``: number, aerodynamic resistance, see Liu et al (2007), Hydrology and Earth System Sciences 11 (2)
+* ``ra``: number, aerodynamic resistance, see Liu et al. [-@Liu2007]
 * ``dz``: number, measurement height for aerodynamic resistance (m)
 
 
@@ -339,7 +339,7 @@ In Beo aquifers are used for modeling horizontal advective flow, for instance ho
 * ``calculate_he_ages``: boolean, option to model AHe ages or not. Ages are modeled for the depths specified in the parameter ``target_zs`` or at the land surface if exhumation is turned on.
 * ``model_AHe_samples``: boolean, model the AHe ages of specified samples, each with a different apatite radius, U238 and Th232 concentration.
 * ``AHe_data_file``: string. Filename of the file containing the AHe data.
-* ``profile_number``: integer number, number of the profile to include in modeling AHe ages. This can be used to not model all the AHe samples in a single datafile, but only those for which the entry in the profile column in the datafile equals ``profile_number``.
+* ``profile_number``: integer number, number of the profile to include in modeling AHe ages. This can be used to not model all the AHe samples in a single datafile, but only those for which the entry in the profile column in the datafile equals ``profile_number``. If the profile number cannot be found in the AHe data file, Beo will go sequentally through all the profile numbers in the datafile and calculate model statistics for each of the numbers.
 * ``save_AHe_ages``: boolean, save the AHe ages at the surface to a separate file
 * ``AHe_method``: string, method to calculate helium diffusivity, use Wolf1996, Farley2000 or RDAAM
 * ``AHe_timestep_reduction``, integer number. Use temperature at each x timestep for the calculation of AHe ages. This should be an integer. Ideally this should be 1, but higher numbers significantly speed up the model code
@@ -350,6 +350,9 @@ In Beo aquifers are used for modeling horizontal advective flow, for instance ho
 * ``U238``: number, concentration uranium-238 for the default apatite (ppm?)
 * ``Th232``: number, concentration thorium-232 for the default apatite (ppm?)
 * ``alpha_ejection``: boolean, model alpha ejection or not.
-* ``stopping_distance``: number, alpha ejection stopping distance (um), see Ketcham (2011) for estimates
+* ``stopping_distance``: number, alpha ejection stopping distance (um), see @Ketcham2011 for estimates
 * ``partial_reset_limit``: number, relative limit to consider a sample partial reset or not, ie if 0.95 a sample will be considered partially reset if the modeled uncorrected AHe age is less than 0.95 x the maximum age in the system.
 * ``reset_limit``: number, absolute age limit (My) below which samples are considered reset (ie. AHe age ~0 My)
+
+
+#References

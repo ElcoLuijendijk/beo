@@ -23,7 +23,7 @@ class ModelParams:
     output_folder = 'model_output'
 
     #
-    output_fn_adj = 'beowawe_AHe_profile_3_v2'
+    output_fn_adj = 'beowawe_AHe_cont'
 
     solver = 'GMRES'
     # steady state or transient model
@@ -41,13 +41,13 @@ class ModelParams:
     # model dimensions
     width = 2000.0
     total_depth = 8000.0
-    air_height = 10.0
+    air_height = 2.0
 
     # depth to fine discretization near surface:
     z_fine = -150
 
     # default cellsize
-    cellsize = 200.0
+    cellsize = 250.0
 
     # cellsize in the air layer:
     cellsize_air = 5.0
@@ -79,7 +79,7 @@ class ModelParams:
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
     # but this also slows the model down somewhat
-    exhumation_steps = 20
+    exhumation_steps = 50
 
     # minimum layer thickness, if the exhumation steps result in surfaces that
     # are less than the min thickness apart, the number of steps is reduced
@@ -165,18 +165,23 @@ class ModelParams:
     # measurement height for aerodynamic resistance
     dz = 1.8
 
-    # number of output steps
-    N_outputs = [41]
+    # number of output steps for each timeslice
+    N_outputs = [30]
 
     # size of a single timestep
     dt = 250.0 * year
 
-    # size of timestep to store model results. make this higher than dt if you want to conserve memory, otherwise make
-    # this the same as dt
+    # size of timestep to store model results. make this higher than dt if you want to conserve memory,
+    # otherwise make this the same as dt
     dt_stored = 1000.0 * year
 
     # duration of each timestep_slice
-    durations = [2e5 * year]
+    #durations = [2e3 * year, 8e3 * year]
+    durations = [3e5 * year]
+
+    # repeat timesclices x times, use this to model repeated episodic heating events
+    # set this to zero or None to not use this
+    repeat_timeslices = None
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -193,7 +198,7 @@ class ModelParams:
     # model-data comparison AHe samples
     model_AHe_samples = True
     AHe_data_file = 'model_parameters/AHe_data.csv'
-    profile_number = 3
+    profile_number = 0
 
     #save the AHe ages at the surface to a separate file
     save_AHe_ages = False
@@ -205,7 +210,7 @@ class ModelParams:
     # this should be an integer. Ideally this should be 1, but higher numbers
     # significantly speed up the model code
     # !! new parameter (3 march 2017)
-    AHe_timestep_reduction = 3
+    AHe_timestep_reduction = 2
 
     # crystallization age
     t0 = 15.6 * My
@@ -256,7 +261,7 @@ class ModelParams:
     # note units are m2/sec, ie the integrated flux over the entire width of the
     # fault zone
     # length of fault = 1.5 km, total discharge is 18 kg/s = 0.018 m3/s = 0.018 / 1500 = 378.4 m2/year
-    fault_fluxes = [[[-380 / year]]]
+    fault_fluxes = [[[-380 / year]], [[0.0]]]
 
     # aquifers, used for modeling horizontal advective flow
     # use aquifer_top = [None] to not use this:
@@ -267,7 +272,9 @@ class ModelParams:
     aquifer_bottoms = [-50.0]
     #aquifer_fluxes = [[100.0 / year, -350.0 / year]]
     # sideways flux is 2/3 of total (Olmsted & Rush) = 2/3. * 380.0 = 250 m2/year
-    aquifer_fluxes = [[-250.0 / year]]
+    # aquifer flux: nested list
+    # [[aquifer1_timestep1, aquifer2_timestep1], [aquifer1_timestep2, aquifer2_timestep2]]
+    aquifer_fluxes = [[-250.0 / year], [0.0]]
     ## left side of aquifer. right hand bnd is assumed to be the fault zone
     aquifer_left_bnds = [-1000.0, -1000.0]
 
@@ -329,3 +336,4 @@ class ParameterRanges:
     ###################################################################
 
     #profile_number_s = [1, 2]
+    #durations_s = [[1e3 * year, 9e3 * year], [2e3 * year, 8e3 * year], [3e3 * year, 7e3 * year]]

@@ -44,7 +44,7 @@ dy = 2.0
 # timeslices = [0] make a figure of the first timestep
 # timeslices = [-1] make a figure of the last timestep
 #timeslices = [0, 3, -1]
-timeslices = 4
+timeslices = [0, 1, 50, -1]
 
 # scale for flow arrows, usually 5 is a good value, note higher value is smaller arrows (!)
 scale_multiplier = 25.0

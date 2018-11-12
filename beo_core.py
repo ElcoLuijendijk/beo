@@ -1915,8 +1915,14 @@ def model_run(mp):
 
             # read sample data
             dfhs = pd.read_csv(mp.AHe_data_file)
-            locs = dfhs['profile'] == mp.profile_number
-            dfhs = dfhs.loc[locs]
+
+            if mp.profile_number in dfhs['profile'].values:
+                print 'selecting profile %i'
+                locs = dfhs['profile'] == mp.profile_number
+                dfhs = dfhs.loc[locs]
+            else:
+                print 'not selecting profile, keeping all AHe data'
+
             AHe_sample_distances = dfhs['distance'].values
             AHe_relative_sample_distances = dfhs['distance_to_fault'].values
             U_conc = dfhs['U'].values
@@ -2243,7 +2249,7 @@ if __name__ == "__main__":
         msg += 'reduce the N_outputs parameter in the model_parameters.py file'
         raise IndexError(msg)
 
-    output_steps = []
+    output_steps = [0]
 
     try:
         assert len(mp.durations) == len(mp.N_outputs)
@@ -2254,9 +2260,17 @@ if __name__ == "__main__":
 
     for duration, N_output in zip(mp.durations, mp.N_outputs):
         nt = int(duration / mp.dt_stored)
+        print 'timesteps = %i' % nt
 
-        output_steps_i = list(np.linspace(0, nt-1, N_output).astype(int))
+        output_steps_i = list(np.linspace(0, nt, N_output + 1).astype(int) + output_steps[-1])[1:]
         output_steps += output_steps_i
+
+    times_test = np.arange(0, np.sum(mp.durations) + mp.dt_stored, mp.dt_stored)
+
+    print 'output steps : '
+    print output_steps
+    print 'generating time output at steps: '
+    print times_test[output_steps] / year
 
     # select data for output steps only
     output_steps = np.array(output_steps)
