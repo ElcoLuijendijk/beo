@@ -1776,27 +1776,27 @@ def model_run(mp):
     #for aquifer_top, aquifer_bottom, aquifer_flux in zip(mp.aquifer_tops,
     #                                                     mp.aquifer_bottoms,
     #                                                     mp.aquifer_fluxes):
-    #    if aquifer_top is not None:
+    if aquifer_top is not None:
 
-    for duration, aquifer_flux_timeslice in zip(mp.durations, mp.aquifer_fluxes):
+        for duration, aquifer_flux_timeslice in zip(mp.durations, mp.aquifer_fluxes):
 
-        aquifer_flux_ii = []
+            aquifer_flux_ii = []
 
-        for aquifer_top, aquifer_bottom, aquifer_flux in zip(mp.aquifer_tops,
-                                                             mp.aquifer_bottoms,
-                                                             aquifer_flux_timeslice):
-            if aquifer_top is not None:
+            for aquifer_top, aquifer_bottom, aquifer_flux in zip(mp.aquifer_tops,
+                                                                 mp.aquifer_bottoms,
+                                                                 aquifer_flux_timeslice):
+                if aquifer_top is not None:
 
-                aquifer_thickness = aquifer_top - aquifer_bottom
+                    aquifer_thickness = aquifer_top - aquifer_bottom
 
-                aquifer_flux_i = aquifer_flux / aquifer_thickness
+                    aquifer_flux_i = aquifer_flux / aquifer_thickness
 
-            aquifer_flux_ii.append(aquifer_flux_i)
-        aquifer_fluxes_m_per_sec.append(aquifer_flux_ii)
+                aquifer_flux_ii.append(aquifer_flux_i)
+            aquifer_fluxes_m_per_sec.append(aquifer_flux_ii)
 
-    store_results_interval = mp.dt_stored / mp.dt
-    if float(store_results_interval) != int(store_results_interval):
-        raise ValueError('error, dt_stored divided by dt should be an integer.')
+        store_results_interval = mp.dt_stored / mp.dt
+        if float(store_results_interval) != int(store_results_interval):
+            raise ValueError('error, dt_stored divided by dt should be an integer.')
 
 
     # model hydrothermal heating
