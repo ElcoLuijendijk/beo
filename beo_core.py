@@ -1614,6 +1614,14 @@ def model_run(mp):
     K_solid = xyz[0] * 0.0
     porosity = xyz[0] * 0.0
 
+    try:
+        assert len(mp.layer_bottom) == len(mp.K_solids) == len(mp.porosities)
+    except AssertionError:
+        msg = 'error, number of layers, K_solid and porosities supplied in input file are not equal'
+        msg += '\nlayers = %i, K_solid = %i, porosities = %i' % (len(mp.layer_bottom), len(mp.K_solids), len(mp.porosities))
+        msg += '\n check your input file'
+        raise ValueError(msg)
+
     for i, layer_bottom_i in enumerate(mp.layer_bottom):
         indl = es.whereNonPositive(xyz[0] - fault_x)
         indr = es.wherePositive(xyz[0] - fault_x)
@@ -1794,9 +1802,9 @@ def model_run(mp):
                 aquifer_flux_ii.append(aquifer_flux_i)
             aquifer_fluxes_m_per_sec.append(aquifer_flux_ii)
 
-        store_results_interval = mp.dt_stored / mp.dt
-        if float(store_results_interval) != int(store_results_interval):
-            raise ValueError('error, dt_stored divided by dt should be an integer.')
+    store_results_interval = mp.dt_stored / mp.dt
+    if float(store_results_interval) != int(store_results_interval):
+        raise ValueError('error, dt_stored divided by dt should be an integer.')
 
 
     # model hydrothermal heating
