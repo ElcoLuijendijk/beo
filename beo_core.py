@@ -1224,17 +1224,29 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             surface_level = surface_level_init - t_total / year \
                                                  * exhumation_rate
 
-            if exhumation_rate != 0 and surface_level in target_depths and solve_as_steady_state is False:
+            #if exhumation_rate != 0 and surface_level in target_depths and solve_as_steady_state is False:
+            if exhumation_rate != 0 and solve_as_steady_state is False:
 
                 print '\texhumation, new surface level at %0.2f' % surface_level
-                subsurface = es.whereNonPositive(xyz[1] - surface_level)
-                subsurface_ele = es.whereNonPositive(xyze[1] - surface_level)
-                subsurface_ele_10m = es.whereNonPositive(xyze[1] - surface_level) \
-                                     * es.wherePositive(xyze[1] - surface_level + 10)
-                air = es.wherePositive(xyz[1] - surface_level)
-                air_ele = es.wherePositive(xyze[1] - surface_level)
-                surface = es.whereZero(xyz[1] - surface_level)
-                surface_ele = es.whereZero(xyze[1] - surface_level)
+                #subsurface = es.whereNonPositive(xyz[1] - surface_level)
+                #subsurface_ele = es.whereNonPositive(xyze[1] - surface_level)
+                #subsurface_ele_10m = es.whereNonPositive(xyze[1] - surface_level) \
+                #                     * es.wherePositive(xyze[1] - surface_level + 10)
+                #air = es.wherePositive(xyz[1] - surface_level)
+                #air_ele = es.wherePositive(xyze[1] - surface_level)
+                #surface = es.whereZero(xyz[1] - surface_level)
+                #surface_ele = es.whereZero(xyze[1] - surface_level)
+
+                print '\texhumation, new surface level at %0.2f' % surface_level
+                subsurface = es.whereNonPositive(xyz[1] - surface_level_mesh)
+                subsurface_ele = es.whereNonPositive(xyze[1] - surface_level_mesh)
+                subsurface_ele_10m = es.whereNonPositive(xyze[1] - surface_level_mesh) \
+                                     * es.wherePositive(xyze[1] - surface_level_mesh + 10)
+
+                air = es.wherePositive(xyz[1] - surface_level_mesh)
+                air_ele = es.wherePositive(xyze[1] - surface_level_mesh)
+                surface = es.whereZero(xyz[1] - surface_level_mesh)
+                surface_ele = es.whereZero(xyze[1] - surface_level_mesh)
 
                 #q_vector = q_vector * subsurface
                 q_vector_old = q_vector.copy()
@@ -1353,6 +1365,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
                 logP = es.log10(P / 1.0e6)
                 boiling_temp = c1 * logP**3 + c2 * logP**2 + c3 * logP + c4
+            else:
+                boiling_temp = 1e6
 
             # recalculate vapour pressure and max liquid temperature
             if vapour_correction is True:
@@ -1370,6 +1384,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                         #+ subsurface * exceed_max_liquid_T_old
 
                 exceed_max_liquid_T_old = exceed_boiling_temp
+            else:
+                exceed_boiling_temp = 0
 
             if vapour_correction is True or exhumation_rate != 0:
 
