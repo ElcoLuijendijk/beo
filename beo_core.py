@@ -1,26 +1,15 @@
 """
-2D model of advective and conductive heat flow in hydrothermal systems
+2D model of advective and conductive heat flow and thermochronology in hydrothermal systems
 
 Elco Luijendijk, McGill university & Goettingen University, 2013-2018
 """
 
 __author__ = 'Elco Luijendijk'
 
-###############
 # load modules
-###############
-
-import matplotlib
-matplotlib.use('Agg')
 
 import time
-import os
-import sys
-import pickle
-import pdb
-import datetime
 import itertools
-import pdb
 
 import numpy as np
 import pandas as pd
@@ -32,17 +21,13 @@ import esys.pycad as pc
 import esys.pycad.gmsh as gmsh
 import esys.escript.linearPDEs as linearPDEs
 
-import esys.weipa
+# import esys.weipa
 
 # helium diffusion algorithm by Meesters and Dunai (2003)
 import lib.helium_diffusion_models as he
 
 
-def calculate_vapour_pressure(T,
-                              c1=8e-8,
-                              c2=-7e-5,
-                              c3=0.028,
-                              c4=-3.1597):
+def calculate_vapour_pressure(T, c1=8e-8, c2=-7e-5, c3=0.028, c4=-3.1597):
 
     """
     Calculate the vapour pressure curve and check whether there should be
@@ -60,11 +45,7 @@ def calculate_vapour_pressure(T,
     return Pv
 
 
-def calculate_boiling_temp(P,
-                      c1=3.866,
-                      c2=25.151,
-                      c3=103.28,
-                      c4=179.99):
+def calculate_boiling_temp(P, c1=3.866, c2=25.151, c3=103.28, c4=179.99):
     """
     Find the maximum temperature for a given pressure at which there is one
     liquid phase only
@@ -105,23 +86,6 @@ def convert_to_array(u, no_coords=False):
         return u_array
     else:
         return xy, u_array
-
-
-def interpolate_data(xyz_array, Ti, dx, dy):
-
-    """
-    Interpolate irragular data to a regular grid
-    """
-
-    xi = np.arange(xyz_array[:, 0].min(), xyz_array[:, 0].max() + dx, dx)
-    yi = np.arange(xyz_array[:, 1].min(), xyz_array[:, 1].max() + dy, dy)
-    xg, yg = np.meshgrid(xi, yi)
-    #xgf, ygf = xg.flatten(), yg.flatten()
-    #zgf = scipy.interpolate.griddata(xyz_array, Ti, np.vstack((xgf, ygf)).T,
-    #                                 method='linear')
-    zg = matplotlib.mlab.griddata(xyz_array[:, 0], xyz_array[:, 1], Ti, xi, yi)
-
-    return xg, yg, zg
 
 
 def Magnus_eq(T):
@@ -191,153 +155,6 @@ def calculate_fault_x(z_flt, fault_angle, x_flt_surface):
     return x_flt
 
 
-def setup_mesh(width, x_flt_surface, fault_width, fault_angle, z_air,
-               z_surface, z_fine, z_base, cellsize,
-               cellsize_air, cellsize_fault, cellsize_fine, cellsize_base,
-               x_left=0, check_x_bnds=False):
-
-    """
-    Create a mesh for the model of the bewowawe hydrothermal system
-
-    new version, width denotes the extent of the model domain on
-    either side of the fault
-    """
-
-    ###############################
-    # use gmsh to construct domain
-    ##############################
-
-    # calculate fault positions
-    # TODO: enable multiple faults, right now only one fault in model domain
-    z_flt = np.array([z_surface, z_fine, z_base])
-    x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
-
-    if check_x_bnds is True:
-        if np.min(x_flt) <= x_left:
-            print 'warning the left hand side of the fault is at %0.2f, ' \
-                  'which is outside the model domain boundary at x=%0.2f' % (np.min(x_flt), x_left)
-            x_left = np.min(x_flt) - fault_width * 2
-            print 'relocating left hand boundary to %0.2f ' % x_left
-
-        if np.max(x_flt) >= width:
-            print 'warning the right hand side of the fault is at %0.2f, ' \
-                  'which is outside the model domain boundary at x=%0.2f' % (np.max(x_flt), width)
-            width = np.max(x_flt) + fault_width * 2
-            print 'relocating right hand boundary to %0.2f ' % width
-
-    print 'fault locations in mesh:'
-    for x, z in zip(x_flt, z_flt):
-        print x, z
-
-    x_left_bnd = np.min(x_flt) - width
-    x_right_bnd = np.max(x_flt) + width
-
-    print 'left and right hand bnd of mesh: ', x_left_bnd, x_right_bnd
-
-    xys = [[x_left_bnd, z_air], [x_right_bnd, z_air],
-           [x_left_bnd, z_surface], [x_flt[0], z_surface], [x_flt[0] + fault_width, z_surface], [x_right_bnd, z_surface],
-           [x_left_bnd, z_fine], [x_flt[1], z_fine], [x_flt[1] + fault_width, z_fine], [x_right_bnd, z_fine],
-           [x_left_bnd, z_base], [x_flt[2], z_base], [x_flt[2] + fault_width, z_base], [x_right_bnd, z_base]]
-
-    print 'corner points in mesh: '
-    for xysi in xys:
-        print xysi
-
-    #points = create_points(xs,zs)
-    points = [pc.Point(x, z) for x, z in xys]
-
-    # coarse cellsize at lower right
-    points[0].setLocalScale(cellsize_air / cellsize)
-    points[1].setLocalScale(cellsize_air / cellsize)
-    #points[7].setLocalScale(cellsize_fine / cellsize)
-
-    points[3].setLocalScale(cellsize_fault / cellsize)
-    points[4].setLocalScale(cellsize_fault / cellsize)
-    points[7].setLocalScale(cellsize_fault / cellsize)
-    points[8].setLocalScale(cellsize_fault / cellsize)
-    points[11].setLocalScale(cellsize_fault / cellsize)
-    points[12].setLocalScale(cellsize_fault / cellsize)
-
-    #points[5].setLocalScale(cellsize_fine / cellsize)
-    #points[8].setLocalScale(cellsize_fine / cellsize)
-    points[10].setLocalScale(cellsize_base / cellsize)
-    points[13].setLocalScale(cellsize_base / cellsize)
-
-    # horizontal lines:
-    lineh1 = pc.Line(points[0], points[1])
-    lineh2 = pc.Line(points[2], points[3])
-    lineh3 = pc.Line(points[3], points[4])
-    lineh4 = pc.Line(points[4], points[5])
-    lineh5 = pc.Line(points[6], points[7])
-    lineh6 = pc.Line(points[7], points[8])
-    lineh7 = pc.Line(points[8], points[9])
-    lineh8 = pc.Line(points[10], points[11])
-    lineh9 = pc.Line(points[11], points[12])
-    lineh10 = pc.Line(points[12], points[13])
-
-    # vertical lines:
-    linev1 = pc.Line(points[0], points[2])
-    linev2 = pc.Line(points[1], points[5])
-    linev3 = pc.Line(points[2], points[6])
-    linev4 = pc.Line(points[3], points[7])
-    linev5 = pc.Line(points[4], points[8])
-    linev6 = pc.Line(points[5], points[9])
-    linev7 = pc.Line(points[6], points[10])
-    linev8 = pc.Line(points[7], points[11])
-    linev9 = pc.Line(points[8], points[12])
-    linev10 = pc.Line(points[9], points[13])
-
-    # closed curves for different segments of the mesh:
-    curve_air = pc.CurveLoop(lineh1, linev2, -lineh4, -lineh3, -lineh2, -linev1)
-    curve_fine_left = pc.CurveLoop(lineh2, linev4, -lineh5, -linev3)
-    curve_flt_fine = pc.CurveLoop(lineh3, linev5, -lineh6, -linev4)
-    curve_fine_right = pc.CurveLoop(lineh4, linev6, -lineh7, -linev5)
-    curve_base_left = pc.CurveLoop(lineh5, linev8, -lineh8, -linev7)
-    curve_flt_base = pc.CurveLoop(lineh6, linev9, -lineh9, -linev8)
-    curve_base_right = pc.CurveLoop(lineh7, linev10, -lineh10, -linev9)
-
-    surface_air = pc.PlaneSurface(curve_air)
-    surface_flt_fine = pc.PlaneSurface(curve_flt_fine)
-    surface_fine_left = pc.PlaneSurface(curve_fine_left)
-    surface_fine_right = pc.PlaneSurface(curve_fine_right)
-    surface_flt_base = pc.PlaneSurface(curve_flt_base)
-    surface_base_left = pc.PlaneSurface(curve_base_left)
-    surface_base_right = pc.PlaneSurface(curve_base_right)
-
-    #surface_air.setLocalScale(factor=cellsize_air / cellsize)
-    #surface_flt_fine.setLocalScale(factor=cellsize_fault / cellsize)
-    #surface_flt_base.setLocalScale(factor=cellsize_fault / cellsize)
-    #surface_fine.setLocalScale(factor=cellsize_fine / cellsize)
-    #surface_base.setLocalScale(factor=cellsize_base / cellsize)
-    #surface_c.setLocalScale(factor=Parameters.grid_refinement_factor)
-
-    #if fine_mesh is True:
-    #    print 'assigning refined grid to entire landward side of model domain'
-    #    surface_d.setLocalScale(factor=Parameters.grid_refinement_factor)
-
-    d = gmsh.Design(dim=2, element_size=cellsize)
-
-    d.setMeshFileName('beowawe_mesh')
-    #ps1 = pc.PropertySet("bottomleft", surface_base_left)
-    #ps2 = pc.PropertySet("bottommid", surface_flt_base)
-    #ps3 = pc.PropertySet("bottomright", surface_base_right)
-
-    ps1 = pc.PropertySet("bottomleft", lineh8)
-    ps2 = pc.PropertySet("bottommid", lineh9)
-    ps3 = pc.PropertySet("bottomright", lineh10)
-
-    d.addItems(surface_air, surface_flt_fine,
-               surface_fine_left, surface_fine_right, surface_base_left,
-               surface_flt_base, surface_base_right,
-               ps1, ps2, ps3)
-
-    mesh = fl.MakeDomain(d, optimizeLabeling=True)
-
-    mesh.write('mesh.fly')
-
-    return mesh
-
-
 def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle, fault_bottom,
                                z_air,
                                z_surface_initial, z_surface_final,
@@ -391,12 +208,6 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle, f
             width = np.max(x_flt) + fault_width * 2
             print 'relocating right hand boundary to %0.2f ' % width
 
-
-    #xys = [[0, z_air], [width, z_air],
-    #       [0, z_surface], [x_flt[0], z_surface], [x_flt[0] + fault_width, z_surface], [width, z_surface],
-    #       [0, z_fine], [x_flt[1], z_fine], [x_flt[1] + fault_width, z_fine], [width, z_fine],
-    #       [0, z_base], [x_flt[2], z_base], [x_flt[2] + fault_width, z_base], [width, z_base]]
-
     xys = [[[x_left_bnd, z_air], [x_right_bnd, z_air]]]
 
     for xf, zf in zip(x_flt, z_flt):
@@ -404,7 +215,6 @@ def setup_mesh_with_exhumation(width, x_flt_surface, fault_width, fault_angle, f
                     [xf - fault_width / 2.0, zf],
                     [xf + fault_width / 2.0 + 0.02, zf],
                     [x_right_bnd, zf]])
-    #xys.append([[x_left_bnd, z_base], [x_right_bnd, z_base]])
 
     print 'corner points in mesh: '
 
@@ -520,14 +330,11 @@ def setup_mesh_with_exhumation_new(width, x_flt_surface, fault_width, fault_angl
 
     # calculate fault positions
     # TODO: enable multiple faults, right now only one fault in model domain
-    #zs_surface = np.linspace(z_surface_initial, z_surface_final, z_surface_steps + 1)
-    #mp.target_zs = np.linspace(0, exhumed_thickness, exhumation_steps + 1)
 
     zs_surface = target_zs[::-1]
 
     z_flt = np.concatenate((zs_surface, np.array([z_fine, fault_bottom])))
 
-    #z_flt = np.array([z_surface, z_fine, z_base])
     x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
 
     print 'x, z coords of fault locations in mesh:'
@@ -550,12 +357,6 @@ def setup_mesh_with_exhumation_new(width, x_flt_surface, fault_width, fault_angl
                   'which is outside the model domain boundary at x=%0.2f' % (np.max(x_flt), width)
             width = np.max(x_flt) + fault_width * 2
             print 'relocating right hand boundary to %0.2f ' % width
-
-
-    #xys = [[0, z_air], [width, z_air],
-    #       [0, z_surface], [x_flt[0], z_surface], [x_flt[0] + fault_width, z_surface], [width, z_surface],
-    #       [0, z_fine], [x_flt[1], z_fine], [x_flt[1] + fault_width, z_fine], [width, z_fine],
-    #       [0, z_base], [x_flt[2], z_base], [x_flt[2] + fault_width, z_base], [width, z_base]]
 
     xys = [[[x_left_bnd, z_air], [x_right_bnd, z_air]]]
 
@@ -613,7 +414,6 @@ def setup_mesh_with_exhumation_new(width, x_flt_surface, fault_width, fault_angl
 
     hlines.append([pc.Line(points[-1][0], points[-1][1])])
 
-
     # vertical lines:
     vlines = [[pc.Line(points[0][0], points[1][0]), pc.Line(points[0][1], points[1][3])]]
     for point, point_below in zip(points[1:-2], points[2:]):
@@ -670,123 +470,9 @@ def setup_mesh_with_exhumation_new(width, x_flt_surface, fault_width, fault_angl
     return mesh, x_flt[:-2], z_flt[:-2], labels
 
 
-def setup_mesh_with_exhumation_v2(width, x_flt_surface, fault_width, fault_angle,
-                                  z_air,
-                                  z_surface_initial, z_surface_final,
-                                  z_surface_steps,
-                                  z_fine, z_base, cellsize,
-                                  cellsize_air, cellsize_fault,
-                                  cellsize_fine, cellsize_base, fault_buffer_zone):
-
-    """
-    Create a mesh for the model of the bewowawe hydrothermal system, including exhumation
-    """
-
-    ###############################
-    # use gmsh to construct domain
-    ##############################
-
-    # calculate fault positions
-    # TODO: enable multiple faults, right now only one fault in model domain
-    zs_surface = np.linspace(z_surface_initial, z_surface_final, z_surface_steps + 1)
-    z_flt = np.concatenate((zs_surface, np.array([z_fine, z_base])))
-    #z_flt = np.array([z_surface, z_fine, z_base])
-    x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
-
-    print 'fault locations in mesh:'
-    for x, z in zip(x_flt, z_flt):
-        print x, z
-
-    #xys = [[0, z_air], [width, z_air],
-    #       [0, z_surface], [x_flt[0], z_surface], [x_flt[0] + fault_width, z_surface], [width, z_surface],
-    #       [0, z_fine], [x_flt[1], z_fine], [x_flt[1] + fault_width, z_fine], [width, z_fine],
-    #       [0, z_base], [x_flt[2], z_base], [x_flt[2] + fault_width, z_base], [width, z_base]]
-
-    xys = [[[0, z_air], [width, z_air]]]
-
-    for xf, zf in zip(x_flt, z_flt):
-        xys.append([[0, zf], [xf - fault_buffer_zone, zf], [xf, zf], [xf + fault_width, zf],
-                    [xf + fault_buffer_zone * 2, zf],  [width, zf]])
-
-    print 'xy points: ', xys
-
-    points = []
-    for xyi in xys:
-        points_local = [pc.Point(x, z) for x, z in xyi]
-        points.append(points_local)
-
-    # fine cellsize in air layer:
-    for point in points[0]:
-        point.setLocalScale(cellsize_air / cellsize)
-
-    # small cellsize in fault:
-    for point in points[1:]:
-        point[1].setLocalScale(cellsize_fine / cellsize)
-        point[2].setLocalScale(cellsize_fault / cellsize)
-        point[3].setLocalScale(cellsize_fault / cellsize)
-        point[4].setLocalScale(cellsize_fine / cellsize)
-
-    points[-1][0].setLocalScale(cellsize_base / cellsize)
-    points[-1][-1].setLocalScale(cellsize_base / cellsize)
-
-    # horizontal lines:
-    hlines = [[pc.Line(points[0][0], points[0][1])]]
-    for point in points[1:]:
-        hline_local = [pc.Line(point[0], point[1]),
-                       pc.Line(point[1], point[2]),
-                       pc.Line(point[2], point[3]),
-                       pc.Line(point[3], point[4]),
-                       pc.Line(point[4], point[5])]
-        hlines.append(hline_local)
-
-    # vertical lines:
-    vlines = [[pc.Line(points[0][0], points[1][0]), pc.Line(points[0][1], points[1][3])]]
-    for point, point_below in zip(points[1:], points[2:]):
-        vline_local = [pc.Line(point[0], point_below[0]),
-                       pc.Line(point[1], point_below[1]),
-                       pc.Line(point[2], point_below[2]),
-                       pc.Line(point[3], point_below[3]),
-                       pc.Line(point[4], point_below[4]),
-                       pc.Line(point[5], point_below[5])]
-        vlines.append(vline_local)
-
-    curves = [pc.CurveLoop(hlines[0][0], vlines[0][1],
-                           -hlines[1][4], -hlines[1][3], -hlines[1][2], -hlines[1][1], -hlines[1][0],
-                           -vlines[0][0])]
-    for hline, hline_below, vline in zip(hlines[1:-1], hlines[2:], vlines[1:]):
-        curve_local_left = pc.CurveLoop(hline[0], vline[1], -hline_below[0], -vline[0])
-        curve_local_fault_buffer_left = pc.CurveLoop(hline[1], vline[2], -hline_below[1], -vline[1])
-        curve_local_fault = pc.CurveLoop(hline[2], vline[3], -hline_below[2], -vline[2])
-        curve_local_fault_buffer_right = pc.CurveLoop(hline[3], vline[4], -hline_below[3], -vline[3])
-        curve_local_right = pc.CurveLoop(hline[4], vline[5], -hline_below[4], -vline[4])
-
-        curves += [curve_local_left, curve_local_fault_buffer_left, curve_local_fault,
-                   curve_local_fault_buffer_right, curve_local_right]
-
-    surfaces = [pc.PlaneSurface(curve) for curve in curves]
-
-    d = gmsh.Design(dim=2, element_size=cellsize)
-
-    d.setMeshFileName('beowawe_mesh')
-
-    d.addItems(*surfaces)
-
-    mesh = fl.MakeDomain(d, optimizeLabeling=True)
-
-    mesh.write('mesh.stl')
-
-    return mesh
-
-
 def setup_mesh_2faults(width, x_flt_surface, fault_width, fault_angle, z_air,
                        z_surface, z_fine, z_base, cellsize,
                        cellsize_air, cellsize_fault, cellsize_fine, cellsize_base):
-
-    #mp.fault_xs[0], mp.fault_widths[0], mp.fault_angles[0], mp.air_height,
-    #              z_surface, mp.z_fine, z_base, mp.cellsize,
-    #              mp.cellsize_air, mp.cellsize_fault,
-    #              mp.cellsize_fine, mp.cellsize_base
-
 
     """
     Create a mesh for a hydrothermal model containing 2 faults
@@ -794,9 +480,8 @@ def setup_mesh_2faults(width, x_flt_surface, fault_width, fault_angle, z_air,
     """
 
     ###############################
-    # use gmsh to construct domain
+    # use GMSH to construct domain
     ##############################
-
     # calculate fault positions
     # TODO: enable multiple faults, right now only one fault in model domain
     z_flt = np.array([z_surface, z_fine, z_base])
@@ -807,13 +492,11 @@ def setup_mesh_2faults(width, x_flt_surface, fault_width, fault_angle, z_air,
            [0, z_fine], [x_flt[1], z_fine], [x_flt[1] + fault_width, z_fine], [width, z_fine],
            [0, z_base], [x_flt[2], z_base], [x_flt[2] + fault_width, z_base], [width, z_base]]
 
-    #points = create_points(xs,zs)
     points = [pc.Point(x, z) for x, z in xys]
 
     # coarse cellsize at lower right
     points[0].setLocalScale(cellsize_air / cellsize)
     points[1].setLocalScale(cellsize_air / cellsize)
-    #points[7].setLocalScale(cellsize_fine / cellsize)
 
     points[2].setLocalScale(cellsize_fault / cellsize)
     points[3].setLocalScale(cellsize_fault / cellsize)
@@ -822,8 +505,6 @@ def setup_mesh_2faults(width, x_flt_surface, fault_width, fault_angle, z_air,
     points[10].setLocalScale(cellsize_fault / cellsize)
     points[11].setLocalScale(cellsize_fault / cellsize)
 
-    #points[5].setLocalScale(cellsize_fine / cellsize)
-    #points[8].setLocalScale(cellsize_fine / cellsize)
     points[9].setLocalScale(cellsize_base / cellsize)
     points[12].setLocalScale(cellsize_base / cellsize)
 
@@ -864,18 +545,6 @@ def setup_mesh_2faults(width, x_flt_surface, fault_width, fault_angle, z_air,
     surface_base_left = pc.PlaneSurface(curve_base_left)
     surface_base_right = pc.PlaneSurface(curve_base_right)
 
-    #surface_air.setLocalScale(factor=cellsize_air / cellsize)
-    #surface_flt_fine.setLocalScale(factor=cellsize_fault / cellsize)
-    #surface_flt_base.setLocalScale(factor=cellsize_fault / cellsize)
-    #surface_fine.setLocalScale(factor=cellsize_fine / cellsize)
-    #surface_base.setLocalScale(factor=cellsize_base / cellsize)
-    #surface_c.setLocalScale(factor=Parameters.grid_refinement_factor)
-
-
-    #if fine_mesh is True:
-    #    print 'assigning refined grid to entire landward side of model domain'
-    #    surface_d.setLocalScale(factor=Parameters.grid_refinement_factor)
-
     d = gmsh.Design(dim=2, element_size=cellsize)
 
     d.setMeshFileName('beowawe_mesh')
@@ -893,27 +562,6 @@ def setup_mesh_2faults(width, x_flt_surface, fault_width, fault_angle, z_air,
     mesh.write('mesh.fly')
 
     return mesh
-
-
-def interpolate_var_to_2d_grid(model_var):
-
-    """
-    convert escript variable to 2d numpy array
-    only works for regular 2d grids
-    """
-
-    xyz, model_array = convert_to_array(model_var)
-
-    # interpolate variable back to 2d grid
-    xi, xi_pos = np.unique(xyz[:, 0], return_inverse=True)
-    yi, yi_pos = np.unique(xyz[:, 1], return_inverse=True)
-
-    # resize doesnt work, escript screws up row and column order of data...
-    #raster_array = np.resize(model_array, [len(xi), len(yi)])
-    raster_array = np.zeros((len(xi), len(yi)))
-    raster_array[xi_pos, yi_pos] = model_array
-
-    return xi, yi, raster_array
 
 
 def model_hydrothermal_temperatures(mesh, hf_pde,
@@ -934,11 +582,11 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     K_air=None, c_air=None, rho_air=None,
                                     vapour_correction=True,
                                     variable_K_air=False, ra=80.0, reference_z_ra=1.8,
-                                    screen_output_interval=5,
                                     steady_state_iterations=10,
                                     store_results_interval=1,
                                     track_exact_surface_elev=False,
                                     adv_pde=None,
+                                    max_screen_output=500,
                                     debug=False):
 
     """
@@ -1120,7 +768,6 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 specified_heat_flux = specified_flux * specified_flux_loc * dt
             else:
                 specified_heat_flux = specified_flux * specified_flux_loc
-            #specified_heat_flux = specified_flux * specified_flux_loc
 
             #
             hf_pde.setValue(A=A, C=C, D=D, Y=Y,
@@ -1141,18 +788,13 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
             print 'warning, cfl condition not met, cfl number = %0.2f' % cfl_cond_max
 
-            max_cfl_number = 0.5
-
-            #print 'dt was %0.2e' % dt
-
-            #dt = max_cfl_number * dy / es.Lsup(q_vector)
-
-            #print 'reducing dt to %0.2e' % dt
-
         nt = int(duration / dt)
-        #nt_recovery = 1 * nt_heating
 
-        # caclulate grid peclet number
+        # set screen output interval
+        screen_output_interval = int(np.ceil(nt / max_screen_output))
+        print 'screen output once every %i timesteps' % screen_output_interval
+
+        # calculate grid Peclet number
         Pe = rho_f * c_f * q_vector * mesh.getSize() / K_var
         print 'max. grid peclet number = ', es.Lsup(Pe)
 
@@ -1181,7 +823,6 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             if vapour_correction is True:
                 vapour_pressure = calculate_vapour_pressure(T)
                 vapour = subsurface * es.whereNegative(P - vapour_pressure + P_buffer)
-                #vapour = es.whereNegative(P - vapour_pressure)
 
                 xmin_vapour = es.inf(vapour * xyz[0] + es.whereZero(vapour) * 999999.9)
                 xmax_vapour = es.sup(vapour * xyz[0])
@@ -1224,10 +865,6 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
                 int_table = Tsa2
 
-                # dummy for testing
-                #Tsa_select = Tsa[xysa[:, 1] == surface_level]
-                #int_table = np.linspace(0, 50, len(Tsa_select))
-
                 numslices = len(int_table) - 1
                 minval = es.inf(xyz[0])
                 maxval = es.sup(xyz[0])
@@ -1266,8 +903,6 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                     surface_ele = es.whereZero(xyze[1] - surface_level)
 
                 else:
-
-                    #print '\texhumation, new surface level at %0.2f' % surface_level_mesh
                     subsurface = es.whereNonPositive(xyz[1] - surface_level_mesh)
                     subsurface_ele = es.whereNonPositive(xyze[1] - surface_level_mesh)
                     subsurface_ele_10m = es.whereNonPositive(xyze[1] - surface_level_mesh) \
@@ -1278,7 +913,6 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                     surface = es.whereZero(xyz[1] - surface_level_mesh)
                     surface_ele = es.whereZero(xyze[1] - surface_level_mesh)
 
-                #q_vector = q_vector * subsurface
                 q_vector_old = q_vector.copy()
                 q_vector[0] = q_vector[0] * subsurface_ele
                 q_vector[1] = q_vector[1] * subsurface_ele
@@ -1428,7 +1062,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 print '\tcomputational time for one timestep = %0.3f sec' \
                       % (comptime / screen_output_interval)
                 print '\tcomputational time needed by solver = %0.3f sec' \
-                      % (solver_time)
+                      % solver_time
                 print '\tactual surface level ', surface_level
                 if exhumation_rate > 0:
                     print '\tclosest surface in mesh ', surface_level_mesh
@@ -1514,11 +1148,6 @@ def model_run(mp):
 
     if mp.add_exhumation is False:
         print 'construct static mesh without exhumation'
-        #mesh = setup_mesh(mp.width, mp.fault_xs[0], mp.fault_widths[0],
-        #                  mp.fault_angles[0], mp.air_height,
-        #                  z_surface, mp.z_fine, z_base, mp.cellsize,
-        #                  mp.cellsize_air, mp.cellsize_fault,
-        #                  mp.cellsize_fine, mp.cellsize_base)
 
         # make sure to set exhumation rate to 0, will get errors in code otherwise...
         mp.exhumation_rate = 0.0
@@ -1544,7 +1173,7 @@ def model_run(mp):
         #exhumed_thickness = 0
         #elevation_top = z_surface + exhumed_thickness + mp.air_height
 
-    elif mp.add_exhumation is True:
+    else:
         print 'construct dynamic mesh with exhumation'
         exhumed_thickness = mp.exhumation_rate * (np.sum(np.array(mp.durations)) / mp.year)
         exhumation_steps = mp.exhumation_steps
@@ -1568,31 +1197,16 @@ def model_run(mp):
 
         elevation_top = z_surface + exhumed_thickness + mp.air_height
 
-        if mp.use_mesh_with_buffer is False:
-            mesh, x_flt, z_flt, bottom_labels = setup_mesh_with_exhumation_new(mp.width, mp.fault_xs[0],
-                                                            mp.fault_widths[0],
-                                                            mp.fault_angles[0], mp.fault_bottoms[0] - 500.0,
-                                                            elevation_top,
-                                                            z_surface + exhumed_thickness, z_surface,
-                                                            exhumation_steps,
-                                                            mp.z_fine, z_base, mp.cellsize,
-                                                            mp.cellsize_air, mp.cellsize_surface, mp.cellsize_fault,
-                                                            mp.cellsize_fine, mp.cellsize_base, mp.target_zs)
-                                                 #,mp.fault_widths)
+        mesh, x_flt, z_flt, bottom_labels = setup_mesh_with_exhumation_new(mp.width, mp.fault_xs[0],
+                                                        mp.fault_widths[0],
+                                                        mp.fault_angles[0], mp.fault_bottoms[0] - 500.0,
+                                                        elevation_top,
+                                                        z_surface + exhumed_thickness, z_surface,
+                                                        exhumation_steps,
+                                                        mp.z_fine, z_base, mp.cellsize,
+                                                        mp.cellsize_air, mp.cellsize_surface, mp.cellsize_fault,
+                                                        mp.cellsize_fine, mp.cellsize_base, mp.target_zs)
 
-        else:
-            print 'use mesh with a buffer zone with small cell sizes around faults'
-            mesh = setup_mesh_with_exhumation_v2(mp.width, mp.fault_xs[0],
-                                                 mp.fault_widths[0],
-                                                 mp.fault_angles[0], elevation_top,
-                                                 z_surface + exhumed_thickness, z_surface,
-                                                 exhumation_steps,
-                                                 mp.z_fine, z_base, mp.cellsize,
-                                                 mp.cellsize_air, mp.cellsize_fault,
-                                                 mp.cellsize_fine, mp.cellsize_base,
-                                                 mp.fault_buffer_zone)
-
-    ###############################################################
     # convert input params to escript variables
     # see here for more info:
     # https://answers.launchpad.net/escript-finley/+question/189076
@@ -1646,10 +1260,8 @@ def model_run(mp):
     else:
         bottom_temperature = None
         specified_T_loc = es.wherePositive(top_bnd)
-        #specified_T_loc = es.wherePositive(top_bnd) + es.wherePositive(bottom_bnd)
         specified_T = es.wherePositive(top_bnd) * mp.air_temperature
 
-        #specified_flux_loc = es.wherePositive(bottom_bnd)
         specified_flux_loc = es.Scalar(0, es.FunctionOnBoundary(mesh))
         specified_flux = es.Scalar(0, es.FunctionOnBoundary(mesh))
 
@@ -1659,7 +1271,7 @@ def model_run(mp):
 
     # populate porosity and K_solid values
     fault_x = calculate_fault_x(xyz[1], mp.fault_angles[0], mp.fault_xs[0])
-    #K_solid = es.Scalar(0, es.FunctionOnBoundary(mesh))
+    # K_solid = es.Scalar(0, es.FunctionOnBoundary(mesh))
 
     K_solid = xyz[0] * 0.0
     porosity = xyz[0] * 0.0
@@ -1744,9 +1356,9 @@ def model_run(mp):
             fault_segment_tops = fault_segments
 
             depth = xyz[1]
-            #x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
 
-            fault_left = -depth * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 - fault_width / 2.0 + fault_x
+            fault_left = -depth * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 \
+                         - fault_width / 2.0 + fault_x
             fault_right = fault_left + fault_width + 0.02
 
             fault_segments_i = []
@@ -1759,7 +1371,8 @@ def model_run(mp):
 
                 fault_segments_i.append(fault_zone_segment)
 
-                print 'adding segment from z=%0.2f to %0.2f for fault %i ' % (segment_bottom, segment_top, h)
+                print 'adding segment from z=%0.2f to %0.2f for fault %i ' \
+                      % (segment_bottom, segment_top, h)
             fault_segments_all.append(fault_segments_i)
 
     # add horizontal aquifers:
@@ -1831,9 +1444,7 @@ def model_run(mp):
 
     # convert aquifer fluxes from m2/sec to m/sec
     aquifer_fluxes_m_per_sec = []
-    #for aquifer_top, aquifer_bottom, aquifer_flux in zip(mp.aquifer_tops,
-    #                                                     mp.aquifer_bottoms,
-    #                                                     mp.aquifer_fluxes):
+
     if aquifer_top is not None:
 
         for duration, aquifer_flux_timeslice in zip(mp.durations, mp.aquifer_fluxes):
@@ -1856,7 +1467,6 @@ def model_run(mp):
     if float(store_results_interval) != int(store_results_interval):
         raise ValueError('error, dt_stored divided by dt should be an integer.')
 
-
     # model hydrothermal heating
     runtimes, T_steady, Ts, q_vectors, surface_levels, boiling_temps, exceed_boiling_temps = \
         model_hydrothermal_temperatures(
@@ -1873,7 +1483,8 @@ def model_run(mp):
             mp.air_temperature, bottom_temperature,
             solve_as_steady_state=mp.steady_state,
             adv_pde=adv_pde,
-            surface_level_init=surface_level, exhumation_rate=mp.exhumation_rate,
+            surface_level_init=surface_level,
+            exhumation_rate=mp.exhumation_rate,
             target_depths=mp.target_zs,
             K_b=K_b, c_b=c_b, rho_b=rho_b,
             K_air=K_air, c_air=mp.c_air, rho_air=mp.rho_air,
@@ -1957,7 +1568,6 @@ def model_run(mp):
     ##########################################
     # calculate helium ages at surface outcrop
     ##########################################
-    #calculate_he_ages = True
 
     if mp.calculate_he_ages is False:
         Ahe_ages_all = None
@@ -2014,10 +1624,7 @@ def model_run(mp):
         for target_depth in mp.target_zs:
 
             print 'modeling AHe for samples at surface level = %0.2f m' % target_depth
-            #target_depth = 0
-            #nt = len(Ts)
 
-            #ind_surface1 = xyz_array[:, 1] == target_depth
             z_tolerance = 0.01
             ind_surface = np.where(np.abs(xyz_array[:, 1] - target_depth) < z_tolerance)[0]
             nx = len(ind_surface)
@@ -2044,13 +1651,13 @@ def model_run(mp):
                     T_filtered = \
                         np.append(T_filtered, T_array[:, ind_surface[xii]][-1])
 
-                #t_he = np.concatenate((t_prov[:], t_prov[-1] + runtimes))
-                #T_he = np.concatenate((T_prov[:], T_array[:, ind_surface[xii]]))
+                # t_he = np.concatenate((t_prov[:], t_prov[-1] + runtimes))
+                # T_he = np.concatenate((T_prov[:], T_array[:, ind_surface[xii]]))
                 t_he = np.concatenate((t_prov[:], t_prov[-1] + runtimes_filtered[1:]))
                 T_he = np.concatenate((T_prov[:], T_filtered[1:]))
 
                 nt_prov = len(t_prov)
-                #T_he *= 2
+                # T_he *= 2
 
                 T_he += mp.Kelvin
 
@@ -2156,14 +1763,10 @@ def model_run(mp):
                     # find AHe grain data
                     grain_inds = np.where(AHe_relative_sample_distances == rel_distance)[0]
                     print 'AHe grains: ', grain_inds
-                    #print dfhs
-                    #for g in grain_inds:
-                    #    print sample_names[g]
                     print 'distance to fault (m): ', rel_distance
                     print 'x coord of fault (m): ', x_flt_timestep
                     print 'absolute distance for layer at z= %0.2f , x = %0.2f m' % (target_depth, distance)
                     print 'total time = %0.2e yr' % (t_he[-1] / year)
-                    #print 'max temp = %0.1f degr. C' % T_he.max()
 
                     for grain_ind in grain_inds:
 
@@ -2191,7 +1794,6 @@ def model_run(mp):
                         Ft_i = 1 - 3 * S / (4 * R) + S**3 / (16 * R**3)
 
                         he_age_i_corr = he_age_i / Ft_i
-                        #if mp.report_corrected_AHe_ages is True:
 
                         My = 1e6 * 365 * 24 * 60 * 60.0
 
@@ -2203,7 +1805,6 @@ def model_run(mp):
 
                         # copy AHe ages back into array with same length as the
                         # runtime and temperature arrays
-
                         he_ages_run_filtered = he_age_i[nt_prov:]
                         he_ages_unfiltered = np.interp(runtimes, runtimes_filtered[1:],
                                                        he_ages_run_filtered)
@@ -2213,8 +1814,6 @@ def model_run(mp):
                         he_ages_unfiltered = np.interp(runtimes, runtimes_filtered[1:],
                                                        he_ages_run_filtered)
                         he_ages_grains_corr[:, grain_ind] = he_ages_unfiltered
-
-                        #he_ages_grains_corr1[:, grain_ind] = he_ages_unfiltered
 
                 AHe_ages_samples_all.append(he_ages_grains)
                 AHe_ages_samples_all_corr.append(he_ages_grains_corr)
@@ -2249,9 +1848,9 @@ def model_run(mp):
         if mp.model_AHe_samples is True:
             print '\tname, distance, layer, modeled AHe age uncorr, corrected: '
             for i, age_i, age_i_corr in zip(itertools.count(), AHe_ages_samples_all, AHe_ages_samples_all_corr):
-                for sample_name, rel_distance, age, age_corr in zip(sample_names,
-                                                      AHe_relative_sample_distances,
-                                                      age_i[-1], age_i_corr[-1]):
+                for sample_name, rel_distance, age, age_corr in \
+                        zip(sample_names, AHe_relative_sample_distances,
+                            age_i[-1], age_i_corr[-1]):
                     print '\t%s, %0.1f m, %i, %0.2f My, %0.2f My' \
                           % (sample_name, rel_distance, i, age / My, age_corr / My)
 
@@ -2267,288 +1866,6 @@ def model_run(mp):
               AHe_ages_samples_all, AHe_ages_samples_all_corr]
 
     return output
-
-
-if __name__ == "__main__":
-
-    print '-' * 20
-    print 'running a single model scenario:'
-
-    # import model parameters file
-    from model_parameters.model_parameters import ModelParams
-
-    mp = ModelParams
-
-    scriptdir = os.path.realpath(sys.path[0])
-
-    # run a single model scenario
-    output = model_run(mp)
-
-    #(runtimes, xyz_array, surface_levels,
-    # T_init_array, T_array, boiling_temp_array,
-    # xyz_array_exc, exceed_boiling_temp_array,
-    # xyz_element_array,
-    # qh_array, qv_array,
-    # fault_fluxes, durations, xzs, Tzs,
-    # Ahe_ages_all, Ahe_ages_corr_all, xs_Ahe_all, target_depths,
-    # AHe_ages_samples_all) = output
-
-    (runtimes, xyz_array, surface_levels, x_flt, z_flt,
-     T_init_array, T_array, boiling_temp_array,
-     xyz_array_exc, exceed_boiling_temp_array,
-     xyz_element_array,
-     qh_array, qv_array,
-     fault_fluxes, durations, xzs, Tzs, Tzs_diff,
-     Ahe_ages_all, Ahe_ages_corr_all, xs_Ahe_all, target_depths,
-     AHe_ages_samples_all, AHe_ages_samples_all_corr) = output
-
-    # crop output to only the output timesteps, to limit filesize
-    if np.sum(np.array(mp.N_outputs)) > len(Tzs[0]):
-        msg = 'error, the number of requested output timesteps is higher than the number of model timesteps'
-        msg += 'reduce the N_outputs parameter in the model_parameters.py file'
-        raise IndexError(msg)
-
-    output_steps = [0]
-
-    try:
-        assert len(mp.durations) == len(mp.N_outputs)
-    except AssertionError:
-        msg = 'error, the length of the parameters durations and the N_outputs are not the same in the ' \
-              'input file.'
-        raise ValueError(msg)
-
-    for duration, N_output in zip(mp.durations, mp.N_outputs):
-        nt = int(duration / mp.dt_stored)
-        print 'timesteps = %i' % nt
-
-        output_steps_i = list(np.linspace(0, nt, N_output + 1).astype(int) + output_steps[-1])[1:]
-        output_steps += output_steps_i
-
-    times_test = np.arange(0, np.sum(mp.durations) + mp.dt_stored, mp.dt_stored)
-
-    print 'output steps : '
-    print output_steps
-    print 'generating time output at steps: '
-    print times_test[output_steps] / year
-
-    # select data for output steps only
-    output_steps = np.array(output_steps)
-
-    Tzs_cropped = [Tzi[output_steps] for Tzi in Tzs]
-
-    if mp.calculate_he_ages is True:
-        AHe_ages_cropped = [AHe_i[output_steps]
-                            for AHe_i in Ahe_ages_all]
-        AHe_ages_corr_cropped = [AHe_i[output_steps]
-                                 for AHe_i in Ahe_ages_corr_all]
-    else:
-        AHe_ages_cropped = None
-
-    if mp.calculate_he_ages is True and mp.model_AHe_samples is True:
-        AHe_ages_samples_cropped = [AHe_i[output_steps]
-                                    for AHe_i in AHe_ages_samples_all]
-        AHe_ages_samples_cropped_corr = [AHe_i[output_steps]
-                                    for AHe_i in AHe_ages_samples_all_corr]
-    else:
-        AHe_ages_samples_cropped = None
-        AHe_ages_samples_cropped_corr = None
-
-    N_output_steps = len(output_steps)
-
-    # find surface temperatures
-    T_surface = []
-    x_surface = []
-
-    # option to simplify finding surface temp:
-    snap_target_depths = True
-
-    for j in range(N_output_steps):
-
-        # add output T at surface
-        surface_elev = surface_levels[output_steps[j]]
-
-        if surface_elev in target_depths:
-            surface_ind = np.where(target_depths == surface_elev)[0][0]
-            T_surface_i = Tzs[surface_ind][j]
-            x_coords_i = xzs[surface_ind]
-
-        elif snap_target_depths is True:
-            diff = target_depths - surface_elev
-            surface_ind = np.argmin(diff)
-            T_surface_i = Tzs[surface_ind][j]
-            x_coords_i = xzs[surface_ind]
-
-        else:
-            # interpolating surface temperature or AHe ages is very buggy, raising an error for now
-            msg = 'error, cannot find the surface for calculating surface temperature over time'
-            msg += 'trying to find elevation %0.0f in list target_depths: %s' % (surface_elev, target_depths)
-            raise IndexError(msg)
-            # interpolate AHe age from nearest surfaces
-            diff = target_depths - surface_elev
-            ind_low = np.where(diff < 0)[0][-1]
-            ind_high = np.where(diff > 0)[0][0]
-
-            fraction = np.abs(diff[ind_low]) / \
-                       (surface_levels[ind_high] - surface_levels[ind_low])
-
-            T_surface_i = ((1.0-fraction) * Tzs[ind_low][j]
-                           + fraction * Tzs[ind_high][j])
-
-            x_coords_i = (1.0-fraction) * xzs[ind_low] \
-                          + fraction * xzs[ind_high]
-
-        T_surface.append(T_surface_i)
-        x_surface.append(x_coords_i)
-
-    # find AHe ages at surface
-    if mp.calculate_he_ages is True:
-
-        # add surface AHe data to output
-        AHe_ages_surface = []
-        AHe_ages_surface_corr = []
-        AHe_xcoords_surface = []
-
-        for i in range(N_output_steps):
-            surface_elev = surface_levels[i]
-
-            if surface_elev in target_depths:
-                surface_ind = np.where(target_depths == surface_elev)[0][0]
-                ages_raw = AHe_ages_cropped[surface_ind][i]
-                ages_raw_corr = AHe_ages_corr_cropped[surface_ind][i]
-                x_coords = xzs[surface_ind]
-            elif snap_target_depths is True:
-                diff = target_depths - surface_elev
-                surface_ind = np.argmin(diff)
-                ages_raw = AHe_ages_cropped[surface_ind][i]
-                ages_raw_corr = AHe_ages_corr_cropped[surface_ind][i]
-                x_coords = xzs[surface_ind]
-
-            else:
-                # interpolating surface temperature or AHe ages is very buggy, raising an error for now
-                msg = 'error, cannot find the surface for calculating surface temperature over time'
-                msg += 'trying to find elevation %0.0f in list target_depths: %s' % (surface_elev, target_depths)
-                raise IndexError(msg)
-
-                # interpolate AHe age from nearest surfaces
-                diff = target_depths - surface_elev
-                ind_low = np.where(diff < 0)[0][-1]
-                ind_high = np.where(diff > 0)[0][0]
-
-                fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
-
-                ages_raw = ((1.0-fraction) * AHe_ages_cropped[ind_low][i]
-                            + fraction * AHe_ages_cropped[ind_high][i])
-                ages_raw_corr = ((1.0-fraction) * AHe_ages_corr_cropped[ind_low][i]
-                                 + fraction * AHe_ages_corr_cropped[ind_high][i])
-
-                x_coords = (1.0-fraction) * xzs[ind_low] \
-                           + fraction * xzs[ind_high]
-
-            # add surface AHe data to output
-            AHe_ages_surface.append(ages_raw)
-            AHe_ages_surface_corr.append(ages_raw_corr)
-            AHe_xcoords_surface.append(x_coords)
-    else:
-        AHe_ages_surface = None
-        AHe_ages_surface_corr = None
-        AHe_xcoords_surface = None
-
-    # find AHe age of samples at surface
-    if mp.calculate_he_ages is True and mp.model_AHe_samples is True:
-
-        # add surface AHe data to output
-        AHe_ages_samples_surface = []
-        AHe_ages_samples_surface_corr = []
-
-        for i in range(N_output_steps):
-            surface_elev = surface_levels[i]
-
-            if surface_elev in target_depths:
-                surface_ind = np.where(target_depths == surface_elev)[0][0]
-                ages_raw = AHe_ages_samples_cropped[surface_ind][i]
-                ages_raw_corr = AHe_ages_samples_cropped_corr[surface_ind][i]
-
-                #x_coords = xzs[surface_ind]
-            elif snap_target_depths is True:
-                diff = target_depths - surface_elev
-                surface_ind = np.argmin(diff)
-                ages_raw = AHe_ages_samples_cropped[surface_ind][i]
-                ages_raw_corr = AHe_ages_samples_cropped_corr[surface_ind][i]
-
-            else:
-                # interpolate AHe age from nearest surfaces
-                diff = target_depths - surface_elev
-                ind_low = np.where(diff < 0)[0][-1]
-                ind_high = np.where(diff > 0)[0][0]
-
-                fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
-
-                ages_raw = ((1.0-fraction) * AHe_ages_samples_cropped[ind_low][i] + fraction * AHe_ages_samples_cropped[ind_high][i])
-
-                #x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
-
-            # add surface AHe data to output
-            AHe_ages_samples_surface.append(ages_raw)
-            AHe_ages_samples_surface_corr.append(ages_raw_corr)
-
-    else:
-        AHe_ages_samples_surface = None
-        AHe_ages_samples_surface_corr = None
-
-    if mp.model_AHe_samples is True:
-
-        AHe_data_file = pd.read_csv(mp.AHe_data_file)
-
-    else:
-        AHe_data_file = None
-
-    output_selected = \
-        [runtimes, runtimes[output_steps], xyz_array, surface_levels,
-         mp.fault_xs[0], mp.fault_bottoms[0],
-         T_init_array,
-         T_array[output_steps], boiling_temp_array[output_steps],
-         xyz_array_exc, exceed_boiling_temp_array[output_steps],
-         xyz_element_array,
-         qh_array[output_steps], qv_array[output_steps],
-         fault_fluxes, durations,
-         xzs, Tzs_cropped, x_surface, T_surface,
-         AHe_ages_cropped, AHe_ages_corr_cropped, xs_Ahe_all, target_depths,
-         AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
-         AHe_ages_samples_surface, AHe_ages_samples_surface_corr, AHe_data_file]
-
-#             borehole_xlocs, borehole_zlocs, borehole_depths,
-#             borehole_temp_measured, borehole_temps_modeled
-
-    #output_folder = os.path.join(folder, 'model_output')
-    output_folder = os.path.join(scriptdir, mp.output_folder)
-
-    if os.path.exists(output_folder) is False:
-        print 'creating directory %s' % output_folder
-        os.mkdir(output_folder)
-
-    today = datetime.datetime.now()
-    today_str = '%i-%i-%i' % (today.day, today.month,
-                              today.year)
-
-    fn = 'results_q_%s_%i_yr_grad_%0.0f_%s.pck' \
-         % (str(np.array(mp.fault_fluxes) * mp.year),
-            int(np.sum(np.array(durations) / mp.year)),
-            mp.thermal_gradient * 1000.0,
-            today_str)
-
-    fn = fn.replace(' ', '')
-
-    fn_path = os.path.join(output_folder, fn)
-
-    print 'saving model results as %s' % fn_path
-
-    fout = open(fn_path, 'w')
-    pickle.dump(output_selected, fout)
-    fout.close()
-
-    print 'done with model scenario'
-
-print 'done'
 
 
 
