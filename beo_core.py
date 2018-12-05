@@ -937,6 +937,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     screen_output_interval=5,
                                     steady_state_iterations=10,
                                     store_results_interval=1,
+                                    track_exact_surface_elev=False,
+                                    adv_pde=None,
                                     debug=False):
 
     """
@@ -957,6 +959,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
     P_buffer = 10.0
 
+    kronecker_delta = es.kronecker(mesh)
+
     xyz = mesh.getX()
 
     exceed_max_liquid_T_old = None
@@ -965,7 +969,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
     # model steady-state temperature field
     ######################################
     # set PDE coefficients, steady-state heat flow equation
-    A = K_var * es.kronecker(mesh)
+    A = K_var * kronecker_delta
     C = 0
     D = 0
 
@@ -1039,6 +1043,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
     n_time_periods = len(durations)
 
+    xyz = mesh.getX()
+
     for time_period, fault_flux, duration in zip(itertools.count(), fault_fluxes, durations):
 
         print 'time period %i of %i' % (time_period + 1, n_time_periods)
@@ -1092,7 +1098,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         ###############################################
         if solve_as_steady_state is False:
             # set PDE coefficients, transient heat flow equation
-            A = dt * K_var * es.kronecker(mesh)
+            A = dt * K_var * kronecker_delta
             C = dt * rho_f * c_f * q_vector
             D = rho_var * c_var
             Y = rho_var * c_var * T
@@ -1101,7 +1107,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             print 'solving steady-state, with advective flux'
 
             # set PDE coefficients, steady-state flow equation
-            A = K_var * es.kronecker(mesh)
+            A = K_var * kronecker_delta
             C = rho_f * c_f * q_vector
             D = 0
             Y = 0
@@ -1147,8 +1153,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         #nt_recovery = 1 * nt_heating
 
         # caclulate grid peclet number
-        Pe = rho_f * c_f * es.Lsup(q_vector) * mesh.getSize() / K_var
-        print 'grid peclet number = ', Pe
+        Pe = rho_f * c_f * q_vector * mesh.getSize() / K_var
+        print 'max. grid peclet number = ', es.Lsup(Pe)
 
         #############################################
         # iterate heat flow eq.s
@@ -1167,49 +1173,10 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 nt = 1
                 print 'running steady-state model without iterations'
 
+        update_PDE = False
+
         # solve transient heat flux
         for t in range(nt):
-
-            if int(t / screen_output_interval) == float(t / screen_output_interval) or t == nt - 1:
-
-                end = time.time()
-                comptime = end - start
-
-                start = end
-
-                # find closest nodes to the actual surface level
-                try:
-                    surface_level_mesh_id = np.where(target_depths <= surface_level)[0][-1]
-                    surface_level_mesh = target_depths[surface_level_mesh_id]
-                except:
-                    surface_level_mesh = surface_level
-                    #print '\twarning could not find land surface nodes'
-
-                land_surface = es.whereZero(xyz[1] - surface_level_mesh)
-                print 'step %i of %i' % (t + 1, nt)
-                print '\truntime = %0.2e yrs' % (t_total / year)
-                print '\tcomputational time for one timestep = %0.3f sec' \
-                      % (comptime / screen_output_interval)
-                print '\tactual surface level ', surface_level
-                print '\tclosest surface in mesh ', surface_level_mesh
-                print '\ttemperature: ', T
-                if es.sup(land_surface) > 0:
-                    print '\tmax. temperature at land surface: ', \
-                        es.sup(T * land_surface)
-                else:
-                    print '\tcould not find land surface nodes'
-
-                if vapour_correction is True:
-                    if es.sup(vapour) > 0:
-                        print '\tvapour present in: ', es.integrate(vapour), ' m^2'
-                        print '\t\tfrom x = ', xmin_vapour, ' to x = ', \
-                            xmax_vapour
-                        print '\t\tand from y = ', ymin_vapour, ' to y = ', \
-                            ymax_vapour
-                        # print '\tmax. liquid T at the surface = ', \
-                        #    es.sup(boiling_temp * land_surface)
-                    else:
-                        print '\tno vapour present'
 
             if vapour_correction is True:
                 vapour_pressure = calculate_vapour_pressure(T)
@@ -1221,66 +1188,32 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 ymin_vapour = -es.sup(-(vapour * xyz[1]))
                 ymax_vapour = es.sup(vapour * xyz[1])
 
-            surface_level = surface_level_init - t_total / year \
-                                                 * exhumation_rate
-
-            #if exhumation_rate != 0 and surface_level in target_depths and solve_as_steady_state is False:
-            if exhumation_rate != 0 and solve_as_steady_state is False:
-
-                print '\texhumation, new surface level at %0.2f' % surface_level
-                #subsurface = es.whereNonPositive(xyz[1] - surface_level)
-                #subsurface_ele = es.whereNonPositive(xyze[1] - surface_level)
-                #subsurface_ele_10m = es.whereNonPositive(xyze[1] - surface_level) \
-                #                     * es.wherePositive(xyze[1] - surface_level + 10)
-                #air = es.wherePositive(xyz[1] - surface_level)
-                #air_ele = es.wherePositive(xyze[1] - surface_level)
-                #surface = es.whereZero(xyz[1] - surface_level)
-                #surface_ele = es.whereZero(xyze[1] - surface_level)
-
-                print '\texhumation, new surface level at %0.2f' % surface_level
-                subsurface = es.whereNonPositive(xyz[1] - surface_level_mesh)
-                subsurface_ele = es.whereNonPositive(xyze[1] - surface_level_mesh)
-                subsurface_ele_10m = es.whereNonPositive(xyze[1] - surface_level_mesh) \
-                                     * es.wherePositive(xyze[1] - surface_level_mesh + 10)
-
-                air = es.wherePositive(xyz[1] - surface_level_mesh)
-                air_ele = es.wherePositive(xyze[1] - surface_level_mesh)
-                surface = es.whereZero(xyz[1] - surface_level_mesh)
-                surface_ele = es.whereZero(xyze[1] - surface_level_mesh)
-
-                #q_vector = q_vector * subsurface
-                q_vector_old = q_vector.copy()
-                q_vector[0] = q_vector[0] * subsurface_ele
-                q_vector[1] = q_vector[1] * subsurface_ele
-
-                print '\tmax qv above surface = ', es.sup(air_ele * q_vector[1]) * year
-                print '\tmax qv at surface = ', es.sup(surface_ele * q_vector[1]) * year
-                print '\tmax qv below surface = ', es.sup(subsurface_ele * q_vector[1]) * year
-                print '\tmax qv 10m below surface = ', es.sup(subsurface_ele_10m * q_vector[1]) * year
-                dd = q_vector[1] - q_vector_old[1]
-                print '\tdifference old and new qv = ', dd * year
-
-            # populate K, c and rho scalar fields
-            if variable_K_air is True:
+            if exhumation_rate > 0:
+                surface_level = surface_level_init - t_total / year \
+                                                     * exhumation_rate
 
                 try:
                     surface_level_mesh_id = np.where(target_depths <= surface_level)[0][-1]
                     surface_level_mesh = target_depths[surface_level_mesh_id]
                 except:
                     surface_level_mesh = surface_level
-                    #print '\twarning could not find land surface nodes'
+                    # print '\twarning could not find land surface nodes'
 
-                land_surface = es.whereZero(xyz[1] - surface_level_mesh)
+            # calculate effective thermal conductivity air layer based on latent and sensible heat flux
+            # eqs.
+            if variable_K_air is True:
+
+                #land_surface = surface
 
                 # base K_air on surface temperature of nodes below. this may be a bit tricky....
-                surface_T = es.sup(land_surface * T)
+                #surface_T = es.sup(surface * T)
                 #print 'recalculating K air for surface temperature of %0.2e' % surface_T
 
                 #xysa, Tsa = convert_to_array(surface * T)
                 #xysa3, sc = convert_to_array(surface)
 
-                xysa, Tsa = convert_to_array(land_surface * T)
-                xysa3, sc = convert_to_array(land_surface)
+                xysa, Tsa = convert_to_array(surface * T)
+                xysa3, sc = convert_to_array(surface)
 
                 ind_s = sc == 1
                 xa1 = xysa[:, 0][ind_s]
@@ -1303,62 +1236,72 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
                 surface_T_int = es.interpolateTable(int_table, xyz[0], minval, step, toobig)
 
-                print '\tinterpolated surface T ', surface_T_int
+                #print '\tinterpolated surface T ', surface_T_int
 
                 if debug is True:
                     print 'save as csv file?'
 
                     if raw_input() == 'y':
 
-                        es.saveDataCSV('debug/interpolated_surface_T.csv', x=xyz[0], y=xyz[1], surface_T=surface_T_int)
+                        es.saveDataCSV('debug/interpolated_surface_T.csv', x=xyz[0], y=xyz[1],
+                                       surface_T=surface_T_int)
 
                 K_air = calculate_surface_heat_transfer_coeff(rho_air, c_air, ra,
-                                                              reference_z_ra, surface_T_int, air_temperature)
-                print '\tcalculated K air ', K_air
+                                                              reference_z_ra, surface_T_int,
+                                                              air_temperature)
+                #print '\tcalculated K air ', K_air
 
+            # Exhumation: calculate new surface level
+            if exhumation_rate != 0 and solve_as_steady_state is False:
+
+                if track_exact_surface_elev is True:
+                    #print '\texhumation, new surface level at %0.2f' % surface_level
+                    subsurface = es.whereNonPositive(xyz[1] - surface_level)
+                    subsurface_ele = es.whereNonPositive(xyze[1] - surface_level)
+                    subsurface_ele_10m = es.whereNonPositive(xyze[1] - surface_level) \
+                                         * es.wherePositive(xyze[1] - surface_level + 10)
+                    air = es.wherePositive(xyz[1] - surface_level)
+                    air_ele = es.wherePositive(xyze[1] - surface_level)
+                    surface = es.whereZero(xyz[1] - surface_level)
+                    surface_ele = es.whereZero(xyze[1] - surface_level)
+
+                else:
+
+                    #print '\texhumation, new surface level at %0.2f' % surface_level_mesh
+                    subsurface = es.whereNonPositive(xyz[1] - surface_level_mesh)
+                    subsurface_ele = es.whereNonPositive(xyze[1] - surface_level_mesh)
+                    subsurface_ele_10m = es.whereNonPositive(xyze[1] - surface_level_mesh) \
+                                         * es.wherePositive(xyze[1] - surface_level_mesh + 10)
+
+                    air = es.wherePositive(xyz[1] - surface_level_mesh)
+                    air_ele = es.wherePositive(xyze[1] - surface_level_mesh)
+                    surface = es.whereZero(xyz[1] - surface_level_mesh)
+                    surface_ele = es.whereZero(xyze[1] - surface_level_mesh)
+
+                #q_vector = q_vector * subsurface
+                q_vector_old = q_vector.copy()
+                q_vector[0] = q_vector[0] * subsurface_ele
+                q_vector[1] = q_vector[1] * subsurface_ele
+
+            # populate K, c and rho scalar fields in case of exhumation or variable K air
             if variable_K_air is True or (exhumation_rate != 0 and surface_level in target_depths):
 
                 K_var = subsurface * K_b + air * K_air
                 c_var = subsurface * c_b + air * c_air
                 rho_var = subsurface * rho_b + air * rho_air
 
-                if solve_as_steady_state is False:
-                    # reset heatflow PDE coefficients
-                    A = dt * K_var * es.kronecker(mesh)
-                    C = dt * rho_f * c_f * q_vector
-                    D = rho_var * c_var
-                    Y = rho_var * c_var * T
-
-                else:
-                    # set PDE coefficients, steady-state flow equation
-                    A = K_var * es.kronecker(mesh)
-                    C = rho_f * c_f * q_vector
-                    D = 0
-                    Y = 0
-
                 # update bnd cond if spec flux bnd
-                if specified_flux is not None:
+                update_PDE = True
 
-                    #print 'adding specified flux bnd'
+                if specified_flux is not None:
                     if solve_as_steady_state is False:
                         specified_heat_flux = specified_flux * specified_flux_loc * dt
                     else:
                         specified_heat_flux = specified_flux * specified_flux_loc
-                    #
-                    hf_pde.setValue(A=A, C=C, D=D, Y=Y,
-                                    r=specified_temperature,
-                                    q=specified_T_loc,
-                                    y=specified_heat_flux)
-                else:
-                    hf_pde.setValue(A=A, C=C, D=D, Y=Y,
-                                    r=specified_temperature,
-                                    q=specified_T_loc)
 
             # recalculate fluid pressure
-            xyz = mesh.getX()
-            depth = -(xyz[1] - surface_level)
-
             if vapour_correction is True:
+                depth = -(xyz[1] - surface_level)
                 P_init = fluid_density * g * depth + atmospheric_pressure
                 P = P_init * es.wherePositive(depth) \
                     + atmospheric_pressure * es.whereNonPositive(depth)
@@ -1387,7 +1330,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             else:
                 exceed_boiling_temp = 0
 
-            if vapour_correction is True or exhumation_rate != 0:
+            if vapour_correction is True:
 
                 height = xyz[1] - surface_level
                 top_bnd = es.whereNonNegative(height - air_height)
@@ -1407,25 +1350,110 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                         es.wherePositive(top_bnd) * air_temperature \
                         + exceed_boiling_temp * boiling_temp
 
-                hf_pde.setValue(A=A, C=C, D=D, Y=Y,
-                                r=specified_temperature,
-                                q=specified_T_loc)
+                update_PDE = True
+
+            elif exhumation_rate > 0.0:
+
+                height = xyz[1] - surface_level
+                top_bnd = es.whereNonNegative(height - air_height)
+
+                if bottom_temperature is not None:
+                    specified_T_loc = es.wherePositive(top_bnd) \
+                                      + es.wherePositive(bottom_bnd)
+                    specified_temperature = \
+                        es.wherePositive(top_bnd) * air_temperature
+                else:
+                    specified_T_loc = es.wherePositive(top_bnd)
+                    specified_temperature = \
+                        es.wherePositive(top_bnd) * air_temperature
+
+                update_PDE = True
+
+            if update_PDE is True:
+
+                if solve_as_steady_state is False:
+                    # reset heatflow PDE coefficients
+                    A = dt * K_var * kronecker_delta
+                    C = dt * rho_f * c_f * q_vector
+                    D = rho_var * c_var
+                    Y = rho_var * c_var * T
+
+                else:
+                    # set PDE coefficients, steady-state flow equation
+                    A = K_var * kronecker_delta
+                    C = rho_f * c_f * q_vector
+                    D = 0
+                    Y = 0
+
+                if specified_flux is not None:
+                    hf_pde.setValue(A=A, C=C, D=D, Y=Y,
+                                    r=specified_temperature,
+                                    q=specified_T_loc,
+                                    y=specified_heat_flux)
+                else:
+                    hf_pde.setValue(A=A, C=C, D=D, Y=Y,
+                                    r=specified_temperature,
+                                    q=specified_T_loc)
 
             # solve PDE for temperature
-            print '\tsolving for T'
+            #print '\tsolving for T'
+            solve_time_start = time.time()
             T = hf_pde.getSolution()
-            print '\tnew T ', T
+            solver_time = time.time() - solve_time_start
+
+            update_PDE = True
+            #print '\tnew T ', T
 
             # update PDE coefficients
-            if solve_as_steady_state is False:
-                Y = rho_var * c_var * T
-                hf_pde.setValue(A=A, C=C, D=D, Y=Y,
-                                r=specified_temperature,
-                                q=specified_T_loc)
+            #if solve_as_steady_state is False:
+            #    Y = rho_var * c_var * T
+            #    update_PDE = True
 
             t_total += dt
             if solve_as_steady_state is True:
                 t_total = 0.0
+
+            # output to screen:
+            if int(t / float(screen_output_interval)) == float(t / float(screen_output_interval)) \
+                    or t == nt - 1:
+
+                end = time.time()
+                comptime = end - start
+
+                start = end
+
+                print 'step %i of %i' % (t + 1, nt)
+
+                print '\truntime = %0.2e yrs' % (t_total / year)
+                print '\tcomputational time for one timestep = %0.3f sec' \
+                      % (comptime / screen_output_interval)
+                print '\tcomputational time needed by solver = %0.3f sec' \
+                      % (solver_time)
+                print '\tactual surface level ', surface_level
+                if exhumation_rate > 0:
+                    print '\tclosest surface in mesh ', surface_level_mesh
+                print '\ttemperature: ', T
+                if es.sup(surface) > 0:
+                    print '\tmax. temperature at land surface: ', \
+                        es.sup(T * surface)
+                else:
+                    print '\tcould not find land surface nodes'
+
+                if vapour_correction is True:
+                    if es.sup(vapour) > 0:
+                        print '\tvapour present in: ', es.integrate(vapour), ' m^2'
+                        print '\t\tfrom x = ', xmin_vapour, ' to x = ', \
+                            xmax_vapour
+                        print '\t\tand from y = ', ymin_vapour, ' to y = ', \
+                            ymax_vapour
+                        # print '\tmax. liquid T at the surface = ', \
+                        #    es.sup(boiling_temp * land_surface)
+                    else:
+                        print '\tno vapour present'
+
+                if variable_K_air is True:
+                    print '\tinterpolated surface T ', surface_T_int
+                    print '\tcalculated K air ', K_air
 
             # store output
             store_results_count += 1
@@ -1439,14 +1467,11 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                     boiling_temps.append(boiling_temp)
                     exceed_boiling_temps.append(exceed_boiling_temp)
 
-                #ti = output_steps.index(t)
-                #print 'surface T: ', T * surface
-
                 runtimes.append(t_total)
 
                 store_results_count = 0
 
-        print 'T after advective heating ', T
+        print 'final T after advective heating ', T
 
     return (np.array(runtimes), T_steady, Ts, q_vectors,
             np.array(surface_levels), boiling_temps, exceed_boiling_temps)
@@ -1580,6 +1605,7 @@ def model_run(mp):
     #######################################
     print 'setting up PDE and boundary conditions'
     hf_pde = linearPDEs.LinearPDE(mesh)
+    adv_pde = None
 
     solver = mp.solver
     if solver == 'GMRES':
@@ -1589,6 +1615,14 @@ def model_run(mp):
         print 'using direct solver for heat transport PDE'
         hf_pde.getSolverOptions().setSolverMethod(
             es.SolverOptions.DIRECT)
+    elif solver is 'ROWSUM_LUMPING':
+        adv_pde = linearPDEs.LinearPDE(mesh)
+        adv_pde.getSolverOptions().setSolverMethod(es.SolverOptions.ROWSUM_LUMPING)
+        hf_pde.getSolverOptions().setSolverMethod(es.SolverOptions.GMRES)
+    elif solver is 'PCG':
+        #hf_pde.getSolverOptions().setSolverMethod(es.SolverOptions.ROWSUM_LUMPING)
+        hf_pde.getSolverOptions().setSolverMethod(es.SolverOptions.PCG)
+        hf_pde.getSolverOptions().setPreconditioner(es.SolverOptions.AMG)
 
     # find which nodes are on top & bottom boundaries
     top_bnd = es.whereZero(xyz[1] - es.sup(xyz[1]))
@@ -1838,6 +1872,7 @@ def model_run(mp):
             top_bnd, bottom_bnd, mp.air_height,
             mp.air_temperature, bottom_temperature,
             solve_as_steady_state=mp.steady_state,
+            adv_pde=adv_pde,
             surface_level_init=surface_level, exhumation_rate=mp.exhumation_rate,
             target_depths=mp.target_zs,
             K_b=K_b, c_b=c_b, rho_b=rho_b,
@@ -2223,7 +2258,7 @@ def model_run(mp):
     print 'surface T: ', T * surface
 
     output = [runtimes, xyz_array, surface_levels, x_flt, z_flt,
-              T_init_array, T_array, boiling_temp_array,
+              Ts, T_init_array, T_array, boiling_temp_array,
               xyz_array_exc, exceed_boiling_temp_array,
               xyz_element_array,
               qh_array, qv_array,

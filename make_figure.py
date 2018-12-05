@@ -185,6 +185,62 @@ for fn in files:
     # T_array, t_array, dx, dy, fault_mid, xi, yi, nt_heating,
     # subsurface_height, q_advective, duration_heating
 
+    print 'saved timeslices for this model run:'
+    for i, runtime in enumerate(runtimes):
+        print '%i\t%0.2f yr' % (i, runtime / year)
+
+    print '\nplease enter the timeslices you want to include. For several timesteps enter numbers divided by commas'
+
+    key_inp = raw_input()
+    if len(key_inp) == 1:
+        fp.timeslices = [int(a)]
+    else:
+        inp_list = key_inp.split(',')
+        fp.timeslices = [int(ts) for ts in inp_list]
+
+    print 'timeslices to show: ', fp.timeslices
+
+    xmin, xmax = xyz_array[:, 0].min(), xyz_array[:, 0].max()
+    ymin, ymax = xyz_array[:, 1].min(), xyz_array[:, 1].max()
+
+    print 'model dimensions:'
+    print 'x coordinates: %0.1f to %0.1f ' % (xmin, xmax)
+    print 'y coordinates: %0.1f to %0.1f ' % (ymin, ymax)
+
+    print 'select figure bounds in x direction. Enter two numbers divided by a comma'
+    print 'press enter to show full model domain'
+
+    key_inp = raw_input()
+
+    if key_inp == '':
+        fp.xlim = None
+        fp.ylim = None
+
+    else:
+        fp.xlim = np.array(key_inp.split(',')).astype(float)
+        print 'select figure bounds in y direction'
+        key_inp = raw_input()
+        fp.ylim = np.array(key_inp.split(',')).astype(float)
+
+    print 'show water vapour (y/n)?'
+    if 'y' in raw_input():
+        fp.show_vapour = True
+    else:
+        fp.show_vapour = False
+
+    print 'show mesh (y/n) ?'
+    if 'y' in raw_input():
+        fp.show_mesh = True
+    else:
+        fp.show_mesh = False
+
+    if borehole_xlocs is not None:
+        print 'add panel with borehole temperatures (y/n) ?'
+        if 'y' in raw_input():
+            fp.add_temperature_panel = True
+        else:
+            fp.add_temperature_panel = False
+
     if go is True:
 
         # check if timeslices are really present
@@ -207,8 +263,9 @@ for fn in files:
         print 'at timeslices ', fp.timeslices
         print 'total number of saved timeslices = %i' % len(T_array)
 
-        xmin, xmax = xyz_array[:, 0].min(), xyz_array[:, 0].max()
-        ymin, ymax = xyz_array[:, 1].min(), xyz_array[:, 1].max()
+        print 'x and y bounds of figure:'
+        print 'x = ', fp.xlim
+        print 'y = ', fp.ylim
 
         nt = len(T_array)
         vmin = T_array.min()

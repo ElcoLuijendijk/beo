@@ -24,6 +24,9 @@ import pandas as pd
 
 import beo_core
 
+import esys.weipa
+import esys.escript as es
+
 
 def interpolate_data(xyz, data, target_x, y_steps=300):
 
@@ -290,7 +293,7 @@ for model_run, param_set in enumerate(param_list):
             continue
 
     (runtimes, xyz_array, surface_levels, x_flt, z_flt,
-     T_init_array, T_array, boiling_temp_array,
+     Ts, T_init_array, T_array, boiling_temp_array,
      xyz_array_exc, exceed_boiling_temp_array,
      xyz_element_array, qh_array, qv_array,
      fault_fluxes, durations,
@@ -352,6 +355,28 @@ for model_run, param_set in enumerate(param_list):
     N_output_steps = len(output_steps)
 
     T_array = T_array[output_steps]
+
+    if hasattr(mp, "save_VTK_file") is True and mp.save_VTK_file is True:
+        VTK_dir = 'VTK_files_model_run_%i_%s_%s_%s' \
+                  % (model_run, str(param_set), mp.output_fn_adj, today_str)
+        VTK_dir_full = os.path.join(output_folder, VTK_dir)
+        print 'saving VTK file of temperarues and flux in directory %s' % VTK_dir_full
+
+        if os.path.exists(VTK_dir_full) is False:
+            os.mkdir(VTK_dir_full)
+        #esys.weipa.saveVTK(os.path.join(output_folder, fn_VTK), temperature=Ts[-1])
+
+        VTK_data = es.DataManager(formats=[es.DataManager.VTK], work_dir=VTK_dir_full)
+
+        for output_step in output_steps:
+
+            VTK_data.addData(temperature=Ts[output_step])
+            VTK_data.setTime(runtimes[output_step] / year)
+            VTK_data.export()
+
+    else:
+        print 'no output to VTK file. add save_VTK_file=True to input file to change this'
+
 
     #
     T_surface = []

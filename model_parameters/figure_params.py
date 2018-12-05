@@ -22,10 +22,10 @@ fig_format = 'png'
 height_ratios = [25, 75, 7, 3]
 
 # limits of x and y axis of figure, set xlim = None and ylim = None to show the entire model domain
-xlim = None
-ylim = None
-#xlim = [4900, 5100]
-#ylim = [-200, 50]
+#xlim = None
+#ylim = None
+xlim = [4800, 5200]
+ylim = [-350, 50]
 
 # number of labels on x, y axis and colorbar
 bins_xaxis = 3
@@ -44,14 +44,14 @@ dy = 2.0
 # timeslices = [0] make a figure of the first timestep
 # timeslices = [-1] make a figure of the last timestep
 #timeslices = [0, 3, -1]
-timeslices = 3
+timeslices = [1, 10, 20]
 
 # scale for flow arrows, usually 5 is a good value, note higher value is smaller arrows (!)
-scale_multiplier = 25.0
+scale_multiplier = 50.0
 
 # show only one in every x flow arrows:
-skip_arrows = 5
-skip_arrows = 5
+skip_arrows = 10
+skip_arrows = 10
 
 arrow_transparency = 0.75
 
@@ -62,7 +62,7 @@ show_vapour = True
 marker_size = 7
 AHe_color = 'blue'
 #AHe_color = 'None'
-show_AHe_data = True
+show_AHe_data = False
 # linestyle for AHe data, see matplotlub documentation here for the available options
 AHe_linestyle = ':'
 
