@@ -60,7 +60,7 @@ Beo was tested on Ubuntu 14.04 and 16.04
 
 # Manual
 
-You can find a manual for beo in the directory doc. The manual contains more background on the model, explanation of how surface heat flow is modeled and a detailed list and explanation of the model paramameters
+You can find a manual for beo in the directory manual. The manual contains more background on the model, explanation of how surface heat flow is modeled and a detailed list and explanation of the model paramameters
 
 
 # Model input & output

@@ -1,1 +1,0 @@
-pandoc beo_manual.md -o beo_manual.pdf -o beo_manual.docx -V geometry:margin=0.5in

@@ -1,6 +1,7 @@
 ---
-title: Beo
+title: Beo v1.0 manual
 author: Elco Luijendijk, elco.luijendijk@geo.uni-goettingen.de
+date: Dec 2018
 ---
 
 
@@ -17,7 +18,7 @@ author: Elco Luijendijk, elco.luijendijk@geo.uni-goettingen.de
 
 # Introduction <a name="introduction"></a>
 
-Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code escript (https://launchpad.net/escript-finley) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The modeled temperatures can be compared to temperature daat from thermal springs or subsurface temperatures records from  nearby boreholes. The resulting temperature history can also be used to calculate two low-temperature thermochronometers, apatite fission track data and apatite (U-Th)/He data or vitrinite reflectance data. The modeled values of these thermochronometers can then be compared to measured values. Beo also support automated model runs to explore which parameter values like fluid fluxes, fault geometry and age of the hydrothermal system best match the thermochronometer data, as well as present-day spring temperature data or temperature records in nearby boreholes. 
+Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code escript (https://launchpad.net/escript-finley) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The modeled temperatures can be compared to temperature daat from thermal springs or subsurface temperatures records from  nearby boreholes. The resulting temperature history can also be used to calculate the apatite (U-Th)/He thermochronometer. The modeled values of this thermochronometer can then be compared to measured values. Beo also support automated model runs to explore which parameter values like fluid fluxes, fault geometry and age of the hydrothermal system best match the thermochronometer data, as well as present-day spring temperature data or temperature records in nearby boreholes. 
 
 
 
@@ -148,29 +149,6 @@ $D = \rho_b c_b$
 
 $Y = \rho_b c_b T^t$
 
-
-## Explicit form
-
-In addition, you can also choose to solve the explicit form of the heat flow equation. The discretized form of the equation is:
-
-$$\rho_b c_b T^{t+1} = \nabla \Delta t \; \kappa \nabla T^t - \Delta t \, \rho_f c_f \vec{q} \nabla T^t +  \rho_b c_b T^t$$
-
-Casting the implicit heat transport equation into the escript PDE yields:
-
-$$- \nabla (A \nabla u + B u ) + C \nabla u + D u = - \nabla X + Y$$
-
-$$\underbrace{\rho_b c_b}_D T^{t+1} = \nabla \underbrace{ \Delta t \; \kappa \nabla T^t}_X +  \underbrace{-\Delta t \, \rho_f c_f \vec{q} \nabla T^t + \rho_b c_b T^t}_Y$$
-
-
-with the following values for the escript constants:
-
-$u = T^{t+1}$
-
-$D = \rho_b c_b$
-
-$X = dt \; \kappa \nabla T^t$
-
-$Y = - dt \, \rho_f c_f \vec{q} \nabla T^t + \rho_b c_b T^t$
 
 
 ## Steady-state
