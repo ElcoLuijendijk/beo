@@ -18,6 +18,7 @@ import os
 import pickle
 import pdb
 import itertools
+import argparse
 
 import numpy as np
 import matplotlib.pyplot as pl
@@ -58,20 +59,45 @@ def interpolate_data(xyz_array, Ti, dx, dy):
 
     return xg, yg, zg
 
+print '-' * 50
+
+parser = argparse.ArgumentParser(description='make figures of model temperatures and AHe ages for model runs Beo')
+
+parser.add_argument(dest='output_files', metavar='output files', default=None, nargs='?',
+                    help='one or more Beo output files (.pck)')
+
+parser.add_argument('-t', dest='timeslices', default=None, help='one or more timeslices (years) to display in '
+                                                                'the figure',
+                    nargs='+', type=float)
+
+parser.add_argument('-x', dest='xbounds', default=None, help='min. and max. x bound of figure as two numbers',
+                    nargs='+', type=float)
+
+parser.add_argument('-y', dest='ybounds', default=None, help='min. and max. y bound of figure as two numbers',
+                    nargs='+', type=float)
+
+parser.add_argument('-c', dest='combine_figs', help='combine modeled AHe ages or borehole temperatures in one figure',
+                    action="store_true")
+
+parser.add_argument('-m', dest='show_mesh', help='show mesh',
+                    action="store_true")
+
+parser.add_argument('-v', dest='do_not_show_vapour', help='do not show water vapour',
+                    action="store_true")
+
+parser.print_help()
+
+print '\nnote, more options for figure layout are available in the figure_params.py file in ' \
+      'the model_parameters directory'
 
 print '-' * 50
-print 'note, to change any options for making figures adjust the figure_params.py file in ' \
-      'the model_parameters directory'
-print '-' * 50
+
+args = parser.parse_args()
 
 degree_symbol = unichr(176)
 day = 24.0 * 60.0 * 60.0
 year = 365.25 * day
 My = year * 1e6
-
-
-# timesteps to select for output
-#timeslices = [2, 20, 100]
 
 
 #
@@ -80,34 +106,51 @@ My = year * 1e6
 
 # read model output files
 #model_output_folder = '/home/elco/model_files/hydrotherm_escript/'
+
 result_dir = 'model_output'
-files = os.listdir(result_dir)
 
-files = [os.path.join(result_dir, f) for f in files if f[-4:] == '.pck']
+if args.output_files is not None:
 
-files.sort(key=os.path.getmtime)
+    files = args.output_files
 
-files = files[::-1]
+else:
+    # list files in model output directory
+    files = os.listdir(result_dir)
 
-print 'output files, from newest to oldest:'
-for i, fn in enumerate(files):
-    print i, fn
+    files = [os.path.join(result_dir, f) for f in files if f[-4:] == '.pck']
 
-print 'enter a number to select a file, two numbers separated by - for a series of figures, ' \
-      'or press enter to make a figure of all files'
+    files.sort(key=os.path.getmtime)
 
-a = raw_input()
+    files = files[::-1]
 
-if '-' in a:
-    b = a.split('-')
-    files = [files[i] for i in range(int(b[0]), int(b[1]) + 1)]
-elif a != '':
-    files = [files[int(a)]]
+    print 'output files, from newest to oldest:'
+    for i, fn in enumerate(files):
+        print i, fn
 
+    print 'enter a number to select a file, two numbers separated by - for a series of figures, ' \
+          'or press enter to make a figure of all files'
+
+    a = raw_input()
+
+    if '-' in a:
+        b = a.split('-')
+        files = [files[i] for i in range(int(b[0]), int(b[1]) + 1)]
+    elif ',' in a:
+        b = a.split(',')
+        files = [files[int(i)] for i in b]
+    elif a != '':
+        files = [files[int(a)]]
+
+if args.do_not_show_vapour is True:
+    fp.show_vapour = False
+
+if args.show_mesh is True:
+    fp.show_mesh = True
 
 for fn in files:
 
     #fn = 'model_output/T_field_duration_500.pck'
+    print 'reading model output datafile %s' % fn
     fin = open(fn, 'r')
     output_data = pickle.load(fin)
     fin.close()
@@ -184,18 +227,30 @@ for fn in files:
     # T_array, t_array, dx, dy, fault_mid, xi, yi, nt_heating,
     # subsurface_height, q_advective, duration_heating
 
-    print 'saved timeslices for this model run:'
-    for i, runtime in enumerate(runtimes):
-        print '%i\t%0.2f yr' % (i, runtime / year)
+    if args.timeslices is None:
+        print 'saved timeslices for this model run:'
+        for i, runtime in enumerate(runtimes):
+            print '%i\t%0.2f yr' % (i, runtime / year)
 
-    print '\nplease enter the timeslices you want to include. For several timesteps enter numbers divided by commas'
+        print '\nplease enter the timeslices you want to include. For several timesteps enter numbers divided by commas'
 
-    key_inp = raw_input()
-    if len(key_inp) == 1:
-        fp.timeslices = [int(a)]
+        key_inp = raw_input()
+        if len(key_inp) == 1:
+            fp.timeslices = [int(a)]
+        else:
+            inp_list = key_inp.split(',')
+            fp.timeslices = [int(ts) for ts in inp_list]
+
     else:
-        inp_list = key_inp.split(',')
-        fp.timeslices = [int(ts) for ts in inp_list]
+        #times_raw = [float(ti) for ti in args.timeslices]
+
+        timeslices = []
+        rta = np.array(runtimes) / year
+        for ti in args.timeslices:
+            ind = np.argmin(np.abs(rta - ti))
+            timeslices.append(ind)
+
+        fp.timeslices = timeslices
 
     print 'timeslices to show: ', fp.timeslices
 
@@ -206,32 +261,28 @@ for fn in files:
     print 'x coordinates: %0.1f to %0.1f ' % (xmin, xmax)
     print 'y coordinates: %0.1f to %0.1f ' % (ymin, ymax)
 
-    print 'select figure bounds in x direction. Enter two numbers divided by a comma'
-    print 'press enter to show full model domain'
+    if args.xbounds is None:
+        print 'select figure bounds in x direction. Enter two numbers divided by a comma'
+        print 'press enter to show full model domain'
 
-    key_inp = raw_input()
-
-    if key_inp == '':
-        fp.xlim = None
-        fp.ylim = None
-
-    else:
-        fp.xlim = np.array(key_inp.split(',')).astype(float)
-        print 'select figure bounds in y direction'
         key_inp = raw_input()
-        fp.ylim = np.array(key_inp.split(',')).astype(float)
 
-    print 'show water vapour (y/n)?'
-    if 'y' in raw_input():
-        fp.show_vapour = True
+        if key_inp == '':
+            fp.xlim = None
+        else:
+            fp.xlim = np.array(key_inp.split(',')).astype(float)
     else:
-        fp.show_vapour = False
+        fp.xlim = args.xbounds
 
-    print 'show mesh (y/n) ?'
-    if 'y' in raw_input():
-        fp.show_mesh = True
+    if args.ybounds is None:
+        print 'select figure bounds in y direction, press enter to show full model domain'
+        key_inp = raw_input()
+        if key_inp == '':
+            fp.ylim = None
+        else:
+            fp.ylim = np.array(key_inp.split(',')).astype(float)
     else:
-        fp.show_mesh = False
+        fp.ylim = args.ybounds
 
     if borehole_xlocs is not None:
         print 'add panel with borehole temperatures (y/n) ?'
@@ -239,6 +290,17 @@ for fn in files:
             fp.add_temperature_panel = True
         else:
             fp.add_temperature_panel = False
+
+    #
+    show_surface_only = True
+    if len(Ahe_ages_all) > 1:
+        print 'found multiple depth levels with modeled AHe ages'
+        print 'show only the surface level (y/n)?'
+
+        if 'y' in raw_input():
+            show_surface_only = True
+        else:
+            show_surface_only = False
 
     if go is True:
 
@@ -265,6 +327,9 @@ for fn in files:
         print 'x and y bounds of figure:'
         print 'x = ', fp.xlim
         print 'y = ', fp.ylim
+
+        print 'using resolution for interpolation temperature field of %0.1f x %0.1f m' % (fp.dx, fp.dy)
+        print 'this can be adjusted by modifying dx and dy in the figure_params.py file'
 
         nt = len(T_array)
         vmin = T_array.min()
@@ -331,6 +396,7 @@ for fn in files:
         else:
             cnts = np.arange(fp.cnt_range[0], fp.cnt_range[-1] + fp.cnt_int, fp.cnt_int)
 
+        print 'interpolating temperatures to regular grid'
         for p, Ta in zip(panels, Tas):
             xg, yg, zg = interpolate_data(xyz_array, Ta, fp.dx, fp.dy)
             leg_cn = p.contourf(xg, yg, zg, cnts, cmap=fp.cmap)
@@ -388,6 +454,9 @@ for fn in files:
                              angles='xy', scale=scale, headwidth=5, pivot='tip',
                              alpha=fp.arrow_transparency)
 
+            #if p == panels[-1]:
+            #    p.quiverkey(leg_q, 0.85, 0.1, 'flow direction')
+
         if fp.add_temperature_panel is True:
             # show borehole locations
             for p, timeslice in zip(panels, fp.timeslices):
@@ -422,29 +491,102 @@ for fn in files:
                               color=fp.colors[j], ls=lss[j])
 
         legs.append(leg_st)
-        labels.append('modeled temperature')
+        labels.append('modelled temperature')
 
-        #
         if Ahe_ages_all is not None:
             #Ahe_ages_all, xs_Ahe_all = AHe_data
             #for i in range(n_depths):
-            for rp, timeslice in zip(rpanels, fp.timeslices):
 
-                if (fp.show_corrected_AHe_ages is True
-                    and AHe_ages_surface_corr is not None):
+            if args.combine_figs is True:
+                n_repeats = len(files)
+            else:
+                n_repeats = 1
 
-                    print 'plotting corrected AHe ages'
-                    leg_ahe, = rp.plot(AHe_xcoords_surface[timeslice],
-                                       AHe_ages_surface_corr[timeslice] / My,
-                                       color=fp.AHe_color, ls=fp.AHe_linestyle)
+            AHe_label = 'modelled AHe ages'
+
+            for n_repeat in range(n_repeats):
+
+                # read additional data
+                if args.combine_figs is True and n_repeat > 0:
+
+                    fn = files[n_repeat]
+
+                    print 'reading model output datafile %s for additional AHe model results' % fn
+                    fin = open(fn, 'r')
+                    output_data_add = pickle.load(fin)
+                    fin.close()
+
+                    [Ahe_ages_all, Ahe_ages_all_corr, xs_Ahe_all, Ahe_depths,
+                     AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
+                     AHe_ages_samples_surface, AHe_ages_samples_surface_corr, AHe_data_file] = output_data_add[20:30]
+                    #AHe_xcoords_surface_all, AHe_ages_surface_corr_all, AHe_xcoords_surface_all, AHe_ages_surface_all
+
+                    runtimes_new = output_data_add[1]
+
+                    print 'new timeslices to show: '
+                    print runtimes_new[fp.timeslices] / year
+
+                    if len(Ahe_ages_all) > 1:
+                        print 'found multiple depth levels with modeled AHe ages'
+                        print 'show only the surface level (y/n)?'
+
+                        if 'y' in raw_input():
+                            show_surface_only = True
+                        else:
+                            show_surface_only = False
+
+                if args.combine_figs is True:
+                    print 'enter label for modeled AHe ages:'
+                    AHe_label = raw_input()
+
+                if show_surface_only is True:
+
+                    for p, rp, timeslice in zip(panels, rpanels, fp.timeslices):
+
+                        if (fp.show_corrected_AHe_ages is True
+                            and AHe_ages_surface_corr is not None):
+
+                            print 'plotting corrected AHe ages'
+                            leg_ahe, = rp.plot(AHe_xcoords_surface[timeslice],
+                                               AHe_ages_surface_corr[timeslice] / My,
+                                               color=fp.AHe_color[n_repeat], ls=fp.AHe_linestyle)
+                        else:
+                            print 'plotting uncorrected AHe ages'
+                            leg_ahe, = rp.plot(AHe_xcoords_surface[timeslice],
+                                               AHe_ages_surface[timeslice] / My,
+                                               color=fp.AHe_color[n_repeat], ls=fp.AHe_linestyle)
+
+                        if timeslice == fp.timeslices[0]:
+                            legs.append(leg_ahe)
+                            labels.append(AHe_label)
                 else:
-                    print 'plotting uncorrected AHe ages'
-                    leg_ahe, = rp.plot(AHe_xcoords_surface[timeslice],
-                                       AHe_ages_surface[timeslice] / My,
-                                       color=fp.AHe_color, ls=fp.AHe_linestyle)
 
-            legs.append(leg_ahe)
-            labels.append('modeled AHe ages')
+                    for p, rp, timeslice in zip(panels, rpanels, fp.timeslices):
+
+                        for AHe_age_i, AHe_age_corr_i, ahe_x, ahe_depth in zip(Ahe_ages_all,  Ahe_ages_all_corr,
+                                                                               xs_Ahe_all, Ahe_depths):
+
+                            print 'show AHe age for depth slice %0.1f m? (y/n)' % ahe_depth
+
+                            if 'y' in raw_input():
+                                if (fp.show_corrected_AHe_ages is True
+                                        and AHe_ages_surface_corr is not None):
+
+                                    print 'plotting corrected AHe ages'
+                                    leg_ahe, = rp.plot(ahe_x,
+                                                       AHe_age_corr_i[timeslice] / My,
+                                                       ls=fp.AHe_linestyle)
+                                else:
+                                    print 'plotting uncorrected AHe ages'
+                                    leg_ahe, = rp.plot(ahe_x,
+                                                       AHe_age_i[timeslice] / My,
+                                                       ls=fp.AHe_linestyle)
+
+                                p.axhline(ahe_depth, ls=fp.AHe_linestyle, color=leg_ahe.get_color())
+
+                                if timeslice == fp.timeslices[0]:
+                                    legs.append(leg_ahe)
+                                    labels.append('modelled AHe ages, %0.0f m' % ahe_depth)
 
         #AHe_ages_samples_surface, AHe_data_file
         if Ahe_ages_all is not None and AHe_data_file is not None:
@@ -469,7 +611,7 @@ for fn in files:
                                                       marker='o',
                                                       ms=fp.marker_size,
                                                       markeredgecolor='black',
-                                                      color=fp.AHe_color,
+                                                      color=fp.AHe_color[0],
                                                       linestyle='None')
                         #legs.append(leg_ahe_samples)
                         #labels.append('measured AHe ages')
@@ -503,8 +645,8 @@ for fn in files:
                                                       marker='o',
                                                       ms=fp.marker_size,
                                                       markerfacecolor='None',
-                                                      markeredgecolor=fp.AHe_color,
-                                                      color=fp.AHe_color,
+                                                      markeredgecolor=fp.AHe_color[0],
+                                                      color=fp.AHe_color[0],
                                                       linestyle='None',
                                                       lw=1.0)
 
@@ -626,8 +768,8 @@ for fn in files:
 
         if Ahe_ages_all is not None:
             rpanels[-1].set_ylabel('AHe age (My)')
-            rpanels[-1].yaxis.label.set_color(fp.AHe_color)
-            rpanels[-1].tick_params(axis='y', colors=fp.AHe_color)
+            rpanels[-1].yaxis.label.set_color(fp.AHe_color[0])
+            rpanels[-1].tick_params(axis='y', colors=fp.AHe_color[0])
 
         for p, tp in zip(panels, tpanels):
             p.set_xlim(xmin, xmax)

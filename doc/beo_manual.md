@@ -121,7 +121,7 @@ In which $T$ is temperature (K), $t$ is time (sec), $c$ is heat capacity, $\rho$
 
 Beo solves the implicit form of the heat flow equation by discretization of the derivative of $T$ over time:
 
-$$\dfrac{\partial T}{\partial t} = \dfrac{T^{t+1} - T^t}{\delta t}$$
+$$\dfrac{\partial T}{\partial t} = \dfrac{T^{t+1} - T^t}{\Delta t}$$
 
 Which when inserted into heat transport equation yields:
 
@@ -129,24 +129,48 @@ $$\rho _b c_b \dfrac{T^{t+1} - T^t}{\partial t} = \nabla \kappa \nabla T^{t+1} -
 
 which can be rearranged to:
 
-$$- \nabla dt \; \kappa \nabla T^{t+1} + dt \, \phi  \rho_{f} c_{p,f} \vec{q} \nabla T^{t+1} + \rho_b c_b T^{t+1}  =  \rho_b c_b T^t$$
+$$- \nabla \Delta t \; \kappa \nabla T^{t+1} + \Delta t \, \phi  \rho_{f} c_{p,f} \vec{q} \nabla T^{t+1} + \rho_b c_b T^{t+1}  =  \rho_b c_b T^t$$
 
 Casting the implicit heat transport equation into the escript PDE yields:
 
-$$- \nabla \underbrace{ dt \; \kappa}_A \nabla T^{t+1} + ( \underbrace{ dt \rho_f c_f \vec{q}}_C ) \nabla T^{t+1} + \underbrace{\rho_b c_b}_D T^{t+1}  =  \underbrace{\rho_b c_b T^t}_Y$$
+$$- \nabla \underbrace{ \Delta t \; \kappa}_A \nabla T^{t+1} + ( \underbrace{ \Delta t \rho_f c_f \vec{q}}_C ) \nabla T^{t+1} + \underbrace{\rho_b c_b}_D T^{t+1}  =  \underbrace{\rho_b c_b T^t}_Y$$
 
 
 with the following values for the escript constants:
 
 $u = T^{t+1}$
 
-$A = dt \; \kappa$
+$A = \Delta t \; \kappa$
 
-$C = dt \rho_f c_f \vec{q}$
+$C = \Delta t \rho_f c_f \vec{q}$
 
 $D = \rho_b c_b$
 
 $Y = \rho_b c_b T^t$
+
+
+## Explicit form
+
+In addition, you can also choose to solve the explicit form of the heat flow equation. The discretized form of the equation is:
+
+$$\rho_b c_b T^{t+1} = \nabla \Delta t \; \kappa \nabla T^t - \Delta t \, \rho_f c_f \vec{q} \nabla T^t +  \rho_b c_b T^t$$
+
+Casting the implicit heat transport equation into the escript PDE yields:
+
+$$- \nabla (A \nabla u + B u ) + C \nabla u + D u = - \nabla X + Y$$
+
+$$\underbrace{\rho_b c_b}_D T^{t+1} = \nabla \underbrace{ \Delta t \; \kappa \nabla T^t}_X +  \underbrace{-\Delta t \, \rho_f c_f \vec{q} \nabla T^t + \rho_b c_b T^t}_Y$$
+
+
+with the following values for the escript constants:
+
+$u = T^{t+1}$
+
+$D = \rho_b c_b$
+
+$X = dt \; \kappa \nabla T^t$
+
+$Y = - dt \, \rho_f c_f \vec{q} \nabla T^t + \rho_b c_b T^t$
 
 
 ## Steady-state

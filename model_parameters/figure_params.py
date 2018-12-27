@@ -50,8 +50,7 @@ timeslices = [1, 10, 20]
 scale_multiplier = 50.0
 
 # show only one in every x flow arrows:
-skip_arrows = 10
-skip_arrows = 10
+skip_arrows = 50
 
 arrow_transparency = 0.75
 
@@ -60,11 +59,11 @@ show_vapour = True
 
 # marker size and color for AHe data:
 marker_size = 7
-AHe_color = 'blue'
+AHe_color = ['blue', 'orange', 'green']
 #AHe_color = 'None'
 show_AHe_data = False
 # linestyle for AHe data, see matplotlub documentation here for the available options
-AHe_linestyle = ':'
+AHe_linestyle = '-'
 
 show_average_AHe_ages = True
 
@@ -94,7 +93,7 @@ show_mesh = False
 
 # linestyles for the modeled surface/borehole temperature
 #linestyles = [':', '--', '-', '-.']
-linestyles = ['-', '-', '-', '-'] * 10
+linestyles = [':', ':', ':', ':'] * 10
 
 # colors for the modeled surface/borehole temperature
 #colors = ['green', 'orange', 'red', 'yellow']

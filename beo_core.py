@@ -10,6 +10,7 @@ __author__ = 'Elco Luijendijk'
 
 import time
 import itertools
+import pdb
 
 import numpy as np
 import pandas as pd
@@ -66,7 +67,18 @@ def calculate_boiling_temp(P, c1=3.866, c2=25.151, c3=103.28, c4=179.99):
     return Tmax
 
 
-def convert_to_array(u, no_coords=False):
+def convert_to_array(u):
+
+    """
+    Return escript variable u as a numpy array
+    """
+
+
+    return np.array(u.toListOfTuples())
+
+
+
+def convert_to_array_with_coords(u):
 
     """
     Return the x,y coordinates and the value of escript variable u as
@@ -82,10 +94,7 @@ def convert_to_array(u, no_coords=False):
 
     assert len(u_array.shape) == 1
 
-    if no_coords is True:
-        return u_array
-    else:
-        return xy, u_array
+    return xy, u_array
 
 
 def Magnus_eq(T):
@@ -157,10 +166,8 @@ def calculate_fault_x(z_flt, fault_angle, x_flt_surface):
 
 def setup_mesh_with_exhumation_new(width, x_flt_surface, fault_width, fault_angle, fault_bottom,
                                    z_air,
-                                   z_surface_initial, z_surface_final,
-                                   z_surface_steps,
                                    z_fine, z_base, cellsize,
-                                   cellsize_air, cellsize_surface, cellsize_fault,
+                                   cellsize_air, cellsize_surface, cellsize_fault_surface, cellsize_fault,
                                    cellsize_fine, cellsize_base, target_zs,
                                    x_left=0):
 
@@ -205,8 +212,8 @@ def setup_mesh_with_exhumation_new(width, x_flt_surface, fault_width, fault_angl
             width = np.max(x_flt) + fault_width * 2
             print 'relocating right hand boundary to %0.2f ' % width
 
-    xys = [[[x_left_bnd, z_air], [-fault_width / 2.0, z_air],
-            [+fault_width / 2.0, z_air], [x_right_bnd, z_air]]]
+    xys = [[[x_left_bnd, z_air], [x_flt[0] -fault_width / 2.0, z_air],
+            [x_flt[0] + fault_width / 2.0, z_air], [x_right_bnd, z_air]]]
 
     for xf, zf in zip(x_flt, z_flt):
         xys.append([[x_left_bnd, zf],
@@ -224,29 +231,30 @@ def setup_mesh_with_exhumation_new(width, x_flt_surface, fault_width, fault_angl
         points_local = [pc.Point(x, z) for x, z in xyi]
         points.append(points_local)
 
-    # fine cellsize in air layer:
-    for point in points[0]:
-        point.setLocalScale(cellsize_air / cellsize)
+    # cellsize in air layer:
+    for p in points[0]:
+        p.setLocalScale(cellsize_air / cellsize)
 
-    # and at top surface:
-    for point in points[1]:
-        point.setLocalScale(cellsize_air / cellsize)
-
-    # small cellsize in surface layers
-    for point_i in points[2:-3]:
-        for p in point_i:
+    # cellsize at land surface
+    for point in points[1:-3]:
+        for p in point:
             p.setLocalScale(cellsize_surface / cellsize)
 
-    # and small cellsize in layer close to surface
+    # cellsize in layer close to surface
     for point in points[-3]:
         point.setLocalScale(cellsize_fine / cellsize)
 
-    # small cellsize in fault:
-    for point in points[:-1]:
+    # cellsize at fault surface
+    for point_i in points[:-3]:
+        point_i[1].setLocalScale(cellsize_fault_surface / cellsize)
+        point_i[2].setLocalScale(cellsize_fault_surface / cellsize)
+
+    # cellsize in fault:
+    for point in points[-3:-1]:
         point[1].setLocalScale(cellsize_fault / cellsize)
         point[2].setLocalScale(cellsize_fault / cellsize)
 
-    # coarse cellsize at lower left and right bnds
+    # cellsize at lower left and right bnds
     points[-2][0].setLocalScale(cellsize_base / cellsize)
     points[-2][-1].setLocalScale(cellsize_base / cellsize)
 
@@ -439,6 +447,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     track_exact_surface_elev=False,
                                     adv_pde=None,
                                     max_screen_output=500,
+                                    surface_buffer=0.1,
+                                    discretization='implicit',
                                     debug=False):
 
     """
@@ -589,9 +599,11 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         print '\tqz = ', q_vector[1]
 
         # make sure only flow in subsurface
-        subsurface_ele = es.whereNonPositive(xyze[1] - surface_level)
+        depth_ele = surface_level - xyze[1]
+        subsurface_ele = es.wherePositive(depth_ele - surface_buffer)
 
-        q_vector = q_vector * subsurface_ele
+        q_vector[0] = q_vector[0] * subsurface_ele
+        q_vector[1] = q_vector[1] * subsurface_ele
 
         ###############################################
         # model transient response to fluid convection
@@ -644,6 +656,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
         # set screen output interval
         screen_output_interval = int(np.ceil(nt / max_screen_output))
+        if screen_output_interval < 1:
+            screen_output_interval = 1
         print 'screen output once every %i timesteps' % screen_output_interval
 
         # calculate grid Peclet number
@@ -696,23 +710,18 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             # eqs.
             if variable_K_air is True:
 
-                #land_surface = surface
+                xysa, Tsa = convert_to_array_with_coords(surface * T)
+                sc = convert_to_array(surface)
 
-                # base K_air on surface temperature of nodes below. this may be a bit tricky....
-                #surface_T = es.sup(surface * T)
-                #print 'recalculating K air for surface temperature of %0.2e' % surface_T
-
-                #xysa, Tsa = convert_to_array(surface * T)
-                #xysa3, sc = convert_to_array(surface)
-
-                xysa, Tsa = convert_to_array(surface * T)
-                xysa3, sc = convert_to_array(surface)
-
+                # find x coords surface nodes
                 ind_s = sc == 1
                 xa1 = xysa[:, 0][ind_s]
+
+                # get temperature surface nodes
                 Tsa1 = Tsa[ind_s]
+
+                # sort in ascending order
                 a = np.argsort(xa1)
-                xa2 = xa1[a]
                 Tsa2 = Tsa1[a]
 
                 int_table = Tsa2
@@ -723,9 +732,13 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 step = es.sup(maxval - minval) / numslices
                 toobig = int_table.max() * 1.5
 
+                # interpolate surface temperature
                 surface_T_int = es.interpolateTable(int_table, xyz[0], minval, step, toobig)
 
-                #print '\tinterpolated surface T ', surface_T_int
+                # calculate heat transfer coefficient air:
+                K_air = calculate_surface_heat_transfer_coeff(rho_air, c_air, ra,
+                                                              reference_z_ra, surface_T_int,
+                                                              air_temperature)
 
                 if debug is True:
                     print 'save as csv file?'
@@ -735,42 +748,33 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                         es.saveDataCSV('debug/interpolated_surface_T.csv', x=xyz[0], y=xyz[1],
                                        surface_T=surface_T_int)
 
-                K_air = calculate_surface_heat_transfer_coeff(rho_air, c_air, ra,
-                                                              reference_z_ra, surface_T_int,
-                                                              air_temperature)
-                #print '\tcalculated K air ', K_air
-
             # Exhumation: calculate new surface level
             if exhumation_rate != 0 and solve_as_steady_state is False:
 
                 if track_exact_surface_elev is True:
-                    #print '\texhumation, new surface level at %0.2f' % surface_level
-                    subsurface = es.whereNonPositive(xyz[1] - surface_level)
-                    subsurface_ele = es.whereNonPositive(xyze[1] - surface_level)
-                    subsurface_ele_10m = es.whereNonPositive(xyze[1] - surface_level) \
-                                         * es.wherePositive(xyze[1] - surface_level + 10)
-                    air = es.wherePositive(xyz[1] - surface_level)
-                    air_ele = es.wherePositive(xyze[1] - surface_level)
-                    surface = es.whereZero(xyz[1] - surface_level)
-                    surface_ele = es.whereZero(xyze[1] - surface_level)
+
+                    depth = surface_level - xyz[1]
+                    depth_ele = surface_level - xyze[1]
 
                 else:
-                    subsurface = es.whereNonPositive(xyz[1] - surface_level_mesh)
-                    subsurface_ele = es.whereNonPositive(xyze[1] - surface_level_mesh)
-                    subsurface_ele_10m = es.whereNonPositive(xyze[1] - surface_level_mesh) \
-                                         * es.wherePositive(xyze[1] - surface_level_mesh + 10)
+                    depth = surface_level_mesh - xyz[1]
+                    depth_ele = surface_level_mesh - xyze[1]
 
-                    air = es.wherePositive(xyz[1] - surface_level_mesh)
-                    air_ele = es.wherePositive(xyze[1] - surface_level_mesh)
-                    surface = es.whereZero(xyz[1] - surface_level_mesh)
-                    surface_ele = es.whereZero(xyze[1] - surface_level_mesh)
+                subsurface = es.wherePositive(depth)
+                subsurface_ele = es.wherePositive(depth_ele)
+                subsurface_ele_buffer = es.wherePositive(depth_ele - surface_buffer)
+
+                air = es.whereNegative(depth)
+                #air_ele = es.whereNegative(depth_ele)
+                surface = es.whereZero(depth)
+                #surface_ele = es.whereZero(depth_ele)
 
                 q_vector_old = q_vector.copy()
-                q_vector[0] = q_vector[0] * subsurface_ele
-                q_vector[1] = q_vector[1] * subsurface_ele
+                q_vector[0] = q_vector[0] * subsurface_ele_buffer
+                q_vector[1] = q_vector[1] * subsurface_ele_buffer
 
             # populate K, c and rho scalar fields in case of exhumation or variable K air
-            if variable_K_air is True or (exhumation_rate != 0 and surface_level in target_depths):
+            if variable_K_air is True or exhumation_rate != 0:
 
                 K_var = subsurface * K_b + air * K_air
                 c_var = subsurface * c_b + air * c_air
@@ -857,29 +861,36 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
             if update_PDE is True:
 
-                if solve_as_steady_state is False:
-                    # reset heatflow PDE coefficients
-                    A = dt * K_var * kronecker_delta
-                    C = dt * rho_f * c_f * q_vector
-                    D = rho_var * c_var
-                    Y = rho_var * c_var * T
-
-                else:
+                if solve_as_steady_state is True:
                     # set PDE coefficients, steady-state flow equation
                     A = K_var * kronecker_delta
                     C = rho_f * c_f * q_vector
                     D = 0
                     Y = 0
 
-                if specified_flux is not None:
-                    hf_pde.setValue(A=A, C=C, D=D, Y=Y,
-                                    r=specified_temperature,
-                                    q=specified_T_loc,
-                                    y=specified_heat_flux)
-                else:
-                    hf_pde.setValue(A=A, C=C, D=D, Y=Y,
-                                    r=specified_temperature,
-                                    q=specified_T_loc)
+                elif discretization == 'implicit':
+
+                    # reset heatflow PDE coefficients
+                    A = dt * K_var * kronecker_delta
+                    C = dt * rho_f * c_f * q_vector
+                    D = rho_var * c_var
+                    Y = rho_var * c_var * T
+
+                    if specified_flux is not None:
+                        hf_pde.setValue(A=A, C=C, D=D, Y=Y,
+                                        r=specified_temperature,
+                                        q=specified_T_loc,
+                                        y=specified_heat_flux)
+                    else:
+                        hf_pde.setValue(A=A, C=C, D=D, Y=Y,
+                                        r=specified_temperature,
+                                        q=specified_T_loc)
+
+                elif discretization == 'explicit':
+
+                    # set PDE coefficients, explicit form of heat flow eq..
+                    # not implemented yet...
+                    pass
 
             # solve PDE for temperature
             #print '\tsolving for T'
@@ -1013,11 +1024,17 @@ def model_run(mp):
                                                         mp.fault_widths[0],
                                                         mp.fault_angles[0], mp.fault_bottoms[0] - 500.0,
                                                         elevation_top,
-                                                        z_surface, z_surface,
-                                                        exhumation_steps,
                                                         mp.z_fine, z_base, mp.cellsize,
-                                                        mp.cellsize_air, mp.cellsize_surface, mp.cellsize_fault,
+                                                        mp.cellsize_air, mp.cellsize_surface,
+                                                        mp.cellsize_fault_surface, mp.cellsize_fault,
                                                         mp.cellsize_fine, mp.cellsize_base, mp.target_zs)
+
+        #def setup_mesh_with_exhumation_new(width, x_flt_surface, fault_width, fault_angle, fault_bottom,
+        #                                   z_air,
+        #                                   z_fine, z_base, cellsize,
+        #                                   cellsize_air, cellsize_surface, cellsize_fault,
+        #                                   cellsize_fine, cellsize_base, target_zs,
+        #                                   x_left=0):
 
         x_flt = np.ones(len(mp.target_zs)) * mp.fault_xs[0]
         z_flt = np.zeros(len(mp.target_zs))
@@ -1049,15 +1066,23 @@ def model_run(mp):
 
         elevation_top = z_surface + exhumed_thickness + mp.air_height
 
-        mesh, x_flt, z_flt, bottom_labels = setup_mesh_with_exhumation_new(mp.width, mp.fault_xs[0],
+        mesh, x_flt, z_flt, bottom_labels = setup_mesh_with_exhumation_new(
+                                                        mp.width, mp.fault_xs[0],
                                                         mp.fault_widths[0],
                                                         mp.fault_angles[0], mp.fault_bottoms[0] - 500.0,
                                                         elevation_top,
-                                                        z_surface + exhumed_thickness, z_surface,
-                                                        exhumation_steps,
                                                         mp.z_fine, z_base, mp.cellsize,
-                                                        mp.cellsize_air, mp.cellsize_surface, mp.cellsize_fault,
+                                                        mp.cellsize_air, mp.cellsize_surface,
+                                                        mp.cellsize_fault_surface, mp.cellsize_fault,
                                                         mp.cellsize_fine, mp.cellsize_base, mp.target_zs)
+
+
+        #def setup_mesh_with_exhumation_new(width, x_flt_surface, fault_width, fault_angle, fault_bottom,
+        #                                   z_air,
+        #                                   z_fine, z_base, cellsize,
+        #                                   cellsize_air, cellsize_surface, cellsize_fault,
+        #                                   cellsize_fine, cellsize_base, target_zs,
+        #                                   x_left=0):
 
     # convert input params to escript variables
     # see here for more info:
@@ -1316,8 +1341,9 @@ def model_run(mp):
             aquifer_fluxes_m_per_sec.append(aquifer_flux_ii)
 
     store_results_interval = mp.dt_stored / mp.dt
-    if float(store_results_interval) != int(store_results_interval):
-        raise ValueError('error, dt_stored divided by dt should be an integer.')
+    if float(store_results_interval) != int(store_results_interval) and store_results_interval != 1.0:
+        msg = 'error, dt_stored divided by dt is %s but should be an integer.' % str(store_results_interval)
+        raise ValueError(msg)
 
     # model hydrothermal heating
     runtimes, T_steady, Ts, q_vectors, surface_levels, boiling_temps, exceed_boiling_temps = \
@@ -1350,29 +1376,29 @@ def model_run(mp):
     print 'done modeling'
 
     # convert modeled T field and vectors to arrays
-    xyz_array, T0 = convert_to_array(Ts[0])
-    T_list = [convert_to_array(T, no_coords=True) for T in Ts]
+    xyz_array, T0 = convert_to_array_with_coords(Ts[0])
+    T_list = [convert_to_array(T) for T in Ts]
     T_array = np.array(T_list)
-    T_init_array = convert_to_array(T_steady, no_coords=True)
+    T_init_array = convert_to_array(T_steady)
 
-    xyz_element_array, qh0 = convert_to_array(q_vectors[0][0])
-    qh_list = [convert_to_array(q_vector[0], no_coords=True)
+    xyz_element_array, qh0 = convert_to_array_with_coords(q_vectors[0][0])
+    qh_list = [convert_to_array(q_vector[0])
                for q_vector in q_vectors]
-    qv_list = [convert_to_array(q_vector[1], no_coords=True)
+    qv_list = [convert_to_array(q_vector[1])
                for q_vector in q_vectors]
     qh_array = np.array(qh_list)
     qv_array = np.array(qv_list)
 
     if boiling_temps is not None:
-        xyz_array_bt, b0 = convert_to_array(boiling_temps[-1])
-        boiling_temp_list = [convert_to_array(maxT, no_coords=True) for maxT in boiling_temps]
+        xyz_array_bt, b0 = convert_to_array_with_coords(boiling_temps[-1])
+        boiling_temp_list = [convert_to_array(maxT) for maxT in boiling_temps]
         boiling_temp_array = np.array(boiling_temp_list)
 
         if np.max(xyz_array_bt - xyz_array_bt) > 0:
             print 'warning, node coords for boiling and T parameter are not the same'
 
-        xyz_array_exc, bte_last = convert_to_array(exceed_boiling_temps[-1])
-        bt_list = [convert_to_array(bt, no_coords=True) for bt in exceed_boiling_temps]
+        xyz_array_exc, bte_last = convert_to_array_with_coords(exceed_boiling_temps[-1])
+        bt_list = [convert_to_array(bt) for bt in exceed_boiling_temps]
         exceed_boiling_temp_array = np.array(bt_list)
 
     else:
@@ -1709,7 +1735,7 @@ def model_run(mp):
     print 'surface T: ', T * surface
 
     output = [runtimes, xyz_array, surface_levels, x_flt, z_flt,
-              Ts, T_init_array, T_array, boiling_temp_array,
+              Ts, q_vectors, T_init_array, T_array, boiling_temp_array,
               xyz_array_exc, exceed_boiling_temp_array,
               xyz_element_array,
               qh_array, qv_array,

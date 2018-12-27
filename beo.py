@@ -12,6 +12,7 @@ import itertools
 import inspect
 import pdb
 import datetime
+import time
 import imp
 import scipy.interpolate
 
@@ -172,7 +173,7 @@ n_ts = np.sum(np.array(mp.N_outputs))
 n_rows = n_model_runs * n_ts
 
 ind = np.arange(n_rows)
-columns = ['model_run', 'model_error', 'timestep', 'runtime_yr'] + attribute_names
+columns = ['model_run', 'model_error', 'timestep', 'runtime_yr', 'computational_time'] + attribute_names
 columns += ['surface_elevation',
             'max_surface_temperature', 'T_change_avg']
 
@@ -264,11 +265,27 @@ for model_run, param_set in enumerate(param_list):
 
     no_exceptions = True
     if no_exceptions is True:
+        start_time = time.time()
         output = beo_core.model_run(Parameters)
+        comp_time_model_run = time.time() - start_time
+
+        for j in range(n_ts):
+
+            output_number = model_run * n_ts + j
+            df.loc[output_number, 'computational_time'] = comp_time_model_run
 
     else:
         try:
+            start_time = time.time()
             output = beo_core.model_run(Parameters)
+
+            comp_time_model_run = time.time() - start_time
+
+            for j in range(n_ts):
+
+                output_number = model_run * n_ts + j
+                df.loc[output_number, 'computational_time'] = comp_time_model_run
+
         except Exception, msg:
             print '!' * 10
             print 'error running model run %i' % model_run
@@ -293,7 +310,7 @@ for model_run, param_set in enumerate(param_list):
             continue
 
     (runtimes, xyz_array, surface_levels, x_flt, z_flt,
-     Ts, T_init_array, T_array, boiling_temp_array,
+     Ts, q_vectors, T_init_array, T_array, boiling_temp_array,
      xyz_array_exc, exceed_boiling_temp_array,
      xyz_element_array, qh_array, qv_array,
      fault_fluxes, durations,
@@ -310,7 +327,6 @@ for model_run, param_set in enumerate(param_list):
 
         output_steps_i = list(np.linspace(0, nt, N_output + 1).astype(int) + output_steps[-1])[1:]
         output_steps += output_steps_i
-
 
     # select data for output steps only
     output_steps = np.array(output_steps)
@@ -370,7 +386,7 @@ for model_run, param_set in enumerate(param_list):
 
         for output_step in output_steps:
 
-            VTK_data.addData(temperature=Ts[output_step])
+            VTK_data.addData(temperature=Ts[output_step], q=q_vectors[output_step])
             VTK_data.setTime(runtimes[output_step] / year)
             VTK_data.export()
 
@@ -578,7 +594,7 @@ for model_run, param_set in enumerate(param_list):
                 max_age = np.max(ages)
                 ind_min_age = np.argmin(ages)
 
-                save_data_all_layers = False
+                save_data_all_layers = True
 
                 if save_data_all_layers is True:
 

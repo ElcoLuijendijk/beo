@@ -24,9 +24,15 @@ class ModelParams:
     output_folder = 'model_output'
 
     #
-    output_fn_adj = 'baden_test'
+    output_fn_adj = 'baden_7km'
 
+    #
+    save_VTK_file = True
+
+    # solver, see escript documentation for details
+    # available choices: 'PCG', 'DIRECT', 'GMRES', 'ROWSUM_LUMPING'
     solver = 'GMRES'
+
     # steady state or transient model
     # note that regardless of this setting, the initial condition of transient model is
     # the steady-state solution without any advection
@@ -45,25 +51,28 @@ class ModelParams:
     air_height = 2.0
 
     # depth to fine discretization near surface:
-    z_fine = -150
+    z_fine = -100
 
     # default cellsize
     cellsize = 500.0
 
     # cellsize in the air layer:
-    cellsize_air = 10.0
+    cellsize_air = 100.0
 
-    # cellsize at surface layers:
-    cellsize_surface = 50.0
+    # cellsize at fault surface:
+    cellsize_fault_surface = 0.5
+
+    # cellsize at land surface:
+    cellsize_surface = 100.0
 
     # fine cellsize near surface (up to depth = z_fine)
     cellsize_fine = 100.0
 
     # in fault zone:
-    cellsize_fault = 5.0
+    cellsize_fault = 2.5
 
     # cellsize at the lower left and right corners:
-    cellsize_base = 500.0
+    cellsize_base = 1000.0
 
     # new: buffer zone around fault with the same cell size as the fault
     # this is to reduce model instability
@@ -125,11 +134,11 @@ class ModelParams:
     # thermal parameters
     # note that only thermal conductivity is varied between layers,
     # the other parameters are constant
-    K_solids = [3.0]
+    K_solids = [2.5]
 
     # thermal properties air, solid matrix and porewater:
     # note K_air is not used if variable_K_air is set to True
-    K_air = 100.0
+    K_air = 50.0
     K_water = 0.58
 
     rho_air = 1.29
@@ -144,24 +153,23 @@ class ModelParams:
     variable_K_air = True
 
     # parameters to estimate heat transfer coefficient of air:
-    # aerodynamic resistance, see Liu et al (2007), Hydrology and Earth System Sciences 11 (2)
     ra = 80
 
     # measurement height for aerodynamic resistance
-    dz = 1.8
+    dz = 2.0
 
     # number of output steps for each timeslice
-    N_outputs = [11]
+    N_outputs = [15]
 
     # size of a single timestep
-    dt = 250.0 * year
+    dt = 50.0 * year
 
     # size of timestep to store model results. make this higher than dt if you want to conserve memory,
     # otherwise make this the same as dt
-    dt_stored = 500.0 * year
+    dt_stored = 100.0 * year
 
     # duration of each timestep_slice
-    durations = [1e4 * year]
+    durations = [15e3 * year]
 
     # repeat timesclices x times, use this to model repeated episodic heating events
     # set this to zero or None to not use this
@@ -218,7 +226,7 @@ class ModelParams:
     fault_xs = [0.0]
 
     # fault width (m)
-    fault_widths = [20.0]
+    fault_widths = [10.0]
 
     # angle of the fault zone (degrees), dip of normal faults ~60-70 degrees
     fault_angles = [-65.0]
@@ -243,9 +251,9 @@ class ModelParams:
     aquifer_bottoms = [-50.0]
     # aquifer flux: nested list
     # [[aquifer1_timestep1, aquifer2_timestep1], [aquifer1_timestep2, aquifer2_timestep2]]
-    aquifer_fluxes = [[[0.0]]]
+    aquifer_fluxes = [[-250.0 / year], [0.0]]
     # left side of aquifer. right hand bnd is assumed to be the fault zone
-    aquifer_left_bnds = [-1000.0]
+    aquifer_left_bnds = [-1000.0, -1000.0]
 
     # relative limit to consider a sample partial reset or not, ie if 0.95
     # a sample will be considered partially reset if the modeled uncorrected
@@ -303,6 +311,6 @@ class ParameterRanges:
     # parameters that will be changed in the sensitivity analysis runs:
     #fault_bottoms_s = [[-3000.0], [-4000.0], [-5000.0], [-6000.0], [-7000.0], [-8000.0], [-9000.0]]
 
-    ra_s = [30., 130.0]
+    #dt_s = [10 * year]
 
-    variable_K_air_s = [False]
+    #cellsize_fault_s = [10.0, 5.0, 2.5]
