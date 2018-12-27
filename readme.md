@@ -1,6 +1,6 @@
 # Beo: Model heat flow and (U-Th)/He thermochronology in a hydrothermal system
 
-*Elco Luijendijk, McGill University & Göttingen University*
+*Elco Luijendijk, University of Göttingen*
 
 
 # Introduction
