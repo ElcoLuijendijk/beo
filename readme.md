@@ -55,6 +55,12 @@ where ``model_parameters/model_parameters.py`` is a file containing all model pa
 
 These modules are available as standalone packages. For mac and windows an easy way to get a working version of python and these modules is to install a full Python environemnt like Anaconda (https://www.anaconda.com/), Enthought Canopy (https://www.enthought.com/products/canopy) or pythonxy (https://code.google.com/p/pythonxy/wiki/Welcome).
 
+Note that Beo includes an option to calculate apatite (U-Th)/He ages using the RDAAM model (Flowers et al. 2009, Geochimica et Cosmochimica Acta 73(8)). The implementation of the RDAAM model uses a piece of Fortran code to speed up the model. To enable the RDAAM model you first need to compile the Fortran code using f2py, which is normally inlcuded with Numpy (https://docs.scipy.org/doc/numpy/f2py/). To do so, navigate to the subdirectory lib and run the following command:
+
+``f2py -c calculate_reduced_AFT_lengths.f90 -m calculate_reduced_AFT_lengths``
+
+If all goes well there should now be a file called ``calculate_reduced_AFT_lengths.so`` in the subdirectory lib, which will be used by Beo to calculate radiation damage and the diffusivity of helium in apatites. Currently new updates are planned to convert the fortran code to python, which will remove this requirement.  
+
 Beo was tested on Ubuntu 14.04 and 16.04 
 
 
@@ -105,7 +111,7 @@ A copy of this license is distributed along with the source code, see LICENSE.tx
 
 # Reference
 
-Please cite the following paper if you publish work that uses PyBasin:
+Please cite the following paper if you publish work that uses Beo:
 
 Luijendijk, E.: Beo v1.0: Numerical model of heat flow and low-temperature thermochronology in hydrothermal systems, Geosci. Model Dev. Discuss., https://doi.org/10.5194/gmd-2018-341, in review, 2019. 
 
