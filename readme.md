@@ -58,9 +58,11 @@ These modules are available as standalone packages. For mac and windows an easy 
 Beo was tested on Ubuntu 14.04 and 16.04 
 
 
-# Manual
+# Manual and publication
 
-You can find a manual for beo in the directory manual. The manual contains more background on the model, explanation of how surface heat flow is modeled and a detailed list and explanation of the model paramameters
+You can find a manual for beo in the directory manual. The manual contains more background on the model, explanation of how surface heat flow is modeled and a detailed list and explanation of the model paramameters. More information on the model code can be found in a discussion paper that is currently under review: https://doi.org/10.5194/gmd-2018-341. See the bottom of this readme for the full reference. 
+
+The example model runs for the Baden & Schinznach hot springs that are discussed in this paper can be reproduced by using one of the parameter files located in the directory ``example_input_files``.
 
 
 # Model input & output
@@ -70,7 +72,7 @@ You can find a manual for beo in the directory manual. The manual contains more 
 All model input parameters are contained in a single Python file. An example file can be found in ``model_parameters.py`` located in the directory model_parameters. The class ``ModelParameters`` contains all parameters needed for a single model run. See the manual for an explanation of the model parameters.
 
 
-##Multiple model runs
+## Multiple model runs
 
 Optionally you can start automated runs to test a range of parameter combinations. This is useful for automated sensitivity or uncertainty analysis. 
 
@@ -100,3 +102,11 @@ http://www.gnu.org/copyleft/gpl.html
 
 A copy of this license is distributed along with the source code, see LICENSE.txt
 
+
+# Reference
+
+Please cite the following paper if you publish work that uses PyBasin:
+
+Luijendijk, E.: Beo v1.0: Numerical model of heat flow and low-temperature thermochronology in hydrothermal systems, Geosci. Model Dev. Discuss., https://doi.org/10.5194/gmd-2018-341, in review, 2019. 
+
+The paper is freely available and can be found here: https://doi.org/10.5194/gmd-2018-341

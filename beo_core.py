@@ -1379,6 +1379,9 @@ def model_run(mp):
     xyz_array, T0 = convert_to_array_with_coords(Ts[0])
     T_list = [convert_to_array(T) for T in Ts]
     T_array = np.array(T_list)
+
+    T_list = None
+
     T_init_array = convert_to_array(T_steady)
 
     xyz_element_array, qh0 = convert_to_array_with_coords(q_vectors[0][0])
@@ -1389,10 +1392,15 @@ def model_run(mp):
     qh_array = np.array(qh_list)
     qv_array = np.array(qv_list)
 
+    qh_list = None
+    qv_list = None
+
     if boiling_temps is not None:
         xyz_array_bt, b0 = convert_to_array_with_coords(boiling_temps[-1])
         boiling_temp_list = [convert_to_array(maxT) for maxT in boiling_temps]
         boiling_temp_array = np.array(boiling_temp_list)
+
+        boiling_temp_list = None
 
         if np.max(xyz_array_bt - xyz_array_bt) > 0:
             print 'warning, node coords for boiling and T parameter are not the same'
@@ -1400,6 +1408,7 @@ def model_run(mp):
         xyz_array_exc, bte_last = convert_to_array_with_coords(exceed_boiling_temps[-1])
         bt_list = [convert_to_array(bt) for bt in exceed_boiling_temps]
         exceed_boiling_temp_array = np.array(bt_list)
+        bt_list = None
 
     else:
         boiling_temp_array = None
