@@ -10,7 +10,6 @@ import os
 import pickle
 import itertools
 import inspect
-import pdb
 import datetime
 import time
 import imp
@@ -19,13 +18,8 @@ import scipy.interpolate
 import numpy as np
 import pandas as pd
 
-#from model_parameters.model_parameters import ModelParams
-#import model_parameters.parameter_ranges as pr
-#from model_parameters.model_parameters import ParameterRanges as pr
-
 import beo_core
 
-import esys.weipa
 import esys.escript as es
 
 
@@ -96,9 +90,7 @@ My = year * 1e6
 scriptdir = os.path.realpath(sys.path[0])
 
 if len(sys.argv) > 1 and 'beo.py' not in sys.argv[-1]:
-    #scenario_name = sys.argv[-1]
-    #model_input_subfolder = os.path.join(scriptdir, 'model_input',
-    #                                     scenario_name)
+
     inp_file_loc = os.path.join(scriptdir, sys.argv[-1])
 
     print 'model input files: ', inp_file_loc
@@ -123,6 +115,10 @@ else:
 mp = ModelParams
 
 output_folder = os.path.join(scriptdir, mp.output_folder)
+
+if os.path.exists(output_folder) is False:
+    os.mkdir(output_folder)
+    print 'created new directory for model output: %s' % output_folder
 
 # create list with param values for each model run
 scenario_param_names_raw = dir(pr)
@@ -168,8 +164,6 @@ attribute_names = [attribute[0] for attribute in attributes
 # set up pandas dataframe to store model input params
 n_model_runs = len(param_list)
 n_ts = np.sum(np.array(mp.N_outputs))
-#if mp.exhumation_rate > 0:
-#    n_ts = mp.exhumation_steps
 n_rows = n_model_runs * n_ts
 
 ind = np.arange(n_rows)
@@ -231,12 +225,6 @@ for model_run, param_set in enumerate(param_list):
     attribute_dict = [attribute for attribute in attributes
                       if not (attribute[0].startswith('__') and
                               attribute[0].endswith('__'))]
-    #for a in attribute_dict:
-    #    if a[0] in df.columns:
-    #        if type(a[1]) is list or type(a[1]) is np.ndarray:
-    #            df.loc[model_run, a[0]] = str(a[1])
-    #        else:
-    #            df.loc[model_run, a[0]] = a[1]
 
     print 'running single model'
 
@@ -296,8 +284,6 @@ for model_run, param_set in enumerate(param_list):
 
                 output_number = model_run * n_ts + j
 
-                #k = output_steps[j]
-
                 for a in attribute_dict:
                     if a[0] in df.columns:
                         if type(a[1]) is list or type(a[1]) is np.ndarray:
@@ -338,11 +324,6 @@ for model_run, param_set in enumerate(param_list):
     print 'generating time output at steps: '
     print times_test[output_steps] / year
 
-    #if mp.exhumation_rate != 0:
-    #    print 'exhumation, making sure output steps are equal to steps where ' \
-    #          'a new surface level is reached'
-    #    output_steps = [i for i, s in enumerate(surface_levels) if s in target_depths]
-
     if mp.steady_state is False:
         n_ts = len(output_steps)
     else:
@@ -380,7 +361,6 @@ for model_run, param_set in enumerate(param_list):
 
         if os.path.exists(VTK_dir_full) is False:
             os.mkdir(VTK_dir_full)
-        #esys.weipa.saveVTK(os.path.join(output_folder, fn_VTK), temperature=Ts[-1])
 
         VTK_data = es.DataManager(formats=[es.DataManager.VTK], work_dir=VTK_dir_full)
 
@@ -392,7 +372,6 @@ for model_run, param_set in enumerate(param_list):
 
     else:
         print 'no output to VTK file. add save_VTK_file=True to input file to change this'
-
 
     #
     T_surface = []
@@ -411,8 +390,8 @@ for model_run, param_set in enumerate(param_list):
     borehole_temps_modeled = []
 
     # find x coord of first fault, for relative positioning of borehole temperature data and AHe samples
-    x_loc_fault = np.zeros((n_ts))
-    z_loc_fault = np.zeros((n_ts))
+    x_loc_fault = np.zeros(n_ts)
+    z_loc_fault = np.zeros(n_ts)
 
     for j in range(n_ts):
         z_surface = surface_levels[output_steps[j]]
@@ -496,14 +475,11 @@ for model_run, param_set in enumerate(param_list):
                 R2_T = coefficient_of_determination(T_obs, T_mod)
                 df.loc[output_number, 'R2_temperature_%s' % borehole] = R2_T
 
-            #borehole_xlocs.append(borehole_xloc)
-            borehole_temps_modeled.append( borehole_temp_modeled)
+            borehole_temps_modeled.append(borehole_temp_modeled)
 
     for j in range(n_ts):
 
         output_number = model_run * n_ts + j
-
-        #k = output_steps[j]
 
         for a in attribute_dict:
             if a[0] in df.columns:
@@ -558,16 +534,6 @@ for model_run, param_set in enumerate(param_list):
             ind_low = np.where(diff < 0)[0][-1]
             ind_high = np.where(diff > 0)[0][0]
 
-            #fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
-
-            #T_down = Tzs_cropped[ind_low][j]
-            #T_up = Tzs_cropped[ind_high][j]
-
-            #if len(T_down) != len(T_up):
-            #    print 'warning, trying to interpolate two layers with unequal number of nodes'
-
-            #T_surface_i = ((1.0-fraction) * Tzs_cropped[ind_low][j] + fraction * Tzs_cropped[ind_high][j])
-            #x_coords_i = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
             T_surface_i = Tzs_cropped[ind_low][j]
             x_coords_i = xzs[ind_low]
 
@@ -582,10 +548,11 @@ for model_run, param_set in enumerate(param_list):
             n_depths = len(AHe_ages_cropped)
             nt_output = AHe_ages_cropped[0].shape[0]
 
+            x_step = 1.0
+
             for i in range(n_depths):
                 ages_raw = AHe_ages_cropped[i][j] / My
                 ages_raw_corr = AHe_ages_corr_cropped[i][j] / My
-                x_step = 1.0
                 x_coords_int = np.arange(xzs[i].min(), xzs[i].max() + x_step, x_step)
                 ages = np.interp(x_coords_int, xzs[i], ages_raw)
                 dev_age = ages / ages.max()
@@ -652,12 +619,8 @@ for model_run, param_set in enumerate(param_list):
                 ind_low = np.where(diff < 0)[0][-1]
                 ind_high = np.where(diff > 0)[0][0]
 
-                fraction = np.abs(diff[ind_low]) \
-                           / (target_depths[ind_high] - target_depths[ind_low])
+                fraction = np.abs(diff[ind_low]) / (target_depths[ind_high] - target_depths[ind_low])
 
-                #ages_raw = ((1.0-fraction) * AHe_ages_cropped[ind_low][j]
-                #            + fraction * AHe_ages_cropped[ind_high][j]) / My
-                #x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
                 ages_raw = AHe_ages_cropped[ind_low][j] / My
                 ages_raw_corr = AHe_ages_corr_cropped[ind_low][j] / My
                 x_coords = xzs[ind_low]
@@ -736,7 +699,6 @@ for model_run, param_set in enumerate(param_list):
                     surface_ind = np.where(target_depths == surface_elev)[0][0]
                     ages_raw = AHe_ages_samples_cropped[surface_ind][i]
                     ages_raw_corr = AHe_ages_samples_corr_cropped[surface_ind][i]
-                    #x_coords = xzs[surface_ind]
 
                 else:
                     # interpolate AHe age from nearest surfaces
@@ -747,14 +709,8 @@ for model_run, param_set in enumerate(param_list):
                     fraction = np.abs(diff[ind_low]) / (target_depths[ind_high]
                                                         - target_depths[ind_low])
 
-                    #ages_raw = ((1.0-fraction) * AHe_ages_samples_cropped[ind_low][i]
-                    #            + fraction * AHe_ages_samples_cropped[ind_high][i])
-                    #ages_raw_corr = ((1.0-fraction) * AHe_ages_samples_corr_cropped[ind_low][i]
-                    #            + fraction * AHe_ages_samples_corr_cropped[ind_high][i])
                     ages_raw = AHe_ages_samples_cropped[ind_low][i]
                     ages_raw_corr = AHe_ages_samples_corr_cropped[ind_low][i]
-
-                    #x_coords = (1.0-fraction) * xzs[ind_low] + fraction * xzs[ind_high]
 
                 # add surface AHe data to output
                 AHe_ages_samples_surface.append(ages_raw)
@@ -789,11 +745,9 @@ for model_run, param_set in enumerate(param_list):
             print 'available profiles in AHe data file: ',  np.unique(dfhs['profile'])
             print 'selected profiles: ', profiles
 
-
             for profile in profiles:
                 profile_loc = dfhs['profile'] == profile
                 dfhs2 = dfhs.loc[profile_loc]
-
 
                 if mp.profile_number in dfhs['profile'].values:
                     diff = dfhs2['AHe_age_uncorr'].values - AHe_ages_samples_surface[timestep] / My
@@ -802,22 +756,25 @@ for model_run, param_set in enumerate(param_list):
                     diff = dfhs2['AHe_age_uncorr'].values - AHe_ages_samples_surface[timestep][profile_loc] / My
                     diff_corr = dfhs2['AHe_age_corr'].values - AHe_ages_samples_surface_corr[timestep][profile_loc] / My
 
-
                 me_ahe[timestep] = np.mean(diff)
                 mae_ahe[timestep] = np.mean(np.abs(diff))
                 mswd_ahe[timestep] = np.sum((diff / (0.5 * dfhs2['AHe_age_uncorr_2se'])) ** 2) / (n_grains - 1)
 
                 me_ahe_corr[timestep] = np.mean(diff_corr)
                 mae_ahe_corr[timestep] = np.mean(np.abs(diff_corr))
-                mswd_ahe_corr[timestep] = np.sum((diff_corr / (0.5 * dfhs2['AHe_age_uncorr_2se'])) ** 2) / (n_grains - 1)
+                mswd_ahe_corr[timestep] = \
+                    np.sum((diff_corr / (0.5 * dfhs2['AHe_age_uncorr_2se'])) ** 2) / (n_grains - 1)
 
                 df.loc[output_number2, 'mean_error_AHe_samples_profile%s' % (str(profile))] = me_ahe[timestep]
                 df.loc[output_number2, 'mean_abs_error_AHe_samples_profile%s' % (str(profile))] = mae_ahe[timestep]
                 df.loc[output_number2, 'mswd_AHe_samples_profile%s' % (str(profile))] = mswd_ahe[timestep]
 
-                df.loc[output_number2, 'mean_error_AHe_samples_corrected_profile%s' % (str(profile))] = me_ahe_corr[timestep]
-                df.loc[output_number2, 'mean_abs_error_AHe_samples_corrected_profile%s' % (str(profile))] = mae_ahe_corr[timestep]
-                df.loc[output_number2, 'mswd_AHe_samples_corrected_profile%s' % (str(profile))] = mswd_ahe_corr[timestep]
+                df.loc[output_number2, 'mean_error_AHe_samples_corrected_profile%s' % (str(profile))] = \
+                    me_ahe_corr[timestep]
+                df.loc[output_number2, 'mean_abs_error_AHe_samples_corrected_profile%s' % (str(profile))] = \
+                    mae_ahe_corr[timestep]
+                df.loc[output_number2, 'mswd_AHe_samples_corrected_profile%s' % (str(profile))] = \
+                    mswd_ahe_corr[timestep]
 
     # option to save corrected ages for figure output
 
@@ -843,13 +800,6 @@ for model_run, param_set in enumerate(param_list):
          AHe_ages_samples_surface, AHe_ages_samples_surface_corr, AHe_data_file,
          borehole_xlocs, borehole_zlocs, borehole_depths,
          borehole_temp_measured, borehole_temps_modeled]
-
-#    borehole_xlocs = None
-#    borehole_zlocs = None
-#    borehole_depths = None
-#    borehole_temp_measured = []
-#    borehole_temps_modeled = []
-
 
     today = datetime.datetime.now()
     today_str = '%i-%i-%i' % (today.day, today.month,
@@ -898,14 +848,14 @@ for model_run, param_set in enumerate(param_list):
                 a = len(dfh)
                 b = len(AHe_xcoords_surface_all[j][i])
 
-                l = np.min((a, b))
+                n_ahe_data = np.min((a, b))
                 try:
-                    dfh.loc[:l-1, 'x_run_%i_ts%i' % (j, i)] = \
-                        AHe_xcoords_surface_all[j][i][:l]
-                    dfh.loc[:l-1, 'AHe_age_uncorr_run_%i_ts%i' % (j, i)] = \
-                        AHe_ages_surface_all[j][i][:l] / My
-                    dfh.loc[:l-1, 'AHe_age_corrected_run_%i_ts%i' % (j, i)] = \
-                        AHe_ages_surface_corr_all[j][i][:l] / My
+                    dfh.loc[:n_ahe_data-1, 'x_run_%i_ts%i' % (j, i)] = \
+                        AHe_xcoords_surface_all[j][i][:n_ahe_data]
+                    dfh.loc[:n_ahe_data-1, 'AHe_age_uncorr_run_%i_ts%i' % (j, i)] = \
+                        AHe_ages_surface_all[j][i][:n_ahe_data] / My
+                    dfh.loc[:n_ahe_data-1, 'AHe_age_corrected_run_%i_ts%i' % (j, i)] = \
+                        AHe_ages_surface_corr_all[j][i][:n_ahe_data] / My
                 except Exception, msg:
                     print 'error, something went wrong with saving AHe data ' \
                           'to a .csv file for model run %i and timestep %i' \
@@ -923,13 +873,11 @@ for model_run, param_set in enumerate(param_list):
     if Ahe_ages_all is not None and mp.model_AHe_samples is True:
 
         # save AHe ages
-        for timestep in range(N_output):
+        for timestep in range(len(output_steps)):
 
             # and store in datafile
-            col_name = 'modeled_AHe_age_uncorr_run_%i_timestep_%i' \
-                       % (model_run, output_steps[timestep])
-            col_name_corr = 'modeled_AHe_age_corrected_run_%i_timestep_%i' \
-                       % (model_run, output_steps[timestep])
+            col_name = 'modeled_AHe_age_uncorr_run_%i_timestep_%i' % (model_run, output_steps[timestep])
+            col_name_corr = 'modeled_AHe_age_corrected_run_%i_timestep_%i' % (model_run, output_steps[timestep])
 
             if mp.profile_number in dfhs['profile']:
                 profiles = [mp.profile_number]
@@ -946,7 +894,7 @@ for model_run, param_set in enumerate(param_list):
                     except Exception, msg:
                         print 'error, something went wrong with saving AHe ' \
                               'sample data to a .csv file for model run %i ' \
-                              'and timestep %i' % (j, i)
+                              'and timestep %i' % (model_run, timestep)
                         print msg
                         print 'continuing with next timestep'
 
