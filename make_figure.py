@@ -293,7 +293,7 @@ for fn in files:
 
     #
     show_surface_only = True
-    if len(Ahe_ages_all) > 1:
+    if Ahe_ages_all is not None and len(Ahe_ages_all) > 1:
         print 'found multiple depth levels with modeled AHe ages'
         print 'show only the surface level (y/n)?'
 
