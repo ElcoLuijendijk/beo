@@ -61,7 +61,7 @@ show_vapour = True
 marker_size = 7
 AHe_color = ['blue', 'orange', 'green']
 #AHe_color = 'None'
-show_AHe_data = False
+show_AHe_data = True
 # linestyle for AHe data, see matplotlub documentation here for the available options
 AHe_linestyle = '-'
 

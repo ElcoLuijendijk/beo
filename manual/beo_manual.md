@@ -330,10 +330,10 @@ In Beo aquifers are used for modeling horizontal advective flow, for instance ho
 ## Borehole temperature data
 
 * ``analyse_borehole_temp``: boolean, option to calculate temperature data for one or several boreholes. note that there seems to be a bug in the output timesteps for the temperature calculation, avoid using this for now...
-* ``temperature_file``: string, name of the file that contains temperature data.
+* ``temperature_file``: string, name of the file that contains temperature data. This file should be a .csv file with three columns named ``borehole``, ``depth`` and ``temperature``.
 * ``borehole_names``: list of strings. Names of the boreholes to include in your analysis.
 * ``report_borehole_xcoords``, boolean. Report the coordinates of the top of the borehole over time. For debugging purposes. 
-* ``borehole_xs``: list of numbers, x-coordinates of boreholes with temperature data (m), note location is now relative to the location of the first fault ie, -100 m means 100 m to the left of the fault. the model code automatically calculates the correct position to take into account the changing position of the fault surface over time due to exhumation
+* ``borehole_xs``: list of numbers, x-coordinates of boreholes with temperature data (m). Note that the location is relative to the location of the first fault ie, -100 m means 100 m to the left of the fault. The model code automatically calculates the correct position of the borehole to take into account the changing position of the fault surface over time due to exhumation. This means that for each timestep that is reported, the borehole is always located at a distance of x meters from the fault outcrop.
 
 
 ## Apatite U-Th/He params

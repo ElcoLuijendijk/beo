@@ -428,7 +428,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                     fault_zones, fault_segments_all, fault_angles,
                                     specified_T_loc, specified_flux_loc,
                                     durations, fault_fluxes,
-                                    aquifer_locs, aquifer_fluxes_m_per_sec,
+                                    aquifer_locs, aquifer_fluxes_m_per_sec, aquifer_angles,
                                     K_var, rho_var, c_var,
                                     rho_f, c_f,
                                     specified_temperature, specified_flux,
@@ -588,11 +588,14 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
         # add fluxes in aquifers
         if aquifer_locs != []:
-            for k, aquifer_loc, aquifer_flux in zip(itertools.count(), aquifer_locs,
-                                                    aquifer_fluxes_m_per_sec[time_period]):
-                print 'adding aquifer flux %0.2e to aquifer %i' \
-                      % (aquifer_flux, k)
-                q_vector[0] += aquifer_loc * aquifer_flux
+            for k, aquifer_loc, aquifer_flux, aquifer_angle in zip(itertools.count(), aquifer_locs,
+                                                    aquifer_fluxes_m_per_sec[time_period], aquifer_angles):
+                print 'adding aquifer flux %0.2e to aquifer %i' % (aquifer_flux, k)
+                aquifer_flux_x = aquifer_flux * np.cos(np.deg2rad(aquifer_angle))
+                aquifer_flux_y = aquifer_flux * np.sin(np.deg2rad(aquifer_angle))
+
+                q_vector[0] += aquifer_loc * aquifer_flux_x
+                q_vector[1] += aquifer_loc * aquifer_flux_y
 
         print 'modeled advective flux:'
         print '\tqh = ', q_vector[0]
@@ -1254,9 +1257,10 @@ def model_run(mp):
 
     # add horizontal aquifers:
     aquifer_locs = []
-    for aquifer_top, aquifer_bottom, aquifer_left_bnd in zip(mp.aquifer_tops,
-                                                             mp.aquifer_bottoms,
-                                                             mp.aquifer_left_bnds):
+    for aquifer_top, aquifer_bottom, aquifer_left_bnd, aquifer_right_bnd, aquifer_angle \
+            in zip(mp.aquifer_tops, mp.aquifer_bottoms,
+                   mp.aquifer_left_bnds, mp.aquifer_right_bnds, mp.aquifer_angles):
+
         if aquifer_top is not None:
 
             try:
@@ -1265,16 +1269,32 @@ def model_run(mp):
                 new_msg = 'error, the aquifer bottom is higher than the top, check input file'
                 raise AssertionError(new_msg)
 
-            # aquifer isonly active to the left of the last fault
-            # todo: add option in code to change this
-            aquifer_loc = (subsurface * es.whereNegative(xyz[1] - aquifer_top)
-                           * es.wherePositive(xyz[1] - aquifer_bottom)
-                           * es.whereNegative(xyz[0] - fault_right)
-                           * es.wherePositive(xyz[0] - aquifer_left_bnd))
+            aquifer_left_bnd_i = aquifer_left_bnd
+            aquifer_right_bnd_i = aquifer_right_bnd
+
+            if aquifer_left_bnd is None:
+                aquifer_left_bnd_i = fault_right
+            if aquifer_right_bnd is None:
+                aquifer_right_bnd_i = fault_left
+
+            aquifer_thickness_i = aquifer_top - aquifer_bottom
+            aquifer_x = xyz[0] - aquifer_left_bnd_i
+            aquifer_top_i = aquifer_top + aquifer_x * np.tan(np.deg2rad(aquifer_angle))
+            aquifer_bottom_i = aquifer_top_i - aquifer_thickness_i
+
+            aquifer_loc = (subsurface
+                           * es.whereNegative(xyz[1] - aquifer_top_i)
+                           * es.wherePositive(xyz[1] - aquifer_bottom_i)
+                           * es.whereNegative(xyz[0] - aquifer_right_bnd_i)
+                           * es.wherePositive(xyz[0] - aquifer_left_bnd_i))
 
             aquifer_locs.append(aquifer_loc)
 
-            print 'added aquifer from top z=%0.2f to bottom z=%0.2f m' % (aquifer_top, aquifer_bottom)
+            aquifer_center_x = es.integrate(aquifer_loc * xyz[0]) / es.integrate(xyz[0])
+            aquifer_center_y = es.integrate(aquifer_loc * xyz[1]) / es.integrate(xyz[1])
+
+            print 'added aquifer centered on x= ', aquifer_center_x,' and z = ', aquifer_center_y
+
 
             try:
                 assert(es.Lsup(aquifer_loc) >= 1.0)
@@ -1352,7 +1372,7 @@ def model_run(mp):
             fault_zones, fault_segments_all, mp.fault_angles,
             specified_T_loc, specified_flux_loc,
             mp.durations, fault_fluxes_m_per_sec,
-            aquifer_locs, aquifer_fluxes_m_per_sec,
+            aquifer_locs, aquifer_fluxes_m_per_sec, mp.aquifer_angles,
             K_var, rho_var, c_var,
             mp.rho_f, mp.c_f,
             specified_T, specified_flux,

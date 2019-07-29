@@ -99,7 +99,6 @@ day = 24.0 * 60.0 * 60.0
 year = 365.25 * day
 My = year * 1e6
 
-
 #
 #xlim = [1500, 3500]
 #ylim = [-2000, 0]
@@ -783,7 +782,7 @@ for fn in files:
         tick_locator = ticker.MaxNLocator(nbins=fp.bins_colorbar)
         cb.locator = tick_locator
         cb.update_ticks()
-        cb.set_label('Temperature (%s C)' % degree_symbol)
+        cb.set_label('Temperature (%sC)' % degree_symbol)
 
         if fp.add_legend is True:
             leg = leg_panel.legend(legs, labels, frameon=False,
