@@ -7,8 +7,8 @@
 
 Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code escript (https://launchpad.net/escript-finley) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The resulting temperature history is used to calculate the low-temperature thermochronometer apatite (U-Th)/He. The modeled values of this thermochronometers can then be compared to measured values. Beo support automated model runs to explore which parameter values like fluid fluxes, fault geometry and age of the hydrothermal system best match the thermochronometer data, spring temperature data or temperature records in nearby boreholes. 
 
- A description of the model background and two example case studies can be found in a discussion paper in the journal Geoscientific Model Development here: https://www.geosci-model-dev-discuss.net/gmd-2018-341/. A model study on episodic fluid flow in a fault zone in the Basin and Range Province in the western USA can be found in a preprint on EarthArxiv (https://eartharxiv.org/cjvxk) and in an upcoming paper in the journal Geology (Louis et al., Episodic fluid flow in active fault, Geology, in press).
- 
+ A description of the model background and two example case studies can be found in a discussion paper in the journal Geoscientific Model Development here: https://www.geosci-model-dev-discuss.net/gmd-2018-341/. A model study on episodic fluid flow in a fault zone in the Basin and Range Province in the western USA can be found in a preprint on EarthArxiv (https://eartharxiv.org/cjvxk) and in an upcoming paper in the journal Geology (Louis et al., Episodic fluid flow in an active fault, Geology, in press).
+
 
 # Downloading Beo
 
