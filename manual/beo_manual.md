@@ -1,25 +1,15 @@
 ---
 title: Beo v1.0 manual
 author: Elco Luijendijk, elco.luijendijk@geo.uni-goettingen.de
-date: Dec 2018
+date: 1 August 2019
 ---
-
-
-# Table of contents
-
-1. [Introduction](#introduction)
-2. [Installing & running](#Installing & running)
-3. [Required modules](#Required modules)
-4. [Model input & output](#Model input & output)
-5. [Making figures](#Making figures)
-6. [Model Background](#Model Background)
-7. [Explanation of model parameters](#params)
 
 
 # Introduction <a name="introduction"></a>
 
-Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code escript (https://launchpad.net/escript-finley) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The modeled temperatures can be compared to temperature daat from thermal springs or subsurface temperatures records from  nearby boreholes. The resulting temperature history can also be used to calculate the apatite (U-Th)/He thermochronometer. The modeled values of this thermochronometer can then be compared to measured values. Beo also support automated model runs to explore which parameter values like fluid fluxes, fault geometry and age of the hydrothermal system best match the thermochronometer data, as well as present-day spring temperature data or temperature records in nearby boreholes. 
+Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code escript (https://launchpad.net/escript-finley) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The modeled temperatures can be compared to temperature daat from thermal springs or subsurface temperatures records from  nearby boreholes. The resulting temperature history can also be used to calculate the apatite (U-Th)/He thermochronometer. The modeled values of this thermochronometer can then be compared to measured values. Beo also supports automated model runs to explore which parameter values like fluid fluxes, fault geometry and age of the hydrothermal system best match the thermochronometer data, as well as present-day spring temperature data or temperature records in nearby boreholes. 
 
+A description of the model background and two example case studies can be found in a paper in the journal Geoscientific Model Development [@Luijendijk2019]. A model study on episodic fluid flow in a fault in the Basin and Range Province in the western USA can be found in a preprint on EarthArxiv [@Louis2018] and in an upcoming paper in the journal Geology [@Louisa].
 
 
 # Installing & running <a name="install"></a>
@@ -87,7 +77,8 @@ There are two options for running multiple model runs. The default is a sensitiv
 ## Output
 
 * After each model run, the modeled temperature field and (U-Th)/He data are stored in the directory ``model_output`` as a .pck file, which can be read using Python's pickle module. 
-* In addition, Beo saves a comma separated file containing the model parameters and a summary of the results for each model run and each timestep in the same directory.
+* Beo saves a comma separated file containing the model parameters and a summary of the results for each model run and each timestep in the same directory.
+* The modelled temperature field and fluxes are also saved as a VTK file that can be used for visualization using software such as Paraview or Visit.
 
 
 # Making figures <a name="Making figures"></a>
@@ -303,6 +294,7 @@ Note that only thermal conductivity and porosity are varied between layers, the 
 * ``durations``: list of numbers, duration of each timestep slice (sec). Note that you can define one or more different timeslices, for instance to first model 500 years of heating and then 1000 years of recovery by setting ``durations = [500.0, 1000.0]``. You can define different fluid fluxes in faults or horizontal aquifers in the parameters ``fault_fluxes`` or ``aquifer_fluxes`` below.
 * ``repeat_timeslices``: integer, number of times the durations, fault_fluxes and aquifer_fluxes are repeated. For instance if you specifiy two timeslices, with a duration of 1000 and 10000 years, with a hydrothermal flux in the first period and no flux in the second period, specifying ``repeat_timeslices = 10`` will repeat this sequence of episodic heating ten times.
 * ``target_zs``: list of numbers,  target depth slices for calculating temperature and U-Th/He. In case of exhumation, this values is overridden and set equal to each exhumation step layer. In this way one can track the AHe response to each layer that comes to the surface in a longer time period. Note, values should go from low/bottom to high/top
+* ``T_change_report``: list of numbers or array. Temperature change to report for each depth slice. Ie. when choosing for instance ``[10, 20]`` the model code will report the area where the modeled temperature is 10 and 20 degrees higher than the initial temperature for each timestep.
 
 
 ## Fault parameters
@@ -324,7 +316,9 @@ In Beo aquifers are used for modeling horizontal advective flow, for instance ho
 * ``aquifer_tops``: list of numbers, elevation of the top of one or more aquifers (m). Use ``aquifer_top = [None]`` to not use aquifers in your model run.
 * ``aquifer_bottoms``: list of numbers, elevation of the bottom of one or more aquifers (m).
 * ``aquifer_fluxes``: list of numbers, nested list of the fluid fluxes each aquifer (m s-1). The list is structured like this: [[flux_aquifer1_t1, flux_aquifer1_t1], [flux_aquifer2_t2, flux_aquifer2_t2]]. t1 and t2 refer to different time periods defined in the parameter ``durations``.
-* ``aquifer_left_bnds``: list of numbers, left hand side of aquifer. right hand bnd is assumed to be the fault zone
+* ``aquifer_left_bnds``: list of numbers, left hand side of aquifer. If you use the value 'None' here the left-hand bnd is assumed to be the fault zone
+* ``aquifer_right_bnds``: list of numbers, left hand side of aquifer. If you use the value 'None' the right hand bnd is assumed to be the fault zone
+* ``aquifer_angle``: list of numbers, the angle of the aquifer with the horizontal (degrees)
 
 
 ## Borehole temperature data
@@ -334,12 +328,18 @@ In Beo aquifers are used for modeling horizontal advective flow, for instance ho
 * ``borehole_names``: list of strings. Names of the boreholes to include in your analysis.
 * ``report_borehole_xcoords``, boolean. Report the coordinates of the top of the borehole over time. For debugging purposes. 
 * ``borehole_xs``: list of numbers, x-coordinates of boreholes with temperature data (m). Note that the location is relative to the location of the first fault ie, -100 m means 100 m to the left of the fault. The model code automatically calculates the correct position of the borehole to take into account the changing position of the fault surface over time due to exhumation. This means that for each timestep that is reported, the borehole is always located at a distance of x meters from the fault outcrop.
+* ``discretize_borehole``: not used at present
+* ``borehole_depths``: not used at present
+* ``borehole_cellsize``: not used at present
+
 
 
 ## Apatite U-Th/He params
 
 * ``calculate_he_ages``: boolean, option to model AHe ages or not. Ages are modeled for the depths specified in the parameter ``target_zs`` or at the land surface if exhumation is turned on.
 * ``model_AHe_samples``: boolean, model the AHe ages of specified samples, each with a different apatite radius, U238 and Th232 concentration.
+* ``model_thermochron_surface``: boolean. Option to model AHe ages at for samples at the land surface.
+* ``model_thermochron_borehole``: boolean. Option to model AHe ages in a borehole. Note that for now it is not possible to model AHe data both at the land surface and in a borehole. This is planned for future versions.
 * ``AHe_data_file``: string. Filename of the file containing the AHe data.
 * ``profile_number``: integer number, number of the profile to include in modeling AHe ages. This can be used to not model all the AHe samples in a single datafile, but only those for which the entry in the profile column in the datafile equals ``profile_number``. If the profile number cannot be found in the AHe data file, Beo will go sequentally through all the profile numbers in the datafile and calculate model statistics for each of the numbers.
 * ``save_AHe_ages``: boolean, save the AHe ages at the surface to a separate file
@@ -347,6 +347,8 @@ In Beo aquifers are used for modeling horizontal advective flow, for instance ho
 * ``AHe_timestep_reduction``, integer number. Use temperature at each x timestep for the calculation of AHe ages. This should be an integer. Ideally this should be 1, but higher numbers significantly speed up the model code
 * ``t0``: number, crystallization age (sec), the age of the apatite crystal (which may be older than the age of the hydrothermal system)
 * ``T0``: number, temperature of apatites after crystallization and before hydrothermal heating (degrees C)
+* ``t_cooling``: list of numbers or array. Ages (in sec) that define a cooling history that precedes the modelled thermal history. 
+* ``cooling_rates``: list of numbers or array. Cooling rates (degr. C/sec) for each timeslice defined by ``t_cooling``. This cooling history is added to the initial temperatures for each node in the borehole, and defines the temperature history before the start of the modeled hydrothermal activity. Note that for now this is only used for borehole AHe data, the initial AHe age for samples at the land surface is defined by the parameter ``t0``.
 * ``T_surface`` : number, temperature at the surface (degrees C)
 * ``radius``: number, radius of the default apatite (m)
 * ``U238``: number, concentration uranium-238 for the default apatite (ppm?)
@@ -357,4 +359,5 @@ In Beo aquifers are used for modeling horizontal advective flow, for instance ho
 * ``reset_limit``: number, absolute age limit (My) below which samples are considered reset (ie. AHe age ~0 My)
 
 
-#References
+
+# References
