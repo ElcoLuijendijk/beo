@@ -188,6 +188,12 @@ class ModelParams:
     # U-Th/He params
     calculate_he_ages = False
 
+    # calculate thermochron ages for surface layer, including the effects of exhumation
+    model_thermochron_surface = False
+
+    # model thermochron ages in a borehole section
+    model_thermochron_borehole = True
+
     # model-data comparison AHe samples
     model_AHe_samples = True
     AHe_data_file = 'model_parameters/AHe_data.csv'
@@ -211,6 +217,11 @@ class ModelParams:
     # temperature of apatites after crystallization and before hydrothermal heating
     T0 = 10.0
     T_surface = 10.0
+
+    # cooling rate for calculating pre-hydrothermal activity ages (degr. C / sec)
+    # this is only used when modeling borehole temperature samples
+    t_cooling = [4.0 * My, 3.0 * My, 1.0 * My]
+    cooling_rates = [(1.5 * 27.) / My, 5.0 / My, (1.25 * 27.) / My]
 
     # apatite params
     radius = 100.0 * 1e-6
@@ -256,6 +267,8 @@ class ModelParams:
     # left side of aquifer. right hand bnd is assumed to be the fault zone
     aquifer_left_bnds = [-1000.0, -1000.0]
 
+    aquifer_angles = [0.0]
+
     # relative limit to consider a sample partial reset or not, ie if 0.95
     # a sample will be considered partially reset if the modeled uncorrected
     # AHe age is less than 0.95 x the maximum age in the system.
@@ -281,6 +294,16 @@ class ModelParams:
     # into account the changing position of the fault surface over time
     # due to exhumation
     borehole_xs = [-250.0]
+
+    # add additional mesh points for the borehole
+    discretize_borehole = False
+
+    # depth of boreholes
+    # this is only used for adding mesh node points to resolve the borehole
+    borehole_depths = [500.0]
+
+    #
+    borehole_cellsize = 50.0
 
     # temperature changes to report, report area in depth slices with temperature changes > x degrees
     T_change_report = [10.0]

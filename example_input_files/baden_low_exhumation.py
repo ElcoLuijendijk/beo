@@ -60,7 +60,7 @@ class ModelParams:
     cellsize_air = 100.0
 
     # cellsize at fault surface:
-    cellsize_fault_surface = 0.25
+    cellsize_fault_surface = 1.0
 
     # cellsize at land surface:
     cellsize_surface = 50.0
@@ -69,7 +69,7 @@ class ModelParams:
     cellsize_fine = 100.0
 
     # in fault zone:
-    cellsize_fault = 2.5
+    cellsize_fault = 5.0
 
     # cellsize at the lower left and right corners:
     cellsize_base = 1000.0
@@ -89,7 +89,7 @@ class ModelParams:
     # number of grid layers between initial and final surface level
     # the more layers, the more smooth and accurate the exhumation history,
     # but this also slows the model down somewhat
-    exhumation_steps = 25
+    exhumation_steps = 50
 
     # minimum layer thickness, if the exhumation steps result in surfaces that
     # are less than the min thickness apart, the number of steps is reduced
@@ -182,10 +182,17 @@ class ModelParams:
     # comes to the surface in a longer time period
     # note, values should go from low/bottom to high/top
     # warning: the lowest value in target_zs should always be higher than z_fine
-    target_zs = [-1000, 0.0]
+    #target_zs = [-500.0, 0.0]
+    target_zs = [0.0]
 
     # U-Th/He params
     calculate_he_ages = True
+
+    # calculate thermochron ages for surface layer, including the effects of exhumation
+    model_thermochron_surface = True
+
+    # model thermochron ages in a borehole section
+    model_thermochron_borehole = False
 
     # model-data comparison AHe samples
     model_AHe_samples = False
@@ -211,6 +218,11 @@ class ModelParams:
     T0 = 10.0
     T_surface = 10.0
 
+    # cooling rate for calculating pre-hydrothermal activity ages (degr. C / sec)
+    # this is only used when modeling borehole temperature samples
+    t_cooling = [4.0 * My, 3.0 * My, 1.0 * My]
+    cooling_rates = [(1.5 * 27.) / My, 5.0 / My, (1.25 * 27.) / My]
+
     # apatite params
     radius = 100.0 * 1e-6
     U238 = 8.0e-6
@@ -226,7 +238,7 @@ class ModelParams:
     fault_xs = [0.0]
 
     # fault width (m)
-    fault_widths = [10.0]
+    fault_widths = [25.0]
 
     # angle of the fault zone (degrees), dip of normal faults ~60-70 degrees
     fault_angles = [-65.0]
@@ -254,6 +266,9 @@ class ModelParams:
     aquifer_fluxes = [[-250.0 / year], [0.0]]
     # left side of aquifer. right hand bnd is assumed to be the fault zone
     aquifer_left_bnds = [-1000.0, -1000.0]
+    aquifer_right_bnds = [None]
+
+    aquifer_angles = [0]
 
     # relative limit to consider a sample partial reset or not, ie if 0.95
     # a sample will be considered partially reset if the modeled uncorrected
@@ -279,7 +294,17 @@ class ModelParams:
     # the model code automatically calculates the correct position to take
     # into account the changing position of the fault surface over time
     # due to exhumation
-    borehole_xs = [-250.0]
+    borehole_xs = [-100.0]
+
+    # add additional mesh points for the borehole
+    discretize_borehole = False
+
+    # depth of boreholes
+    # this is only used for adding mesh node points to resolve the borehole
+    borehole_depths = [500.0]
+
+    #
+    borehole_cellsize = 50.0
 
     # temperature changes to report, report area in depth slices with temperature changes > x degrees
     T_change_report = [10.0]

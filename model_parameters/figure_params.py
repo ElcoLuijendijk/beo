@@ -14,7 +14,7 @@ ysize = 6.0
 figure_resolution = 150
 
 # figure format, png, jpg, svg, eps, etc..
-fig_format = 'png'
+fig_formats = ['png', 'svg']
 
 # ratios of the different rows in the figure, relative sizes (numbers dont matter only the differences
 # [top panel, main panel, space between main panel and colorbar, colorbar]
@@ -36,6 +36,8 @@ bins_colorbar = 3
 add_temperature_panel = False
 relative_size_temp_panel = 0.5
 
+add_borehole_ahe_panel = False
+
 # grid size for interpolating model results
 dx = 5.0
 dy = 2.0
@@ -47,10 +49,10 @@ dy = 2.0
 timeslices = [1, 10, 20]
 
 # scale for flow arrows, usually 5 is a good value, note higher value is smaller arrows (!)
-scale_multiplier = 50.0
+scale_multiplier = 25.0
 
 # show only one in every x flow arrows:
-skip_arrows = 50
+skip_arrows = 100
 
 arrow_transparency = 0.75
 
@@ -93,11 +95,11 @@ show_mesh = False
 
 # linestyles for the modeled surface/borehole temperature
 #linestyles = [':', '--', '-', '-.']
-linestyles = [':', ':', ':', ':'] * 10
+linestyles = ['-', '-', '-', '-'] * 10
 
 # colors for the modeled surface/borehole temperature
-#colors = ['green', 'orange', 'red', 'yellow']
-colors = ['black', 'black', 'black', 'black'] * 10
+colors = ['green', 'orange', 'red', 'yellow']
+#colors = ['black', 'black', 'black', 'black'] * 10
 
 # colors for the temperature contours:
 cmap = matplotlib.cm.get_cmap('coolwarm')

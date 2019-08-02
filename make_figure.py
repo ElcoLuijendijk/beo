@@ -85,6 +85,10 @@ parser.add_argument('-m', dest='show_mesh', help='show mesh',
 parser.add_argument('-v', dest='do_not_show_vapour', help='do not show water vapour',
                     action="store_true")
 
+parser.add_argument('-z', dest='default_close_up', help='default close up figure',
+                    action="store_true")
+
+
 parser.print_help()
 
 print '\nnote, more options for figure layout are available in the figure_params.py file in ' \
@@ -146,6 +150,9 @@ if args.do_not_show_vapour is True:
 if args.show_mesh is True:
     fp.show_mesh = True
 
+#if args.default_close_up is True:
+
+
 for fn in files:
 
     #fn = 'model_output/T_field_duration_500.pck'
@@ -174,7 +181,10 @@ for fn in files:
             Ahe_ages_all_corr = None
             AHe_ages_surface_corr = None
             AHe_ages_samples_surface_corr = None
-        else:
+
+            z_borehole, he_ages_borehole, he_ages_borehole_corrected = None, None, None
+
+        elif len(output_data) == 35:
             print 'reading output data, new version of code with corrected ' \
                   'AHe data'
             [runtimes_all, runtimes, xyz_array,
@@ -190,6 +200,27 @@ for fn in files:
              borehole_xlocs, borehole_zlocs, borehole_depths,
              borehole_temp_measured, borehole_temps_modeled] \
                 = output_data
+
+            z_borehole, he_ages_borehole, he_ages_borehole_corrected = None, None, None
+
+        else:
+            print 'reading output data, new version of code with borehole ' \
+                  'AHe data'
+            [runtimes_all, runtimes, xyz_array,
+             surface_levels, x_loc_fault, z_loc_fault,
+             T_init_array, T_array, boiling_temp_array,
+             xyz_array_exc, exceed_boiling_temp_array, xyz_element_array,
+             qh_array, qv_array, fault_fluxes,
+             durations, xzs, Tzs,
+             x_surface, T_surface,
+             Ahe_ages_all, Ahe_ages_all_corr, xs_Ahe_all, Ahe_depths,
+             AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
+             AHe_ages_samples_surface, AHe_ages_samples_surface_corr, AHe_data_file,
+             borehole_xlocs, borehole_zlocs, borehole_depths,
+             borehole_temp_measured, borehole_temps_modeled,
+             z_borehole, he_ages_borehole, he_ages_borehole_corrected] \
+                = output_data
+            #z_borehole, he_ages_borehole, he_ages_borehole_corrected
 
 #4            [runtimes, runtimes[output_steps], xyz_array, surface_levels,
 #1             T_init_array,
@@ -226,7 +257,10 @@ for fn in files:
     # T_array, t_array, dx, dy, fault_mid, xi, yi, nt_heating,
     # subsurface_height, q_advective, duration_heating
 
-    if args.timeslices is None:
+    if args.default_close_up is True:
+        fp.timeslices = np.linspace(0, len(runtimes), 3).astype(int)
+
+    elif args.timeslices is None:
         print 'saved timeslices for this model run:'
         for i, runtime in enumerate(runtimes):
             print '%i\t%0.2f yr' % (i, runtime / year)
@@ -260,7 +294,10 @@ for fn in files:
     print 'x coordinates: %0.1f to %0.1f ' % (xmin, xmax)
     print 'y coordinates: %0.1f to %0.1f ' % (ymin, ymax)
 
-    if args.xbounds is None:
+    if args.default_close_up is True:
+        fp.xlim = [-500.0, 500.0]
+
+    elif args.xbounds is None:
         print 'select figure bounds in x direction. Enter two numbers divided by a comma'
         print 'press enter to show full model domain'
 
@@ -273,7 +310,10 @@ for fn in files:
     else:
         fp.xlim = args.xbounds
 
-    if args.ybounds is None:
+    if args.default_close_up is True:
+        fp.ylim = [-1000, 50]
+
+    elif args.ybounds is None:
         print 'select figure bounds in y direction, press enter to show full model domain'
         key_inp = raw_input()
         if key_inp == '':
@@ -284,11 +324,24 @@ for fn in files:
         fp.ylim = args.ybounds
 
     if borehole_xlocs is not None:
-        print 'add panel with borehole temperatures (y/n) ?'
-        if 'y' in raw_input():
+        if args.default_close_up is True:
             fp.add_temperature_panel = True
         else:
-            fp.add_temperature_panel = False
+            print 'add panel with borehole temperatures (y/n) ?'
+            if 'n' in raw_input():
+                fp.add_temperature_panel = False
+            else:
+                fp.add_temperature_panel = True
+
+    if he_ages_borehole is not None:
+        if args.default_close_up is True:
+            fp.add_borehole_ahe_panel = True
+        else:
+            print 'add panel with borehole AHe (y/n) ?'
+            if 'n' in raw_input():
+                fp.add_borehole_ahe_panel = False
+            else:
+                fp.add_borehole_ahe_panel = True
 
     #
     show_surface_only = True
@@ -361,15 +414,27 @@ for fn in files:
             ncols += 1
             width_ratios.append(2 * fp.relative_size_temp_panel)
 
+        if fp.add_borehole_ahe_panel is True:
+            ncols += 1
+            width_ratios.append(3 * fp.relative_size_temp_panel)
+
         gs = gridspec.GridSpec(nrows, ncols,
                                height_ratios=height_ratios,
                                width_ratios=width_ratios)
         #ax = fig.add_subplot(gs[0, 0])
 
+
+
         if fp.add_temperature_panel is True:
-            panels = [fig.add_subplot(gs[1, i]) for i in range(ncols - 1)]
-            tpanels = [fig.add_subplot(gs[0, i]) for i in range(ncols - 1)]
-            temp_panel = fig.add_subplot(gs[1, -1])
+            if fp.add_borehole_ahe_panel is True:
+                panels = [fig.add_subplot(gs[1, i]) for i in range(ncols - 2)]
+                tpanels = [fig.add_subplot(gs[0, i]) for i in range(ncols - 2)]
+                temp_panel = fig.add_subplot(gs[1, -2])
+                bh_ahe_panel = fig.add_subplot(gs[1, -1])
+            else:
+                panels = [fig.add_subplot(gs[1, i]) for i in range(ncols - 1)]
+                tpanels = [fig.add_subplot(gs[0, i]) for i in range(ncols - 1)]
+                temp_panel = fig.add_subplot(gs[1, -1])
         else:
             panels = [fig.add_subplot(gs[1, i]) for i in range(ncols)]
             tpanels = [fig.add_subplot(gs[0, i]) for i in range(ncols)]
@@ -401,6 +466,11 @@ for fn in files:
             leg_cn = p.contourf(xg, yg, zg, cnts, cmap=fp.cmap)
             #p.scatter(xyz_array[:, 0], xyz_array[:, 1], s=0.1, color='gray')
             #c=Ta, **kwargs)
+
+            # raterize contours
+            for c in leg_cn.collections:
+                c.set_rasterized(True)
+            #pdb.set_trace()
 
         if fp.show_vapour is True and exceed_boiling_temp_array is not None:
             print 'showing location of water vapour'
@@ -456,7 +526,7 @@ for fn in files:
             #if p == panels[-1]:
             #    p.quiverkey(leg_q, 0.85, 0.1, 'flow direction')
 
-        if fp.add_temperature_panel is True:
+        if borehole_xlocs is not None and (fp.add_temperature_panel is True or fp.add_borehole_ahe_panel is True):
             # show borehole locations
             for p, timeslice in zip(panels, fp.timeslices):
 
@@ -668,6 +738,9 @@ for fn in files:
                 leg_bh_temp_meas, = temp_panel.plot(borehole_temp_measured_i, -borehole_depth,
                                 color='gray', lw=1.5, ls='--')
 
+                legs += [leg_bh_temp_meas]
+                labels += ['measured temperature']
+
                 for j, timeslice in enumerate(fp.timeslices):
 
                     leg_bh_temp_mod, = temp_panel.plot(borehole_temp_modeled[timeslice],
@@ -676,8 +749,37 @@ for fn in files:
                                                        ls=lss[j],
                                                        color=fp.colors[j])
 
-                legs += [leg_bh_temp_meas]
-                labels += ['measured temperature']
+                    legs += [leg_bh_temp_mod]
+                    if fp.add_borehole_ahe_panel is False:
+                        labels += ['modelled temperature, %0.0f years' % (runtimes[timeslice] / year)]
+                    else:
+                        labels += ['modelled temperature/AHe age, %0.0f years' % (runtimes[timeslice] / year)]
+
+        if fp.add_borehole_ahe_panel is True:
+
+            x = AHe_data_file['AHe_age_corr'].values
+            xerr = AHe_data_file['AHe_age_corr_2se'].values
+
+            y = -AHe_data_file['depth'].values
+
+            leg_ahe_samples = bh_ahe_panel.errorbar(x, y, xerr=xerr,
+                                          marker='o',
+                                          ms=fp.marker_size/2.,
+                                          markeredgecolor='black',
+                                          color=fp.AHe_color[0],
+                                          linestyle='None')
+
+            legs += [leg_ahe_samples]
+            labels += ['measured single grain AHe ages']
+
+            for j, timeslice in enumerate(fp.timeslices):
+                leg_ahe_bh_mod, = bh_ahe_panel.plot(he_ages_borehole[timeslice] / My,
+                                               z_borehole,
+                                               lw=1.0,
+                                               ls=lss[j],
+                                               color=fp.colors[j])
+                #legs += [leg_ahe_bh_mod]
+                #labels += ['modelled AHe ages, %0.0f years' % (runtimes[timeslice]) / year]
 
         panels[0].set_ylabel('Elevation (m)')
 
@@ -752,6 +854,17 @@ for fn in files:
             temp_panel.spines['right'].set_visible(False)
             temp_panel.get_yaxis().tick_left()
             temp_panel.set_xlabel('Borehole\ntemperature (%sC)' % degree_symbol)
+            temp_panel.set_xlim(0, temp_panel.get_xlim()[-1])
+
+        if fp.add_borehole_ahe_panel is True:
+            bh_ahe_panel.set_yticklabels([])
+            bh_ahe_panel.set_ylim(ymin, ymax)
+            bh_ahe_panel.spines['top'].set_visible(False)
+            bh_ahe_panel.get_xaxis().tick_bottom()
+            bh_ahe_panel.spines['right'].set_visible(False)
+            bh_ahe_panel.get_yaxis().tick_left()
+            bh_ahe_panel.set_xlabel('AHe age (Ma)')
+            bh_ahe_panel.set_xlim(0, bh_ahe_panel.get_xlim()[-1])
 
         #for panel in panels:
         #    panel.set_yticks(panel.get_yticks()[::2])
@@ -778,6 +891,9 @@ for fn in files:
         if fp.add_temperature_panel is True:
             temp_panel.set_ylim(ymin, ymax)
 
+        if fp.add_borehole_ahe_panel is True:
+            bh_ahe_panel.set_ylim(ymin, ymax)
+
         cb = fig.colorbar(leg_cn, cax=cpanel, orientation='horizontal')
         tick_locator = ticker.MaxNLocator(nbins=fp.bins_colorbar)
         cb.locator = tick_locator
@@ -792,16 +908,13 @@ for fn in files:
             #leg = fig.legend(legs, labels, frameon=False,
             #                 loc='lower right', fontsize=fp.legend_font_size)
 
-        fn_fig = fn[:-4] + '_T_field.%s' % fp.fig_format
-
-        fn_local1 = os.path.split(fn_fig)[-1]
-        fn_local2 = os.path.join('model_output', fn_local1)
-
         #gs.tight_layout(fig)
 
         all_panels = tpanels + panels
         if fp.add_temperature_panel is True:
             all_panels.append(temp_panel)
+        if fp.add_borehole_ahe_panel is True:
+            all_panels.append(bh_ahe_panel)
 
         for i, p in enumerate(all_panels):
             p.text(0.01, 1.01, string.ascii_lowercase[i],
@@ -817,8 +930,14 @@ for fn in files:
 
             #temp_panel.set_yticks(temp_panel.get_yticks()[::2])
 
-        print 'saving %s' % fn_fig
-        fig.savefig(fn_local2, dpi=fp.figure_resolution)
+        for fig_format in fp.fig_formats:
+            fn_fig = fn[:-4] + '_T_field.%s' % fig_format
+
+            fn_local1 = os.path.split(fn_fig)[-1]
+            fn_local2 = os.path.join('model_output', fn_local1)
+
+            print 'saving %s' % fn_fig
+            fig.savefig(fn_local2, dpi=fp.figure_resolution)
 
         pl.clf()
 

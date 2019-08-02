@@ -24,7 +24,7 @@ class ModelParams:
     output_folder = 'model_output'
 
     #
-    output_fn_adj = 'baden_7km'
+    output_fn_adj = 'brigerbad_narrow'
 
     #
     save_VTK_file = True
@@ -47,7 +47,7 @@ class ModelParams:
 
     # model dimensions
     width = 3000.0
-    total_depth = 10000.0
+    total_depth = 5000.0
     air_height = 2.0
 
     # depth to fine discretization near surface:
@@ -60,7 +60,7 @@ class ModelParams:
     cellsize_air = 100.0
 
     # cellsize at fault surface:
-    cellsize_fault_surface = 0.5
+    cellsize_fault_surface = 2.5
 
     # cellsize at land surface:
     cellsize_surface = 100.0
@@ -69,7 +69,7 @@ class ModelParams:
     cellsize_fine = 100.0
 
     # in fault zone:
-    cellsize_fault = 2.5
+    cellsize_fault = 5.0
 
     # cellsize at the lower left and right corners:
     cellsize_base = 1000.0
@@ -109,10 +109,10 @@ class ModelParams:
 
     # calculate bottom T using a fixed geothermal gradient.
     # use None is you want to use a specified basal heat flux instead
-    thermal_gradient = None
+    thermal_gradient = 0.027
 
     # bottom flux bnd condition, set to None if T bnd is used
-    basal_heat_flux = 70e-3
+    basal_heat_flux = None
 
     # elevation of layers either side of the fault
     # structured like this:
@@ -129,7 +129,7 @@ class ModelParams:
     layer_bottom = [[-20000, -20000]]
 
     # porosity for each layer
-    porosities = [0.15]
+    porosities = [0.10]
 
     # thermal parameters
     # note that only thermal conductivity is varied between layers,
@@ -159,7 +159,7 @@ class ModelParams:
     dz = 2.0
 
     # number of output steps for each timeslice
-    N_outputs = [15]
+    N_outputs = [10]
 
     # size of a single timestep
     dt = 50.0 * year
@@ -168,12 +168,13 @@ class ModelParams:
     # otherwise make this the same as dt
     dt_stored = 100.0 * year
 
-    # duration of each timestep_slice
-    durations = [15e3 * year]
+    # duration of each timeslice
+    #durations = [15e3, 70e3 * year]
+    durations = [1e4 * year]
 
     # repeat timesclices x times, use this to model repeated episodic heating events
     # set this to zero or None to not use this
-    repeat_timeslices = 0
+    repeat_timeslices = None
 
     # target depth slices for calculating temperature and U-Th/He
     # in case of exhumation, this values is overridden and
@@ -191,11 +192,11 @@ class ModelParams:
     model_thermochron_surface = False
 
     # model thermochron ages in a borehole section
-    model_thermochron_borehole = True
+    model_thermochron_borehole = False
 
     # model-data comparison AHe samples
-    model_AHe_samples = True
-    AHe_data_file = 'model_parameters/AHe_data.csv'
+    model_AHe_samples = False
+    AHe_data_file = 'example_input_files/AHe_data_brigerbad.csv'
     profile_number = 0
 
     # save the AHe ages at the surface to a separate file
@@ -210,7 +211,7 @@ class ModelParams:
     # !! new parameter (3 march 2017)
     AHe_timestep_reduction = 1
 
-    # crystallization age
+    # pre-model thermal history
     t0 = 15.6 * My
 
     # temperature of apatites after crystallization and before hydrothermal heating
@@ -223,9 +224,9 @@ class ModelParams:
     cooling_rates = [(1.5 * 27.) / My, 5.0 / My, (1.25 * 27.) / My]
 
     # apatite params
-    radius = 100.0 * 1e-6
-    U238 = 8.98e-6
-    Th232 = 161.3e-6
+    radius = 50.0 * 1e-6
+    U238 = 29.0 * 1e-6
+    Th232 = 44.0 * 1e-6
 
     # alpha ejection parameters:
     alpha_ejection = True
@@ -233,40 +234,43 @@ class ModelParams:
     # alpha ejection stopping distance (um), see Ketcham (2011) for estimates
     stopping_distance = 21e-6
 
-    # x location of fault (m):
+    # x location of faults (m):
     fault_xs = [0.0]
 
-    # fault width (m)
-    fault_widths = [10.0]
+    # fault widths (m)
+    fault_widths = [100.0]
 
-    # angle of the fault zone (degrees), dip of normal faults ~60-70 degrees
-    fault_angles = [-65.0]
+    # angle of the fault zones (degrees)
+    fault_angles = [65.0]
 
-    # elevation of bottom of fault
-    fault_bottoms = [-7000.0]
+    # elevation of bottom of faults
+    fault_bottoms = [-3500.0]
 
     # different segments of the fault, list of the top bnd of each segments starting from the bottom
     # nested list: [[segment_top1_fault1, segment_top2_fault1], [segment_top1_fault2, segment_top2_fault2], etc...]
-    fault_segments = [[5000.0]]
+    fault_segments = [[-100]]
 
     # fluid advection rates in faults:
     # nested list,
     # [[[fault1_segment1_t1, fault1_segment2_t1], [fault2_segment1_t1, fault2_segment2_t1], etc...]
     # note units are m2/sec, ie the integrated flux over the entire width of the fault zone
-    fault_fluxes = [[[-2e-5]]]
+    fault_fluxes = [[[140/year]], [[0.0]]]
 
     # aquifers, used for modeling horizontal advective flow
     # use aquifer_top = [None] to not use this:
     # note for multiple aquifers start at the lowest aquifer
-    aquifer_tops = [None]
-    aquifer_bottoms = [-50.0]
+    aquifer_tops = [0.0, 0.0]
+    aquifer_bottoms = [-100.0, -100]
     # aquifer flux: nested list
     # [[aquifer1_timestep1, aquifer2_timestep1], [aquifer1_timestep2, aquifer2_timestep2]]
-    aquifer_fluxes = [[-250.0 / year], [0.0]]
-    # left side of aquifer. right hand bnd is assumed to be the fault zone
-    aquifer_left_bnds = [-1000.0, -1000.0]
+    aquifer_fluxes = [[140/year, -140/year], [0, 0]]
+    # left side of aquifer. Use None to use the fault as the left-hand boundary
+    aquifer_left_bnds = [-1500.0, -126.0]
+    # left side of aquifer. Use None to use the fault as the left-hand boundary
+    aquifer_right_bnds = [-125.0, 75.0]
 
-    aquifer_angles = [0.0]
+    # angle of aquifer with horizontal plane (degrees)
+    aquifer_angles = [0.0, -20.0]
 
     # relative limit to consider a sample partial reset or not, ie if 0.95
     # a sample will be considered partially reset if the modeled uncorrected
@@ -279,11 +283,11 @@ class ModelParams:
     # option to calculate temperature data for one or several boreholes
     # note that there seems to be a bug in the output timesteps for the temperature calculation
     # avoid using this for now...
-    analyse_borehole_temp = False
+    analyse_borehole_temp = True
 
     # file that contains temperature data
-    temperature_file = 'model_parameters/temperature_data.csv'
-    borehole_names = ['dummy']
+    temperature_file = 'example_input_files/borehole_temperature_data_brigerbad.csv'
+    borehole_names = ['BR-02']
     report_borehole_xcoords = False
 
     # locations of boreholes for temperature data,
@@ -292,7 +296,7 @@ class ModelParams:
     # the model code automatically calculates the correct position to take
     # into account the changing position of the fault surface over time
     # due to exhumation
-    borehole_xs = [-250.0]
+    borehole_xs = [-100.0]
 
     # add additional mesh points for the borehole
     discretize_borehole = False
@@ -337,3 +341,5 @@ class ParameterRanges:
     #dt_s = [10 * year]
 
     #cellsize_fault_s = [10.0, 5.0, 2.5]
+
+    #fault_widths_s = [[25.0], [100.0], [200.0], [300.0], [400.0]]

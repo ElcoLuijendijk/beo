@@ -13,6 +13,9 @@ import inspect
 import datetime
 import time
 import imp
+
+import pdb
+
 import scipy.interpolate
 
 import numpy as np
@@ -23,28 +26,7 @@ import beo_core
 import esys.escript as es
 
 
-def interpolate_data(xyz, data, target_x, y_steps=300):
 
-    """
-
-    """
-
-    xi = np.array([xyz[:, 0].min(), target_x, xyz[:, 0].max()])
-    yi = np.linspace(xyz[:, 1].min(), xyz[:, 1].max(), y_steps)
-    nx = len(xi)
-    ny = len(yi)
-
-    xg, yg = np.meshgrid(xi, yi)
-    xgf, ygf = xg.flatten(), yg.flatten()
-
-    # interpolate u to grid
-    zgf = scipy.interpolate.griddata(xyz, data, np.vstack((xgf, ygf)).T,
-                                     method='linear')
-
-    # make a 2d grid again
-    zg = np.resize(zgf, (ny, nx))
-
-    return yg[:, 1], zg[:, 1]
 
 
 def coefficient_of_determination(y, f):
@@ -301,9 +283,10 @@ for model_run, param_set in enumerate(param_list):
      xyz_element_array, qh_array, qv_array,
      fault_fluxes, durations,
      xzs, Tzs, Tzs_diff,
-     Ahe_ages_all, Ahe_ages_corr_all, xs_Ahe_all,
+     Ahe_ages_surface_all, Ahe_ages_surface_corr_all, xs_Ahe_surface_all,
      target_depths,
-     AHe_ages_samples_all, AHe_ages_samples_all_corr) = output
+     AHe_ages_surface_samples_all, AHe_ages_surface_samples_all_corr,
+     z_borehole, AHe_ages_borehole, AHe_ages_borehole_corrected) = output
 
     output_steps = [0]
 
@@ -333,18 +316,18 @@ for model_run, param_set in enumerate(param_list):
     Tzs_cropped = [Tzi[output_steps] for Tzi in Tzs]
     Tzs_diff_cropped = [Tzi[output_steps] for Tzi in Tzs_diff]
 
-    if Ahe_ages_all is not None:
-        AHe_ages_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_all]
-        AHe_ages_corr_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_corr_all]
+    if Ahe_ages_surface_all is not None:
+        AHe_ages_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_surface_all]
+        AHe_ages_corr_cropped = [AHe_i[output_steps] for AHe_i in Ahe_ages_surface_corr_all]
     else:
         AHe_ages_cropped = None
         AHe_ages_corr_cropped = None
 
-    if mp.calculate_he_ages is True and mp.model_AHe_samples is True:
+    if AHe_ages_surface_samples_all is not None:
         AHe_ages_samples_cropped = [AHe_i[output_steps]
-                                    for AHe_i in AHe_ages_samples_all]
+                                    for AHe_i in AHe_ages_surface_samples_all]
         AHe_ages_samples_corr_cropped = [AHe_i[output_steps]
-                                         for AHe_i in AHe_ages_samples_all_corr]
+                                         for AHe_i in AHe_ages_surface_samples_all_corr]
     else:
         AHe_ages_samples_cropped = None
         AHe_ages_samples_corr_cropped = None
@@ -450,9 +433,7 @@ for model_run, param_set in enumerate(param_list):
                 x_buffer = 200.0
                 pre_select = np.abs(xyz_array[:, 0] - xloc) < x_buffer
 
-                zi, Ti = interpolate_data(xyz_array[pre_select],
-                                          T_array[j][pre_select],
-                                          xloc, y_steps=300)
+                zi, Ti = beo_core.interpolate_data(xyz_array[pre_select], T_array[j][pre_select], xloc, y_steps=300)
 
                 T_mod = np.interp(z_obs, zi, Ti)
 
@@ -543,7 +524,7 @@ for model_run, param_set in enumerate(param_list):
         df.loc[output_number, 'max_surface_temperature'] = T_surface_i.max()
 
         # calculate partial resetting and full resetting distance in the AHe data
-        if Ahe_ages_all is not None:
+        if Ahe_ages_surface_all is not None:
 
             n_depths = len(AHe_ages_cropped)
             nt_output = AHe_ages_cropped[0].shape[0]
@@ -690,7 +671,7 @@ for model_run, param_set in enumerate(param_list):
         AHe_ages_samples_surface = []
         AHe_ages_samples_surface_corr = []
 
-        if Ahe_ages_all is not None and mp.calculate_he_ages and mp.model_AHe_samples is True:
+        if Ahe_ages_surface_all is not None and mp.calculate_he_ages and mp.model_AHe_samples is True:
 
             for i in range(N_output_steps):
                 surface_elev = surface_levels[output_steps[i]]
@@ -717,7 +698,7 @@ for model_run, param_set in enumerate(param_list):
                 AHe_ages_samples_surface_corr.append(ages_raw_corr)
 
     # analyze model-data fit of AHe surface samples
-    if Ahe_ages_all is not None and mp.model_AHe_samples is True:
+    if Ahe_ages_surface_all is not None and mp.model_AHe_samples is True:
 
         print 'analyzing fit of modeled and measured AHe ages'
 
@@ -786,6 +767,13 @@ for model_run, param_set in enumerate(param_list):
         exceed_boiling_temp_array_cropped = None
         boiling_temp_array_cropped = None
 
+    if AHe_ages_borehole is not None:
+        AHe_ages_borehole_cropped = AHe_ages_borehole[output_steps]
+        AHe_ages_borehole_corrected_cropped = AHe_ages_borehole_corrected[output_steps]
+    else:
+        AHe_ages_borehole_cropped = None
+        AHe_ages_borehole_corrected_cropped = None
+
     # gather and save model output
     output_selected = \
         [runtimes, runtimes[output_steps], xyz_array,
@@ -795,11 +783,12 @@ for model_run, param_set in enumerate(param_list):
          qh_array[output_steps], qv_array[output_steps], fault_fluxes,
          durations, xzs, Tzs_cropped,
          x_surface, T_surface, AHe_ages_cropped,
-         AHe_ages_corr_cropped, xs_Ahe_all, target_depths,
+         AHe_ages_corr_cropped, xs_Ahe_surface_all, target_depths,
          AHe_ages_surface, AHe_ages_surface_corr, AHe_xcoords_surface,
          AHe_ages_samples_surface, AHe_ages_samples_surface_corr, AHe_data_file,
          borehole_xlocs, borehole_zlocs, borehole_depths,
-         borehole_temp_measured, borehole_temps_modeled]
+         borehole_temp_measured, borehole_temps_modeled,
+         z_borehole, AHe_ages_borehole_cropped, AHe_ages_borehole_corrected_cropped]
 
     today = datetime.datetime.now()
     today_str = '%i-%i-%i' % (today.day, today.month,
@@ -827,7 +816,7 @@ for model_run, param_set in enumerate(param_list):
         print 'saving modeled temperatures for boreholes to %s' % fn_new
         dft.to_csv(os.path.join(output_folder, fn_new))
 
-    if Ahe_ages_all is not None and mp.save_AHe_ages is True and AHe_ages_surface_all != []:
+    if Ahe_ages_surface_all is not None and mp.save_AHe_ages is True and AHe_ages_surface_all != []:
 
         nxs = np.max(np.array([AHe_ii.shape[0]
                                for AHe_i in AHe_ages_surface_all
@@ -870,7 +859,7 @@ for model_run, param_set in enumerate(param_list):
         print 'saving modeled AHe ages at the surface to %s' % fnh
         dfh.to_csv(os.path.join(output_folder, fnh), index_label='row')
 
-    if Ahe_ages_all is not None and mp.model_AHe_samples is True:
+    if Ahe_ages_surface_all is not None and mp.model_AHe_samples is True:
 
         # save AHe ages
         for timestep in range(len(output_steps)):
