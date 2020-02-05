@@ -1,26 +1,33 @@
 ---
 title: Beo v1.0 manual
 author: Elco Luijendijk, elco.luijendijk@geo.uni-goettingen.de
-date: 1 August 2019
+date: 5 Feb. 2019
+
 ---
 
 
-# Introduction <a name="introduction"></a>
+# Introduction
 
-Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code escript (https://launchpad.net/escript-finley) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The modeled temperatures can be compared to temperature daat from thermal springs or subsurface temperatures records from  nearby boreholes. The resulting temperature history can also be used to calculate the apatite (U-Th)/He thermochronometer. The modeled values of this thermochronometer can then be compared to measured values. Beo also supports automated model runs to explore which parameter values like fluid fluxes, fault geometry and age of the hydrothermal system best match the thermochronometer data, as well as present-day spring temperature data or temperature records in nearby boreholes. 
+Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code [escript](https://launchpad.net/escript-finley) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The resulting temperature history is used to calculate the apatite (U-Th)/He (AHe) thermochronometer and can be compared to measured AHe ages. Beo supports automated model runs to explore which parameter values like fluid fluxes, fault geometry, age and duration of the hydrothermal activity best match thermochronometer data, spring temperature data or temperature records in nearby boreholes. 
 
-A description of the model background and two example case studies can be found in a paper in the journal Geoscientific Model Development [@Luijendijk2019]. A model study on episodic fluid flow in a fault in the Basin and Range Province in the western USA can be found in a preprint on EarthArxiv [@Louis2018] and in an upcoming paper in the journal Geology [@Louisa].
+ A description of the model background and two example case studies can be found in the journal Geoscientific Model Development ([Luijendijk 2019](https://doi.org/10.5194/gmd-12-4061-2019)). The model code was used to quantify episodic fluid flow in a fault zone in the Beowawe geyser field in the Basin and Range Province, which was published in a separate paper  in Geology ([Louis et al. 2019](https://pubs.geoscienceworld.org/gsa/geology/article/573168/Episodic-fluid-flow-in-an-active-fault)).
+
+![Example model run showing modelled temperatures in a simple hydrothermal system with upward fluid flow along a single fault zone. The top panels show the resulting modelled AHe ages at the surface and at 500 m depth.](fig/model_example_fig.png)
 
 
-# Installing & running <a name="install"></a>
+
+# Getting started
+
+* Click the download link on the right for a zip file of the source code or clone the repository
 
 * Install Escript
 
-    - get the code here: https://launchpad.net/escript-finley
-    - an installation guide can be found here: http://esys.geocomp.uq.edu.au/docs
+    - Get the code here: https://launchpad.net/escript-finley
+    - An installation guide can be found here: http://esys.geocomp.uq.edu.au/docs
+    - Note that the newer versions of escript support installation using Flatpak or Docker. These install sandboxed versions of escript that currently do not include the Python modules Scipy or Pandas. However, Beo uses these modules for interpolating variables and model-data comparison. Therefore the recommended way to install escript is to use the binary version in Debian/Ubuntu (``sudo apt-get install python-escript``) or to compile the source code.
 
-* Unzip the beo source code  
-* Navigate to the directory where you have installed escript. Go to the subdirectory bin (``python-escript/bin/``) and run Beo by executing the following command from the command line:
+* Unzip the beo source code 
+* Navigate to the directory where you have installed escript and go to the subdirectory bin. If you used apt-get to install escript you can normally find escript in ``/usr/bin/``. Then run Beo by executing the following command from the command line:
 	
 ````bash
 ./run-escript beo_dir/beo.py
@@ -43,56 +50,62 @@ python beo.py model_parameters/model_parameters.py
 where ``model_parameters/model_parameters.py`` is a file containing all model parameters. An example file called ``model_parameters.py`` is located in the directory ``model_parameters``.
 
 
-# Required modules <a name="Required modules"></a>
+# Required modules
 
-* numpy:  http://www.numpy.org/
-* For creating figures (optional):
+Beo requires the Python modules [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), [Scipy](http://scipy.org/scipylib/index.html) and [Matplotlib](http://matplotlib.org/downloads.html). Note that the current version of escript and Beo still run on Python2.7. Beo will be ported to Python3 once a Python3 compatible version of escript is released.
 
-    - scipy: http://scipy.org/scipylib/index.html
-    - matplotlib: http://matplotlib.org/downloads.html
+An easy way to get a working version of python and these modules is to install a full Python environment like [Anaconda](https://www.anaconda.com/), [Canopy](https://www.enthought.com/products/canopy) or [pythonxy](https://code.google.com/p/pythonxy/wiki/Welcome).
 
-These modules are available as standalone packages. For mac and windows an easy way to get a working version of python and these modules is to install a full Python environemnt like Anaconda (https://www.anaconda.com/), Enthought Canopy (https://www.enthought.com/products/canopy) or pythonxy (https://code.google.com/p/pythonxy/wiki/Welcome).
+Note that Beo includes an option to calculate apatite (U-Th)/He ages using the RDAAM model ([Flowers et al. 2009](https://www.sciencedirect.com/science/article/abs/pii/S001670370900043X)). The implementation of the RDAAM model uses a piece of Fortran code to speed up the model. To enable the RDAAM model you first need to compile the Fortran code using f2py, which is normally included with Numpy. See this [link](https://docs.scipy.org/doc/numpy/f2py/) for more information on f2py. To install the Fortran RDAAM module, navigate to the subdirectory lib and run the following command:
 
-Beo was tested on Ubuntu 14.04 and 16.04 
+``f2py -c calculate_reduced_AFT_lengths.f90 -m calculate_reduced_AFT_lengths``
+
+If all goes well there should now be a file called ``calculate_reduced_AFT_lengths.so`` in the subdirectory lib, which will be used by Beo to calculate radiation damage and the diffusivity of helium in apatites. Currently new updates are planned to convert the fortran code to python, which will remove this requirement.
+
+Note that there are plans to port the fortran code to cPython to avoid this extra compilation step. Feel free to bug me if you have trouble compiling this or if you are interested in a Python only version. 
+
+Beo was tested on Ubuntu 14.04, 16.04 and 18.04 
 
 
-# Model input & output <a name="Model input & output"></a>
+# Manual and publication
 
-## Input:
+You can find a manual for beo in the subdirectory [manual](manual). The manual contains more background on the model, an explanation of how surface heat flow is modeled and a detailed list and explanation of the model parameters. More information on the model code can be found in [Luijendijk (2019)](https://doi.org/10.5194/gmd-12-4061-2019). See the bottom of this readme for the full reference for this paper. 
 
-All model input parameters are contained in the file ``model_parameters.py`` located in the directory model_parameters. The class ``ModelParameters`` contains all parameters needed for a single model run. See the comments in this part of the file for a brief explanation of what each parameter does.
+The paper shows model results for two example case studies: the Baden & Schinznach hot springs at the boundary of the Molasse Basin and the Jura, and the Brigerbad hot springs in the Rhone Valley in the Swiss Alps. These model runs can be reproduced by using one of the parameter files located in the directory [example_input_files](example_input_files).
+
+
+# Model input & output
+
+## Model input:
+
+All model input parameters are contained in a single Python file. An example file can be found in [``model_parameters.py``](model_parameters/model_parameters.py) located in the directory [model_parameters](model_parameters). The class ``ModelParameters`` contains all parameters needed for a single model run. See the [manual](manual\beo_manual.pdf) for an explanation of the model parameters.
 
 
 ## Multiple model runs
 
 Optionally you can start automated runs to test a range of parameter combinations. This is useful for automated sensitivity or uncertainty analysis. 
 
-The model input file contains a class calle ``ParameterRanges``. Any parameter value that is included in this class will be used as input for a single model run. All results will be stored an written to a comma separated (.csv) file names ``model_output/model_params_and_results_x_runs.csv``. 
+The model input file contains a class called ``ParameterRanges``. Any parameter value that is included in this class will be used as input for a single model run. All results will be stored and written to a comma separated (.csv) file names ``model_output/model_params_and_results_x_runs.csv``. 
 
 You can include any model parameter in the automated runs. Simply copy a parameter from the ``ModelParameters`` class into the ``ParameterRanges`` class and add _s to the parameter name. For instance to test multiple values of the thermal gradient, add `thermal_gradient_s = [0.03, 0.04, 0.05]` to test the effect of geothermal gradients of 0.03, 0.04 and 0.05 C/m, respectively.
 
 There are two options for running multiple model runs. The default is a sensitivity run. In each model run a single parameter will be changed, while all other parameters are kept constant at the default value specified in the ``ModelParameters`` class. Alternatively you can test all parameter combinations by changing `parameter_combinations = False` to `parameter_combinations = True`. Note that this will generate a lot of model runs, testing ten parameter values for two parameters each will generate 10*10 = 100 model runs, for three parameters this increase to a 1000 model runs, etc...
 
 
-## Output
+## Model output
 
-* After each model run, the modeled temperature field and (U-Th)/He data are stored in the directory ``model_output`` as a .pck file, which can be read using Python's pickle module. 
-* Beo saves a comma separated file containing the model parameters and a summary of the results for each model run and each timestep in the same directory.
-* The modelled temperature field and fluxes are also saved as a VTK file that can be used for visualization using software such as Paraview or Visit.
+* After each model run, the modeled temperature field and (U-Th)/He data are stored in the directory ``model_output`` as a .pck file, which can be read using Python's pickle module and which can be used by a separate script to make figures. 
+* Beo saves a comma separated file containing the input parameters and a summary of the results for each model run and each timestep in the same directory.
+* Beo also contains an option to save modeled temperature and advective flux to a VTK file, which can be used for visualization using software such as Paraview and Visit.
 
 
-# Making figures <a name="Making figures"></a>
+## Making figures
 
-Currently there are two Python scripts that will generate figures of the model output:
-
-* The script ``make_figures.py`` will make a single figure of the final temperature field for output files (with extension .pck) found in the directory ``model_output``. After running this script you will be prompted to select the output file that you would like a figure of. The file ``model_parameters/figure_params.py`` contains a number of parameters that control the figure, such as which timeslices to show, the min. and max. coordinates of the area to show, etc.. THe resulting figure is saved as a .png file in the same directory as the model output file.
-* ``make_figure_2models.py`` will make a figure with two panels containing the modeled temperatures and (U-Th)/He data for two model runs. THe model runs are specified in the script itself, for example like this: ``files = ['model_output/T_field_model_run_14_(-3000.0, 0.03).pck', 'model_output/T_field_model_run_32_(-6000.0, 0.03).pck']``. There are a number of parameters in line 62 to 103 in this script itself that you can adjust how the resulting figure looks. The figure is saved to the ``model_output`` directory.
+The script ``make_figures.py`` will make a single figure of the final temperature field for output files (with extension .pck) found in the directory ``model_output``. After running this script you will be prompted to select the output file that you would like a figure of. The file ``model_parameters/figure_params.py`` contains a number of parameters that control the figure, such as which timeslices to show, the min. and max. coordinates of the area to show, etc.. The resulting figure is saved as a .png file in the same directory as the model output file.
 
 
 
-
-
-# Model Background <a name="Model Background"></a>
+# Model Background
 
 ## Heat transport
 
@@ -205,8 +218,7 @@ The thermal conducivity assigned in the air layer is the sum of the heat transfe
 
 
 
-
-# Explanation of model parameters <a name="Explanation of model parameters"></a>
+# Explanation of model parameters
 
 The parameters that control Beo are stored in a python file called ``model_parameters.py`` in the class ModelParams.  The following section describes each of the model parameters.
 
@@ -351,12 +363,19 @@ In Beo aquifers are used for modeling horizontal advective flow, for instance ho
 * ``cooling_rates``: list of numbers or array. Cooling rates (degr. C/sec) for each timeslice defined by ``t_cooling``. This cooling history is added to the initial temperatures for each node in the borehole, and defines the temperature history before the start of the modeled hydrothermal activity. Note that for now this is only used for borehole AHe data, the initial AHe age for samples at the land surface is defined by the parameter ``t0``.
 * ``T_surface`` : number, temperature at the surface (degrees C)
 * ``radius``: number, radius of the default apatite (m)
-* ``U238``: number, concentration uranium-238 for the default apatite (ppm?)
-* ``Th232``: number, concentration thorium-232 for the default apatite (ppm?)
+* ``U238``: number, concentration uranium-238 for the default apatite (fraction). Note that you can also specify the concentration for each apatite in the input files.
+* ``Th232``: number, concentration thorium-232 for the default apatite (fraction)
 * ``alpha_ejection``: boolean, model alpha ejection or not.
-* ``stopping_distance``: number, alpha ejection stopping distance (um), see @Ketcham2011 for estimates
+* ``stopping_distance``: number, alpha ejection stopping distance ($\mu m$), see @Ketcham2011 for estimates
 * ``partial_reset_limit``: number, relative limit to consider a sample partial reset or not, ie if 0.95 a sample will be considered partially reset if the modeled uncorrected AHe age is less than 0.95 x the maximum age in the system.
 * ``reset_limit``: number, absolute age limit (My) below which samples are considered reset (ie. AHe age ~0 My)
+* ``D0``: number, helium diffusivity at infinite temperature ($m^2 s^{-1}$). Only used if ``Farley2000`` diffusion model is selected (see ``AHe_method``). Note that the default value of 50.0 * 1e-4 is based on the value used in HeFTy 1.8.3, but differs from the value of 31.6 $\times 10^{-4}$ ($10^{1.5} \times 10^{-4}$) reported in Farley [-@Farley2000] itself.
+* ``Ea``: number, acivation energy for helium diffusion ($J\; mol^{-1}$). Only used if ``Farley2000`` diffusion model is selected (see ``AHe_method``).
+* ``log_omega_p``: number. Parameter for the RDAAM helium diffusion model. See Flowers et al. [-@Flowers2009], Table 1.
+* ``log_phi_p``: number. Parameter for the RDAAM helium diffusion model. See Flowers et al. [-@Flowers2009], Table 1.
+* ``Etrap``: number. Parameter for the RDAAM helium diffusion model. See Flowers et al. [-@Flowers2009], Table 1.
+* ``ln_D0_L_div_a2``: number. Parameter for the RDAAM helium diffusion model. See Flowers et al. [-@Flowers2009], Table 1.
+* ``E_L``: number. Parameter for the RDAAM helium diffusion model. See Flowers et al. [-@Flowers2009], Table 1.
 
 
 

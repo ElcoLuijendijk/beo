@@ -228,11 +228,22 @@ class ModelParams:
     U238 = 8.0e-6
     Th232 = 180.0e-6
 
-    # alpha ejection parameters:
+   # alpha ejection parameters:
     alpha_ejection = True
 
     # alpha ejection stopping distance (um), see Ketcham (2011) for estimates
     stopping_distance = 21e-6
+
+    # helium diffusion parameters Farley 2000 model:
+    D0 = 50.0 / 1e4
+    Ea = 32.9 * 4184.0
+
+    # RDAAM parameters (see Flowers et al. 2009, table 1):
+    log_omega_p = -22.0
+    log_phi_p = -13.0
+    Etrap = 34.0 * 1000.0
+    ln_D0_L_div_a2 = 9.733
+    E_L = 122.3 * 1000.0
 
     # x location of fault (m):
     fault_xs = [0.0]

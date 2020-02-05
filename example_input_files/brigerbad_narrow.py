@@ -186,16 +186,16 @@ class ModelParams:
     target_zs = [0.0]
 
     # U-Th/He params
-    calculate_he_ages = False
+    calculate_he_ages = True
 
     # calculate thermochron ages for surface layer, including the effects of exhumation
     model_thermochron_surface = False
 
     # model thermochron ages in a borehole section
-    model_thermochron_borehole = False
+    model_thermochron_borehole = True
 
     # model-data comparison AHe samples
-    model_AHe_samples = False
+    model_AHe_samples = True
     AHe_data_file = 'example_input_files/AHe_data_brigerbad.csv'
     profile_number = 0
 
@@ -208,7 +208,6 @@ class ModelParams:
     # use temperature at each x timestep for the calculation of AHe ages
     # this should be an integer. Ideally this should be 1, but higher numbers
     # significantly speed up the model code
-    # !! new parameter (3 march 2017)
     AHe_timestep_reduction = 1
 
     # pre-model thermal history
@@ -233,6 +232,17 @@ class ModelParams:
 
     # alpha ejection stopping distance (um), see Ketcham (2011) for estimates
     stopping_distance = 21e-6
+
+    # helium diffusion parameters Farley 2000 model:
+    D0 = 50.0 / 1e4
+    Ea = 32.9 * 4184.0
+
+    # RDAAM parameters (see Flowers et al. 2009, table 1):
+    log_omega_p = -22.0
+    log_phi_p = -13.0
+    Etrap = 34.0 * 1000.0
+    ln_D0_L_div_a2 = 9.733
+    E_L = 122.3 * 1000.0
 
     # x location of faults (m):
     fault_xs = [0.0]
