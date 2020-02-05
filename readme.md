@@ -19,6 +19,10 @@ Beo is a model of heat flow in hot springs and hydrothermal systems. The model c
 
 * Click the download link on the right for a zip file of the source code or clone the repository
 
+* Note that there are two branches: 
+	- master. This branch contains the most stable and well tested version of beo.
+	- develop. This branch contains new and experimental, but potentially buggy features. 
+
 * Install Escript
 
     - Get the code here: https://launchpad.net/escript-finley
