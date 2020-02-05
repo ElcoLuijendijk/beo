@@ -7,9 +7,11 @@
 
 Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code [escript](https://launchpad.net/escript-finley) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The resulting temperature history is used to calculate the apatite (U-Th)/He (AHe) thermochronometer and can be compared to measured AHe ages. Beo supports automated model runs to explore which parameter values like fluid fluxes, fault geometry, age and duration of the hydrothermal activity best match thermochronometer data, spring temperature data or temperature records in nearby boreholes. 
 
- A description of the model background and two example case studies can be found in this [paper](https://www.geosci-model-dev.net/12/4061/2019/) in the journal Geoscientific Model Development (Luijendijk 2019). A model study on episodic fluid flow in a fault zone in the Basin and Range Province in the western USA can be found a [paper](https://pubs.geoscienceworld.org/gsa/geology/article/573168/Episodic-fluid-flow-in-an-active-fault) Geology (Louis et al. 2019).
+ A description of the model background and two example case studies can be found in this [paper](https://doi.org/10.5194/gmd-12-4061-2019) in the journal Geoscientific Model Development (Luijendijk 2019). The model code was used to quantify episodic fluid flow in a fault zone in the Beowawe geyser field in the Basin and Range Province, which was published in a separate [paper](https://pubs.geoscienceworld.org/gsa/geology/article/573168/Episodic-fluid-flow-in-an-active-fault) in Geology (Louis et al. 2019).
+
 
 ![Example model run showing modelled temperatures in a simple hydrothermal system with upward fluid flow along a single fault zone. The top panels show the resulting modelled AHe ages at the surface and at 500 m depth (top panels).](manual/fig/model_example_fig.png)
+
 *Example model run showing modelled temperatures in a simple hydrothermal system with upward fluid flow along a single fault zone. The top panels show the resulting modelled AHe ages at the surface and at 500 m depth (top panels).*
 
 
@@ -51,7 +53,7 @@ where ``model_parameters/model_parameters.py`` is a file containing all model pa
 
 Beo requires the Python modules [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), [Scipy](http://scipy.org/scipylib/index.html) and [Matplotlib](http://matplotlib.org/downloads.html). Note that the current version of escript and Beo still run on Python2.7. Beo will be ported to Python3 once a Python3 compatible version of escript is released.
 
-An easy way to get a working version of python and these modules is to install a full Python environment like (Anaconda)[https://www.anaconda.com/], (Enthought Canopy)[https://www.enthought.com/products/canopy] or (pythonxy)[https://code.google.com/p/pythonxy/wiki/Welcome].
+An easy way to get a working version of python and these modules is to install a full Python environment like [Anaconda](https://www.anaconda.com/), [Canopy](https://www.enthought.com/products/canopy) or [pythonxy](https://code.google.com/p/pythonxy/wiki/Welcome).
 
 Note that Beo includes an option to calculate apatite (U-Th)/He ages using the RDAAM model ([Flowers et al. 2009](https://www.sciencedirect.com/science/article/abs/pii/S001670370900043X)). The implementation of the RDAAM model uses a piece of Fortran code to speed up the model. To enable the RDAAM model you first need to compile the Fortran code using f2py, which is normally included with Numpy. See this [link](https://docs.scipy.org/doc/numpy/f2py/) for more information on f2py. To install the Fortran RDAAM module, navigate to the subdirectory lib and run the following command:
 
@@ -66,9 +68,9 @@ Beo was tested on Ubuntu 14.04, 16.04 and 18.04
 
 # Manual and publication
 
-You can find a manual for beo in the subdirectory (manual)[manual]. The manual contains more background on the model, explanation of how surface heat flow is modeled and a detailed list and explanation of the model parameters. More information on the model code can be found in [Luijendijk (2019)](https://www.geosci-model-dev.net/12/4061/2019/). See the bottom of this readme for the full reference for this paper. 
+You can find a manual for beo in the subdirectory (manual)[manual]. The manual contains more background on the model, an explanation of how surface heat flow is modeled and a detailed list and explanation of the model parameters. More information on the model code can be found in [Luijendijk (2019)](https://doi.org/10.5194/gmd-12-4061-2019). See the bottom of this readme for the full reference for this paper. 
 
-The example model runs for the Baden & Schinznach hot springs that are discussed in the paper can be reproduced by using one of the parameter files located in the directory ``example_input_files``.
+The paper shows model results for two example case studies: the Baden & Schinznach hot springs at the boundary of the Molasse Basin and the Jura, and the Brigerbad hot springs in the Rhone Valley in the Swiss Alps. These model runs can be reproduced by using one of the parameter files located in the directory [example_input_files](example_input_files).
 
 
 # Model input & output
@@ -113,4 +115,4 @@ A copy of this license is distributed along with the source code, see LICENSE.tx
 
 Please cite the following paper if you publish work that uses Beo:
 
-Luijendijk, E. (2019) Beo v1.0: Numerical model of heat flow and low-temperature thermochronology in hydrothermal systems, Geosci. Model Dev., https://doi.org/10.5194/gmd-2018-341, 2019. 
+Luijendijk, E. (2019) Beo v1.0: Numerical model of heat flow and low-temperature thermochronology in hydrothermal systems, Geoscientific Model Development 12 (9): 4061-4073, https://doi.org/10.5194/gmd-12-4061-2019. 
