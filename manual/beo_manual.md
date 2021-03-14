@@ -1,34 +1,40 @@
 ---
 title: Beo v1.0 manual
-author: Elco Luijendijk, elco.luijendijk@geo.uni-goettingen.de
-date: 5 Feb. 2019
+author: Elco Luijendijk, elco.luijendijk@posteo.net
+date: March 2021
 
 ---
 
 
 # Introduction
 
-Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code [escript](https://launchpad.net/escript-finley) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The resulting temperature history is used to calculate the apatite (U-Th)/He (AHe) thermochronometer and can be compared to measured AHe ages. Beo supports automated model runs to explore which parameter values like fluid fluxes, fault geometry, age and duration of the hydrothermal activity best match thermochronometer data, spring temperature data or temperature records in nearby boreholes. 
+Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code [esys-escript](https://github.com/esys-escript/esys-escript.github.io) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The resulting temperature history is used to calculate the apatite (U-Th)/He (AHe) thermochronometer and can be compared to measured AHe ages. Beo supports automated model runs to explore which parameter values like fluid fluxes, fault geometry, age and duration of the hydrothermal activity best match thermochronometer data, spring temperature data or temperature records in nearby boreholes.
 
- A description of the model background and two example case studies can be found in the journal Geoscientific Model Development ([Luijendijk 2019](https://doi.org/10.5194/gmd-12-4061-2019)). The model code was used to quantify episodic fluid flow in a fault zone in the Beowawe geyser field in the Basin and Range Province, which was published in a separate paper  in Geology ([Louis et al. 2019](https://pubs.geoscienceworld.org/gsa/geology/article/573168/Episodic-fluid-flow-in-an-active-fault)).
+A description of the model background and two example case studies can be found in the journal Geoscientific Model Development ([Luijendijk 2019](https://doi.org/10.5194/gmd-12-4061-2019)). The model code was used to quantify episodic fluid flow in a fault zone in the Beowawe geyser field in the Basin and Range Province, which was published in a separate paper  in Geology ([Louis et al. 2019](https://pubs.geoscienceworld.org/gsa/geology/article/573168/Episodic-fluid-flow-in-an-active-fault)).
+
 
 ![Example model run showing modelled temperatures in a simple hydrothermal system with upward fluid flow along a single fault zone. The top panels show the resulting modelled AHe ages at the surface and at 500 m depth.](fig/model_example_fig.png)
 
+*Example model run showing modelled temperatures in a simple hydrothermal system with upward fluid flow along a single fault zone. The top panels show the resulting modelled AHe ages at the surface and at 500 m depth.*
 
 
 # Getting started
 
 * Click the download link on the right for a zip file of the source code or clone the repository
 
-* Install Escript
+* Note that there are two branches:
+  - master. This branch contains the most stable and well tested version of beo.
+  - develop. This branch contains new and experimental, but potentially buggy features.
 
-    - Get the code here: https://launchpad.net/escript-finley
-    - An installation guide can be found here: http://esys.geocomp.uq.edu.au/docs
-    - Note that the newer versions of escript support installation using Flatpak or Docker. These install sandboxed versions of escript that currently do not include the Python modules Scipy or Pandas. However, Beo uses these modules for interpolating variables and model-data comparison. Therefore the recommended way to install escript is to use the binary version in Debian/Ubuntu (``sudo apt-get install python-escript``) or to compile the source code.
+* Install esys-escript
 
-* Unzip the beo source code 
-* Navigate to the directory where you have installed escript and go to the subdirectory bin. If you used apt-get to install escript you can normally find escript in ``/usr/bin/``. Then run Beo by executing the following command from the command line:
-	
+  - Get the code here: [https://github.com/esys-escript/esys-escript.github.io](https://github.com/esys-escript/esys-escript.github.io)
+  - An installation guide can be found here: http://esys.geocomp.uq.edu.au/docs
+  - Note that the newer versions of escript support installation using Flatpak or Docker. These install sandboxed versions of esys-escript that currently do not include the Python modules Scipy or Pandas. However, Beo uses these modules for interpolating variables and model-data comparison. Therefore the recommended way to install esys-escript is to use the binary version in Debian/Ubuntu (``sudo apt-get install python-escript``), install it using anaconda, or to compile the source code.
+
+* Unzip the beo source code
+* Navigate to the directory where you have installed esys-escript and go to the subdirectory bin. If you used apt-get to install esys-escript you can normally find esys-escript in ``/usr/bin/``. Then run Beo by executing the following command from the command line:
+
 ````bash
 ./run-escript beo_dir/beo.py
 ````	
@@ -41,7 +47,7 @@ Alternatively use the command
 ./run-escript -e
 ````
 
-This will show you three lines that define environment variables that your system needs to be able to find the location of escript. Add these lines to your .bashrc (Ubuntu linux) or profile file in your home directory. After adding these lines and logging out and in again, you can start beo by going to the directory where the beo code is located (so not to the escript/bin directory) and start beo.py like any regular python code:
+This will show you three lines that define environment variables that your system needs to be able to find the location of esys-escript. Add these lines to your .bashrc (Ubuntu linux) or profile file in your home directory. After adding these lines and logging out and in again, you can start beo by going to the directory where the beo code is located (so not to the escript/bin directory) and start beo.py like any regular python code:
 
 ````bash
 python beo.py model_parameters/model_parameters.py
@@ -52,7 +58,7 @@ where ``model_parameters/model_parameters.py`` is a file containing all model pa
 
 # Required modules
 
-Beo requires the Python modules [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), [Scipy](http://scipy.org/scipylib/index.html) and [Matplotlib](http://matplotlib.org/downloads.html). Note that the current version of escript and Beo still run on Python2.7. Beo will be ported to Python3 once a Python3 compatible version of escript is released.
+Apart from esys-escript Beo requires the Python modules [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), [Scipy](http://scipy.org/scipylib/index.html) and [Matplotlib](http://matplotlib.org/downloads.html). Note that the current version of Beo still runs on Python2.x. Beo will be ported to Python 3 soon to given the transition of esys-escript to Python3.
 
 An easy way to get a working version of python and these modules is to install a full Python environment like [Anaconda](https://www.anaconda.com/), [Canopy](https://www.enthought.com/products/canopy) or [pythonxy](https://code.google.com/p/pythonxy/wiki/Welcome).
 
@@ -62,30 +68,23 @@ Note that Beo includes an option to calculate apatite (U-Th)/He ages using the R
 
 If all goes well there should now be a file called ``calculate_reduced_AFT_lengths.so`` in the subdirectory lib, which will be used by Beo to calculate radiation damage and the diffusivity of helium in apatites. Currently new updates are planned to convert the fortran code to python, which will remove this requirement.
 
-Note that there are plans to port the fortran code to cPython to avoid this extra compilation step. Feel free to bug me if you have trouble compiling this or if you are interested in a Python only version. 
+Note that there are plans to port the fortran code to cPython to avoid this extra compilation step. Feel free to bug me if you have trouble compiling this or if you are interested in a Python only version.
 
-Beo was tested on Ubuntu 14.04, 16.04 and 18.04 
-
-
-# Manual and publication
-
-You can find a manual for beo in the subdirectory [manual](manual). The manual contains more background on the model, an explanation of how surface heat flow is modeled and a detailed list and explanation of the model parameters. More information on the model code can be found in [Luijendijk (2019)](https://doi.org/10.5194/gmd-12-4061-2019). See the bottom of this readme for the full reference for this paper. 
-
-The paper shows model results for two example case studies: the Baden & Schinznach hot springs at the boundary of the Molasse Basin and the Jura, and the Brigerbad hot springs in the Rhone Valley in the Swiss Alps. These model runs can be reproduced by using one of the parameter files located in the directory [example_input_files](example_input_files).
+Beo was tested on Ubuntu 14.04, 16.04 and 18.04
 
 
 # Model input & output
 
 ## Model input:
 
-All model input parameters are contained in a single Python file. An example file can be found in [``model_parameters.py``](model_parameters/model_parameters.py) located in the directory [model_parameters](model_parameters). The class ``ModelParameters`` contains all parameters needed for a single model run. See the [manual](manual\beo_manual.pdf) for an explanation of the model parameters.
+All model input parameters are contained in a single Python file. An example file can be found in [model_parameters.py](model_parameters/model_parameters.py) located in the directory [model_parameters](model_parameters). The class ``ModelParameters`` contains all parameters needed for a single model run. See the [manual](manual\beo_manual.pdf) for an explanation of the model parameters.
 
 
 ## Multiple model runs
 
-Optionally you can start automated runs to test a range of parameter combinations. This is useful for automated sensitivity or uncertainty analysis. 
+Optionally you can start automated runs to test a range of parameter combinations. This is useful for automated sensitivity or uncertainty analysis.
 
-The model input file contains a class called ``ParameterRanges``. Any parameter value that is included in this class will be used as input for a single model run. All results will be stored and written to a comma separated (.csv) file names ``model_output/model_params_and_results_x_runs.csv``. 
+The model input file contains a class called ``ParameterRanges``. Any parameter value that is included in this class will be used as input for a single model run. All results will be stored and written to a comma separated (.csv) file names ``model_output/model_params_and_results_x_runs.csv``.
 
 You can include any model parameter in the automated runs. Simply copy a parameter from the ``ModelParameters`` class into the ``ParameterRanges`` class and add _s to the parameter name. For instance to test multiple values of the thermal gradient, add `thermal_gradient_s = [0.03, 0.04, 0.05]` to test the effect of geothermal gradients of 0.03, 0.04 and 0.05 C/m, respectively.
 
@@ -94,15 +93,33 @@ There are two options for running multiple model runs. The default is a sensitiv
 
 ## Model output
 
-* After each model run, the modeled temperature field and (U-Th)/He data are stored in the directory ``model_output`` as a .pck file, which can be read using Python's pickle module and which can be used by a separate script to make figures. 
+* After each model run, the modeled temperature field and (U-Th)/He data are stored in the directory ``model_output`` as a .pck file, which can be read using Python's pickle module and which can be used by the script [make_figures.py](make_figures.py) to make figures.
 * Beo saves a comma separated file containing the input parameters and a summary of the results for each model run and each timestep in the same directory.
 * Beo also contains an option to save modeled temperature and advective flux to a VTK file, which can be used for visualization using software such as Paraview and Visit.
 
 
 ## Making figures
 
-The script ``make_figures.py`` will make a single figure of the final temperature field for output files (with extension .pck) found in the directory ``model_output``. After running this script you will be prompted to select the output file that you would like a figure of. The file ``model_parameters/figure_params.py`` contains a number of parameters that control the figure, such as which timeslices to show, the min. and max. coordinates of the area to show, etc.. The resulting figure is saved as a .png file in the same directory as the model output file.
+The script [make_figures.py](make_figures.py) will make a single figure of the final temperature field for output files (with extension .pck) found in the directory ``model_output``. After running this script you will be prompted to select the output file that you would like a figure of. The file [model_parameters/figure_params.py](model_parameters/figure_params.py) contains a number of parameters that control the figure, such as which timeslices to show, the min. and max. coordinates of the area to show, etc.. The resulting figure is saved as a .png file in the same directory as the model output file.
 
+
+# License
+
+Beo is distributed under the GNU General Public License, version 3:
+http://www.gnu.org/copyleft/gpl.html
+
+A copy of this license is distributed along with the source code, see LICENSE.txt
+
+
+# Reference
+
+Please cite the following paper if you publish work that uses Beo:
+
+Luijendijk, E. (2019) Beo v1.0: Numerical model of heat flow and low-temperature thermochronology in hydrothermal systems, Geoscientific Model Development 12 (9): 4061-4073, [https://doi.org/10.5194/gmd-12-4061-2019](https://doi.org/10.5194/gmd-12-4061-2019).
+
+The code has also been published at Zenodo:
+
+Elco Luijendijk (2019). Beo: Numerical model of heat flow and low-temperature thermochronology in hydrothermal systems. Zenodo. [http://doi.org/10.5281/zenodo.3359586](http://doi.org/10.5281/zenodo.3359586)
 
 
 # Model Background
@@ -317,13 +334,13 @@ Beo simulates advective heat transport in faults. Note that beo does not model a
 * ``fault_widths`` : list of numbers, width of the fault zone (m)
 * ``fault_angles`` : list of numbers, angle of the fault zone (degrees).
 * ``fault_bottoms``: list of numbers, elevation of bottom of fault (m)
-* ``fault_segments``: list of numbers, different segments of the fault, list of the top bnd of each segments starting from the bottom, nested list: [[segment_top1_fault1, segment_top2_fault1], [segment_top1_fault2, segment_top2_fault2], etc...]. This is used to be able to assign a different fluid flux to different parts of a single fault (for instance below and above a connected aquifer)
-* ``fault_fluxes``, list of numbers, fluid advection rates in faults (m2/sec). This is a nested list that is structured as follows: [[[fault1_segment1_t1, fault1_segment2_t1], [fault2_segment1_t1, fault2_segment2_t1], etc...]. Note that the flux in specified in  m2/sec, i.e., the integrated flux over the entire width of the fault zone. t1 and t2 refer to different time periods defined in the parameter ``durations``.
+* ``fault_segments``: list of numbers, different segments of the fault, list of the top bnd of each segments starting from the bottom, nested list: [[segment_top1_fault1, segment_top2_fault1], [segment_top1_fault2, segment_top2_fault2], etc...]. This is used to be able to assign a different fluid flux to different parts of a single fault (for instance below and above a connected aquifer). use ``fault_segments``
+* ``fault_fluxes``, list of numbers, fluid advection rates in faults (m2/sec). This is a nested list that is structured as follows: [[[fault1_segment1_t1, fault1_segment2_t1], [fault2_segment1_t1, fault2_segment2_t1], etc...]. Note that the flux is specified in  m2/sec, i.e., it represents the integrated flux over the width of the fault zone. t1 and t2 refer to different time periods defined in the parameter ``durations``.
 
 
 ## Aquifer parameters
 
-In Beo aquifers are used for modeling horizontal advective flow, for instance horizontal flow in a permeable layer connected to a fault. Use ``aquifer_top = [None]`` to not use this. For multiple aquifers start at the lowest aquifer
+In Beo aquifers are used for modeling horizontal advective flow, for instance horizontal flow in a permeable layer connected to a fault. Use ``aquifer_top = [None]`` to not use this. For multiple aquifers start the list values for the various parameters described below with the lowest aquifer.
 
 * ``aquifer_tops``: list of numbers, elevation of the top of one or more aquifers (m). Use ``aquifer_top = [None]`` to not use aquifers in your model run.
 * ``aquifer_bottoms``: list of numbers, elevation of the bottom of one or more aquifers (m).

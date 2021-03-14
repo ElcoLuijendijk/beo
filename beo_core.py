@@ -1265,8 +1265,9 @@ def model_run(mp):
         # perhaps have an order of faults, ie first main fault,
         # second fault cannot cross the first fault, etc....
 
-    fault_segments_all = []
+    fault_segments_all = None
     if mp.fault_segments is not None:
+        fault_segments_all = []
         for h, fault_x, fault_angle, fault_width, fault_bottom, fault_segments \
                 in zip(itertools.count(), mp.fault_xs, mp.fault_angles,
                        mp.fault_widths, mp.fault_bottoms, mp.fault_segments):
@@ -1404,8 +1405,10 @@ def model_run(mp):
 
     store_results_interval = mp.dt_stored / mp.dt
     if float(store_results_interval) != int(store_results_interval) and store_results_interval != 1.0:
-        msg = 'error, dt_stored divided by dt is %s but should be an integer.' % str(store_results_interval)
-        raise ValueError(msg)
+        msg = 'warning, dt_stored divided by dt is %s but should be an integer.' % str(store_results_interval)
+        msg += '\nstoring results at each timestep instead.' % str(store_results_interval)
+        print(msg)
+        #raise ValueError(msg)
 
     # model hydrothermal heating
     runtimes, T_steady, Ts, q_vectors, surface_levels, boiling_temps, exceed_boiling_temps = \

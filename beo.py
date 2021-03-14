@@ -340,7 +340,7 @@ for model_run, param_set in enumerate(param_list):
         VTK_dir = 'VTK_files_model_run_%i_%s_%s_%s' \
                   % (model_run, str(param_set), mp.output_fn_adj, today_str)
         VTK_dir_full = os.path.join(output_folder, VTK_dir)
-        print 'saving VTK file of temperarues and flux in directory %s' % VTK_dir_full
+        print 'saving VTK file of temperatures and flux in directory %s' % VTK_dir_full
 
         if os.path.exists(VTK_dir_full) is False:
             os.mkdir(VTK_dir_full)
@@ -807,6 +807,31 @@ for model_run, param_set in enumerate(param_list):
     print 'saving summary of parameters and model results as %s' % fn_path_csv
     df.to_csv(fn_path_csv, index_label='row', encoding='utf-8')
 
+    try:
+        # save temperatures histories at depth slices as a csv file
+        for i in range(n_depths):
+            nn = len(Tzs_cropped[i][0])
+
+            tcols = list((runtimes[output_steps] / year).astype(int))
+            cols = tcols
+            xi = xzs[i]
+
+            dfts = pd.DataFrame(index=list(xi), columns=cols)
+
+            for j in range(n_ts):
+                Ti = Tzs_cropped[i][j]
+                dfts[tcols[j]] = Ti
+
+            fnout = 'temp_depth_slice_%i_%0.0f_%i_runs_%s_%s.csv' % (i, target_depths[i],
+                                                                  len(param_list),
+                                                                   mp.output_fn_adj,
+                                                                    today_str)
+            print 'saving modeled temperatures for surface slice to %s' % fnout
+            dfts.to_csv(os.path.join(output_folder, fnout), index_label='x')
+    except:
+        print('warning, failed to save temperature data')
+
+    # save borehole temperature history
     if mp.analyse_borehole_temp is True:
         fn_new = os.path.split(mp.temperature_file)[-1].split('.')[:-1]
         fn_new = ''.join(fn_new)
@@ -816,6 +841,7 @@ for model_run, param_set in enumerate(param_list):
         print 'saving modeled temperatures for boreholes to %s' % fn_new
         dft.to_csv(os.path.join(output_folder, fn_new))
 
+    # save AHe ages to file
     if Ahe_ages_surface_all is not None and mp.save_AHe_ages is True and AHe_ages_surface_all != []:
 
         nxs = np.max(np.array([AHe_ii.shape[0]

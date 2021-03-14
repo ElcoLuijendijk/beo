@@ -21,6 +21,7 @@ import itertools
 import argparse
 
 import numpy as np
+import scipy.interpolate
 import matplotlib.pyplot as pl
 import matplotlib.mlab
 from matplotlib import ticker
@@ -44,20 +45,29 @@ def simpleaxis(ax, removeh=True):
     return
 
 
-def interpolate_data(xyz_array, Ti, dx, dy):
+def interpolate_data(xyz_array, Ti, dx, dy, limit_number_of_nodes=True, max_nodes=1e6):
 
     xi = np.arange(xyz_array[:, 0].min(), xyz_array[:, 0].max() + dx, dx)
     yi = np.arange(xyz_array[:, 1].min(), xyz_array[:, 1].max() + dy, dy)
+
+    if xi.shape[0] * xi.shape[1] > max_nodes:
+        print('warning, interpolating data on raster with >1e6 nodes')
+        if limit_number_of_nodes is True:
+            xi = np.linspace(xyz_array[:, 0].min(), xyz_array[:, 0].max(), np.sqrt(max_nodes))
+            yi = np.linspace(xyz_array[:, 1].min(), xyz_array[:, 1].max(), np.sqrt(max_nodes))
+
     xg, yg = np.meshgrid(xi, yi)
     xgf, ygf = xg.flatten(), yg.flatten()
-    #zgf = scipy.interpolate.griddata(xyz_array, Ti, np.vstack((xgf, ygf)).T,
-    #                                 method='linear')
+    zgf = scipy.interpolate.griddata(xyz_array, Ti, np.vstack((xgf, ygf)).T,
+                                     method='linear')
+    zg = np.resize(zgf, xg.shape)
 
-    zg = matplotlib.mlab.griddata(xyz_array[:, 0], xyz_array[:, 1], Ti,
-                                  xi, yi,
-                                  interp='linear')
+    #zg = matplotlib.mlab.griddata(xyz_array[:, 0], xyz_array[:, 1], Ti,
+    #                              xi, yi,
+    #                              interp='linear')
 
     return xg, yg, zg
+
 
 print '-' * 50
 
