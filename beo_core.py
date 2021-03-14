@@ -1027,7 +1027,7 @@ def model_run(mp):
     ############################
     # construct rectangular mesh
     ############################
-    print 'constructing mesh'
+    print 'constructing mesh (note, this may take a while....)'
 
     z_surface = 0
     z_base = -mp.total_depth
@@ -1624,10 +1624,18 @@ def model_run(mp):
                     he_age_i = he.calculate_he_age_meesters_dunai_2002(
                         t_he, T_he,
                         mp.radius, mp.U238, mp.Th232,
+                        D0=mp.D0,
+                        Ea=mp.Ea,
                         alpha_ejection=mp.alpha_ejection,
                         stopping_distance=mp.stopping_distance,
                         method=mp.AHe_method,
-                        n_eigenmodes=50)
+                        n_eigenmodes=50,
+                        log_omega_p=mp.log_omega_p,
+                        log_phi_p=mp.log_phi_p,
+                        Etrap=mp.Etrap,
+                        ln_D0_L_div_a2=mp.ln_D0_L_div_a2,
+                        E_L=mp.E_L
+                        )
 
                     # copy AHe ages back into array with same length as the
                     # runtime and temperature arrays
@@ -1745,10 +1753,18 @@ def model_run(mp):
                                     sphere_radius[grain_ind] * 1e-06,
                                     U_conc[grain_ind] * 1e-6,
                                     Th_conc[grain_ind] * 1e-6,
+                                    D0=mp.D0,
+                                    Ea=mp.Ea,
                                     alpha_ejection=mp.alpha_ejection,
                                     stopping_distance=mp.stopping_distance,
                                     method=mp.AHe_method,
-                                    n_eigenmodes=50)
+                                    n_eigenmodes=50,
+                                    log_omega_p=mp.log_omega_p,
+                                    log_phi_p=mp.log_phi_p,
+                                    Etrap=mp.Etrap,
+                                    ln_D0_L_div_a2=mp.ln_D0_L_div_a2,
+                                    E_L=mp.E_L
+                                    )
 
                             R = sphere_radius[grain_ind] * 1e-06
                             S = mp.stopping_distance
@@ -1914,10 +1930,18 @@ def model_run(mp):
                 he_age_i = he.calculate_he_age_meesters_dunai_2002(
                     t_he, T_he,
                     mp.radius, mp.U238, mp.Th232,
+                    D0=mp.D0,
+                    Ea=mp.Ea,
                     alpha_ejection=mp.alpha_ejection,
                     stopping_distance=mp.stopping_distance,
                     method=mp.AHe_method,
-                    n_eigenmodes=50)
+                    n_eigenmodes=50,
+                    log_omega_p=mp.log_omega_p,
+                    log_phi_p=mp.log_phi_p,
+                    Etrap=mp.Etrap,
+                    ln_D0_L_div_a2=mp.ln_D0_L_div_a2,
+                    E_L=mp.E_L
+                    )
 
                 # copy AHe ages back into array with same length as the
                 # runtime and temperature arrays
@@ -1974,10 +1998,18 @@ def model_run(mp):
                         dfhs.loc[ind_grain, 'sphere_radius'].values[0] * 1e-6,
                         dfhs.loc[ind_grain, 'U'].values[0] * 1e-6,
                         dfhs.loc[ind_grain, 'Th'].values[0] * 1e-6,
+                        D0=mp.D0,
+                        Ea=mp.Ea,
                         alpha_ejection=mp.alpha_ejection,
                         stopping_distance=mp.stopping_distance,
                         method=mp.AHe_method,
-                        n_eigenmodes=50)
+                        n_eigenmodes=50,
+                        log_omega_p=mp.log_omega_p,
+                        log_phi_p=mp.log_phi_p,
+                        Etrap=mp.Etrap,
+                        ln_D0_L_div_a2=mp.ln_D0_L_div_a2,
+                        E_L=mp.E_L
+                        )
 
                     # copy AHe ages back into array with same length as the
                     # runtime and temperature arrays

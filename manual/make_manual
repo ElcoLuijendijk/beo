@@ -1,1 +1,1 @@
-pandoc beo_manual.md -o beo_manual.pdf -V geometry:margin=0.5in
+pandoc beo_manual.md -o beo_manual.pdf -V geometry:margin=0.5in --include-in-header latex_style_file.tex  -V linkcolor:blue -V geometry:a4paper  -V geometry:margin=2cm -V mainfont="DejaVu Serif" -V monofont="DejaVu Sans Mono" --filter pandoc-citeproc --bibliography=refs/references.bib --toc

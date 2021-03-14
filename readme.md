@@ -1,11 +1,16 @@
+
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3359586.svg)](https://doi.org/10.5281/zenodo.3359586)
+
+
 # Beo: Model heat flow and (U-Th)/He thermochronology in a hydrothermal system
 
-*Elco Luijendijk, University of Göttingen*
+*Elco Luijendijk*
 
 
 # Introduction
 
-Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code [escript](https://launchpad.net/escript-finley) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The resulting temperature history is used to calculate the apatite (U-Th)/He (AHe) thermochronometer and can be compared to measured AHe ages. Beo supports automated model runs to explore which parameter values like fluid fluxes, fault geometry, age and duration of the hydrothermal activity best match thermochronometer data, spring temperature data or temperature records in nearby boreholes. 
+Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code [esys-escript](https://github.com/esys-escript/esys-escript.github.io) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The resulting temperature history is used to calculate the apatite (U-Th)/He (AHe) thermochronometer and can be compared to measured AHe ages. Beo supports automated model runs to explore which parameter values like fluid fluxes, fault geometry, age and duration of the hydrothermal activity best match thermochronometer data, spring temperature data or temperature records in nearby boreholes. 
 
  A description of the model background and two example case studies can be found in the journal Geoscientific Model Development ([Luijendijk 2019](https://doi.org/10.5194/gmd-12-4061-2019)). The model code was used to quantify episodic fluid flow in a fault zone in the Beowawe geyser field in the Basin and Range Province, which was published in a separate paper  in Geology ([Louis et al. 2019](https://pubs.geoscienceworld.org/gsa/geology/article/573168/Episodic-fluid-flow-in-an-active-fault)).
 
@@ -23,14 +28,14 @@ Beo is a model of heat flow in hot springs and hydrothermal systems. The model c
 	- master. This branch contains the most stable and well tested version of beo.
 	- develop. This branch contains new and experimental, but potentially buggy features. 
 
-* Install Escript
+* Install esys-escript
 
-    - Get the code here: https://launchpad.net/escript-finley
+    - Get the code here: [https://github.com/esys-escript/esys-escript.github.io](https://github.com/esys-escript/esys-escript.github.io)
     - An installation guide can be found here: http://esys.geocomp.uq.edu.au/docs
-    - Note that the newer versions of escript support installation using Flatpak or Docker. These install sandboxed versions of escript that currently do not include the Python modules Scipy or Pandas. However, Beo uses these modules for interpolating variables and model-data comparison. Therefore the recommended way to install escript is to use the binary version in Debian/Ubuntu (``sudo apt-get install python-escript``) or to compile the source code.
+    - Note that the newer versions of escript support installation using Flatpak or Docker. These install sandboxed versions of esys-escript that currently do not include the Python modules Scipy or Pandas. However, Beo uses these modules for interpolating variables and model-data comparison. Therefore the recommended way to install esys-escript is to use the binary version in Debian/Ubuntu (``sudo apt-get install python-escript``), install it using anaconda, or to compile the source code.
 
 * Unzip the beo source code 
-* Navigate to the directory where you have installed escript and go to the subdirectory bin. If you used apt-get to install escript you can normally find escript in ``/usr/bin/``. Then run Beo by executing the following command from the command line:
+* Navigate to the directory where you have installed esys-escript and go to the subdirectory bin. If you used apt-get to install esys-escript you can normally find esys-escript in ``/usr/bin/``. Then run Beo by executing the following command from the command line:
 	
 ````bash
 ./run-escript beo_dir/beo.py
@@ -44,7 +49,7 @@ Alternatively use the command
 ./run-escript -e
 ````
 
-This will show you three lines that define environment variables that your system needs to be able to find the location of escript. Add these lines to your .bashrc (Ubuntu linux) or profile file in your home directory. After adding these lines and logging out and in again, you can start beo by going to the directory where the beo code is located (so not to the escript/bin directory) and start beo.py like any regular python code:
+This will show you three lines that define environment variables that your system needs to be able to find the location of esys-escript. Add these lines to your .bashrc (Ubuntu linux) or profile file in your home directory. After adding these lines and logging out and in again, you can start beo by going to the directory where the beo code is located (so not to the escript/bin directory) and start beo.py like any regular python code:
 
 ````bash
 python beo.py model_parameters/model_parameters.py
@@ -55,7 +60,7 @@ where ``model_parameters/model_parameters.py`` is a file containing all model pa
 
 # Required modules
 
-Beo requires the Python modules [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), [Scipy](http://scipy.org/scipylib/index.html) and [Matplotlib](http://matplotlib.org/downloads.html). Note that the current version of escript and Beo still run on Python2.7. Beo will be ported to Python3 once a Python3 compatible version of escript is released.
+Apart from esys-escript Beo requires the Python modules [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), [Scipy](http://scipy.org/scipylib/index.html) and [Matplotlib](http://matplotlib.org/downloads.html). Note that the current version of Beo still runs on Python2.x. Beo will be ported to Python 3 soon to given the transition of esys-escript to Python3.
 
 An easy way to get a working version of python and these modules is to install a full Python environment like [Anaconda](https://www.anaconda.com/), [Canopy](https://www.enthought.com/products/canopy) or [pythonxy](https://code.google.com/p/pythonxy/wiki/Welcome).
 
@@ -81,7 +86,7 @@ The paper shows model results for two example case studies: the Baden & Schinzna
 
 ## Model input:
 
-All model input parameters are contained in a single Python file. An example file can be found in [``model_parameters.py``](model_parameters/model_parameters.py) located in the directory [model_parameters](model_parameters). The class ``ModelParameters`` contains all parameters needed for a single model run. See the [manual](manual\beo_manual.pdf) for an explanation of the model parameters.
+All model input parameters are contained in a single Python file. An example file can be found in [model_parameters.py](model_parameters/model_parameters.py) located in the directory [model_parameters](model_parameters). The class ``ModelParameters`` contains all parameters needed for a single model run. See the [manual](manual\beo_manual.pdf) for an explanation of the model parameters.
 
 
 ## Multiple model runs
@@ -97,14 +102,14 @@ There are two options for running multiple model runs. The default is a sensitiv
 
 ## Model output
 
-* After each model run, the modeled temperature field and (U-Th)/He data are stored in the directory ``model_output`` as a .pck file, which can be read using Python's pickle module and which can be used by a separate script to make figures. 
+* After each model run, the modeled temperature field and (U-Th)/He data are stored in the directory ``model_output`` as a .pck file, which can be read using Python's pickle module and which can be used by the script [make_figures.py](make_figures.py) to make figures. 
 * Beo saves a comma separated file containing the input parameters and a summary of the results for each model run and each timestep in the same directory.
 * Beo also contains an option to save modeled temperature and advective flux to a VTK file, which can be used for visualization using software such as Paraview and Visit.
 
 
 ## Making figures
 
-The script ``make_figures.py`` will make a single figure of the final temperature field for output files (with extension .pck) found in the directory ``model_output``. After running this script you will be prompted to select the output file that you would like a figure of. The file ``model_parameters/figure_params.py`` contains a number of parameters that control the figure, such as which timeslices to show, the min. and max. coordinates of the area to show, etc.. The resulting figure is saved as a .png file in the same directory as the model output file.
+The script [make_figures.py](make_figures.py) will make a single figure of the final temperature field for output files (with extension .pck) found in the directory ``model_output``. After running this script you will be prompted to select the output file that you would like a figure of. The file [model_parameters/figure_params.py](model_parameters/figure_params.py) contains a number of parameters that control the figure, such as which timeslices to show, the min. and max. coordinates of the area to show, etc.. The resulting figure is saved as a .png file in the same directory as the model output file.
 
 
 # License
@@ -119,4 +124,11 @@ A copy of this license is distributed along with the source code, see LICENSE.tx
 
 Please cite the following paper if you publish work that uses Beo:
 
-Luijendijk, E. (2019) Beo v1.0: Numerical model of heat flow and low-temperature thermochronology in hydrothermal systems, Geoscientific Model Development 12 (9): 4061-4073, https://doi.org/10.5194/gmd-12-4061-2019. 
+Luijendijk, E. (2019) Beo v1.0: Numerical model of heat flow and low-temperature thermochronology in hydrothermal systems, Geoscientific Model Development 12 (9): 4061-4073, [https://doi.org/10.5194/gmd-12-4061-2019](https://doi.org/10.5194/gmd-12-4061-2019). 
+
+The code has also been published at Zenodo:
+
+Elco Luijendijk (2019). Beo: Numerical model of heat flow and low-temperature thermochronology in hydrothermal systems. Zenodo. [http://doi.org/10.5281/zenodo.3359586](http://doi.org/10.5281/zenodo.3359586)
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3359586.svg)](https://doi.org/10.5281/zenodo.3359586)
+

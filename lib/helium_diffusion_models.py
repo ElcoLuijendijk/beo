@@ -182,30 +182,67 @@ def calculate_RDAAM_diffusivity(temperature, time, U238, U235, Th232, radius,
                                 C0=0.39528,
                                 C1=0.01073,
                                 C2=-65.12969,
-                                C3=-7.91715):
+                                C3=-7.91715,
+                                log_omega_p=-22.0,
+                                log_phi_p=-13.0,
+                                Etrap=34.0 * 1000.0,
+                                ln_D0_L_div_a2=9.733,
+                                E_L=122.3 * 1000.0,
+                                L=8.1e-4,
+                                R=8.3144621,
+                                decay_const_U238=4.916e-18,
+                                decay_const_Th232=1.57e-18,
+                                decay_const_U235 = 3.12e-17,
+                                Na=6.022e23,
+                                density=3190.0,
+                                atomic_mass_U238=238.05078826,
+                                atomic_mass_U235=235.0439299,
+                                atomic_mass_Th232=232.0377
+                                ):
 
     """
     calculate He diffusivity as a function of radiation damage
     acc. to RDAAM model, FLowers et al. (2009) GCA
 
-    default kinetic param = fluorapatite (Cl = 0.0 wt %)
 
     parameters:
     -----------
     T : array
-        Temperature midpoint
+        temperature at midpoint (K)
     t : array
-        time, array of begin and end of each timestep (len t = len T +1)
-
+        time, array of begin and end of each timestep (len t = len T +1) (a)
+    U238 : float
+        concentration of 238U (fraction)
+    U235 : float
+        concentration of 235U (fraction)
+    Th232 : float
+        concentration of 232Th (fraction)
+    radius : float
+        equivalent spherical radius of the apatite crystal (m)
+    log_omega_p : float
+        RDAAM parameter, see Flowers et al. (2009) table 1
+    log_phi_p : float
+        RDAAM parameter, see Flowers et al. (2009) table 1
+    Etrap: float
+        RDAAM parameter, see Flowers et al. (2009) table 1
+    ln_D0_L_div_a2 : float
+        RDAAM parameter, see Flowers et al. (2009) table 1
+    E_L: float
+        RDAAM parameter, see Flowers et al. (2009) table 1
+    L : float
+        etchable track length
+    R : float
+    Na : float
+        Avagadro number
+    density : float
+        density of apatite (kg m^-3)
+    atomic_mass_U238 : float
+        atomic mass 238U
+    atomic_mass_U235: float
+        atomic mass 235U
+    atomic_mass_Th232 : float
+        atomic mass 232Th
     """
-
-    log_omega_p = -22.0
-    log_phi_p = -13.0
-    Etrap = 34.0 * 1000.0 # J/mol
-    ln_D0_L_div_a2 = 9.733
-    E_L = 122.3 * 1000.0 # J/mol
-    L = 8.1e-4  # in cm (!)
-    R = 8.3144621
 
     # calculate reduced track density
         # get annealing kinetics:
@@ -271,18 +308,7 @@ def calculate_RDAAM_diffusivity(temperature, time, U238, U235, Th232, radius,
 
     rho_r = AFT.calculate_normalized_density(rc)
 
-    decay_const_U238 = 4.916e-18
-    decay_const_Th232 = 1.57e-18
-    decay_const_U235 = 3.12e-17
 
-    Na = 6.022e23 # avagadro number
-
-    # density of apatite
-    density = 3190.0
-
-    atomic_mass_U238 = 238.05078826
-    atomic_mass_U235 = 235.0439299
-    atomic_mass_Th232 = 232.0377
 
     U238_g = U238 * 1000
     U238_mol = U238_g / atomic_mass_U238
@@ -347,9 +373,9 @@ def calculate_RDAAM_diffusivity(temperature, time, U238, U235, Th232, radius,
 
 
 def calculate_he_age_meesters_dunai_2002(t, T, radius, U, Th,
-                                         D0_div_a2=np.exp(13.4),
-                                         Ea=32.9 * 4184,
                                          R=8.3144621,
+                                         D0=50.0 / 1e4,
+                                         Ea=32.9 * 4184.0,
                                          decay_constant_238U=4.916e-18,
                                          decay_constant_232Th=1.57e-18,
                                          decay_constant_235U=3.12e-17,
@@ -360,7 +386,12 @@ def calculate_he_age_meesters_dunai_2002(t, T, radius, U, Th,
                                          C0=0.39528,
                                          C1=0.01073,
                                          C2=-65.12969,
-                                         C3=-7.91715,
+                                         C3=-7.9171,
+                                         log_omega_p=-22.0,
+                                         log_phi_p=-13.0,
+                                         Etrap=34.0 * 1000.0,
+                                         ln_D0_L_div_a2=9.733,
+                                         E_L=122.3 * 1000.0,
                                          use_fortran_algorithm=True,
                                          n_eigenmodes=15):
 
@@ -382,18 +413,6 @@ def calculate_he_age_meesters_dunai_2002(t, T, radius, U, Th,
         temperature in Kelvin
     
 
-
-    :param t:
-    :param T:
-    :param radius:
-    :param U238:
-    :param Th232:
-    :param D0_div_a2:
-    :param Ea:
-    :param R:
-    :param decay_constant_238U:
-    :param decay_constant_232Th:
-    :return:
     """
 
     # calculate He production:
@@ -405,10 +424,11 @@ def calculate_he_age_meesters_dunai_2002(t, T, radius, U, Th,
     decay_constant = Ur0 / (8*U238 + 7*U235 + 6*Th232)
 
     if method is 'Farley2000':
-        #D0 = D0_div_a2 * radius ** 2
+
         # values in HeFTy 1.8.3:
-        D0 = 50.0 / 1e4     # m2/sec
-        Ea = 32.9 * 4184.0  # J/mol
+        #D0 = 50.0 / 1e4     # m2/sec
+        #Ea = 32.9 * 4184.0  # J/mol
+
         D_div_a2 = D0 / (radius**2) * np.exp(-Ea / (R*T))
         D = D_div_a2 * radius**2
         #print 'using Farley (2000) diffusion parameters'
@@ -418,10 +438,15 @@ def calculate_he_age_meesters_dunai_2002(t, T, radius, U, Th,
         #print 'with U238=%0.3e, U235=%0.3e, Th232=%0.3e, radius=%0.3e' % \
         #      (U238, U235, Th232, radius)
         D = calculate_RDAAM_diffusivity(T, t, U238, U235, Th232, radius,
-                                         alpha=alpha, C0=C0, C1=C1,
-                                         C2=C2, C3=C3,
-                                         use_fortran_algorithm=
-                                         use_fortran_algorithm)
+                                        alpha=alpha, C0=C0, C1=C1,
+                                        C2=C2, C3=C3,
+                                        log_omega_p=log_omega_p,
+                                        log_phi_p=log_phi_p,
+                                        Etrap=Etrap,
+                                        ln_D0_L_div_a2=ln_D0_L_div_a2,
+                                        E_L=E_L,
+                                        use_fortran_algorithm=
+                                        use_fortran_algorithm)
 
     elif method is 'Wolf1996':
         #print 'using Wolf et al. (1996) diffusion parameters'

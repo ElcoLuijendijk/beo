@@ -234,6 +234,17 @@ class ModelParams:
     # alpha ejection stopping distance (um), see Ketcham (2011) for estimates
     stopping_distance = 21e-6
 
+    # helium diffusion parameters Farley 2000 model:
+    D0 = 50.0 / 1e4
+    Ea = 32.9 * 4184.0
+
+    # RDAAM parameters (see Flowers et al. 2009, table 1):
+    log_omega_p = -22.0
+    log_phi_p = -13.0
+    Etrap = 34.0 * 1000.0
+    ln_D0_L_div_a2 = 9.733
+    E_L = 122.3 * 1000.0
+
     # x location of faults (m):
     fault_xs = [0.0]
 
@@ -266,7 +277,7 @@ class ModelParams:
     aquifer_fluxes = [[140/year, -140/year], [0, 0]]
     # left side of aquifer. Use None to use the fault as the left-hand boundary
     aquifer_left_bnds = [-1500.0, 124.0]
-    # left side of aquifer. Use None to use the fault as the left-hand boundary
+    # right side of aquifer. Use None to use the fault as the right-hand boundary
     aquifer_right_bnds = [126.0, 300.0]
 
     # angle of aquifer with horizontal plane (degrees)

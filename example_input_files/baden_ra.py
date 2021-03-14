@@ -265,6 +265,8 @@ class ModelParams:
     aquifer_fluxes = [[-250.0 / year], [0.0]]
     # left side of aquifer. right hand bnd is assumed to be the fault zone
     aquifer_left_bnds = [-1000.0, -1000.0]
+    # right side of aquifer. Use None to use the fault as the right-hand boundary
+    aquifer_right_bnds = [None, None]
 
     aquifer_angles = [0.0]
 

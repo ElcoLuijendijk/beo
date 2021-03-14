@@ -187,6 +187,12 @@ class ModelParams:
     # U-Th/He params
     calculate_he_ages = False
 
+    # calculate thermochron ages for surface layer, including the effects of exhumation
+    model_thermochron_surface = False
+
+    # model thermochron ages in a borehole section
+    model_thermochron_borehole = True
+
     # model-data comparison AHe samples
     model_AHe_samples = True
     AHe_data_file = 'model_parameters/AHe_data.csv'
@@ -211,6 +217,11 @@ class ModelParams:
     T0 = 10.0
     T_surface = 10.0
 
+    # cooling rate for calculating pre-hydrothermal activity ages (degr. C / sec)
+    # this is only used when modeling borehole temperature samples
+    t_cooling = [4.0 * My, 3.0 * My, 1.0 * My]
+    cooling_rates = [(1.5 * 27.) / My, 5.0 / My, (1.25 * 27.) / My]
+
     # apatite params
     radius = 100.0 * 1e-6
     U238 = 8.98e-6
@@ -221,6 +232,17 @@ class ModelParams:
 
     # alpha ejection stopping distance (um), see Ketcham (2011) for estimates
     stopping_distance = 21e-6
+
+    # helium diffusion parameters Farley 2000 model:
+    D0 = 50.0 / 1e4
+    Ea = 32.9 * 4184.0
+
+    # RDAAM parameters (see Flowers et al. 2009, table 1):
+    log_omega_p = -22.0
+    log_phi_p = -13.0
+    Etrap = 34.0 * 1000.0
+    ln_D0_L_div_a2 = 9.733
+    E_L = 122.3 * 1000.0
 
     # x location of fault (m):
     fault_xs = [0.0]
@@ -254,6 +276,10 @@ class ModelParams:
     aquifer_fluxes = [[-250.0 / year], [0.0]]
     # left side of aquifer. right hand bnd is assumed to be the fault zone
     aquifer_left_bnds = [-1000.0, -1000.0]
+    # right side of aquifer. Use None to use the fault as the right-hand boundary
+    aquifer_right_bnds = [None, None]
+
+    aquifer_angles = [0.0]
 
     # relative limit to consider a sample partial reset or not, ie if 0.95
     # a sample will be considered partially reset if the modeled uncorrected
@@ -280,6 +306,16 @@ class ModelParams:
     # into account the changing position of the fault surface over time
     # due to exhumation
     borehole_xs = [-250.0]
+
+    # add additional mesh points for the borehole
+    discretize_borehole = False
+
+    # depth of boreholes
+    # this is only used for adding mesh node points to resolve the borehole
+    borehole_depths = [500.0]
+
+    #
+    borehole_cellsize = 50.0
 
     # temperature changes to report, report area in depth slices with temperature changes > x degrees
     T_change_report = [10.0]
