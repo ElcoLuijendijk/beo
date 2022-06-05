@@ -12,7 +12,7 @@
 
 Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code [esys-escript](https://github.com/esys-escript/esys-escript.github.io) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The resulting temperature history is used to calculate the apatite (U-Th)/He (AHe) thermochronometer and can be compared to measured AHe ages. Beo supports automated model runs to explore which parameter values like fluid fluxes, fault geometry, age and duration of the hydrothermal activity best match thermochronometer data, spring temperature data or temperature records in nearby boreholes. 
 
- A description of the model background and two example case studies can be found in the journal Geoscientific Model Development ([Luijendijk 2019](https://doi.org/10.5194/gmd-12-4061-2019)). The model code was used to quantify episodic fluid flow in a fault zone in the Beowawe geyser field in the Basin and Range Province, which was published in a separate paper  in Geology ([Louis et al. 2019](https://pubs.geoscienceworld.org/gsa/geology/article/573168/Episodic-fluid-flow-in-an-active-fault)). In addition the code was used to quantify the history of a hydrothermal system in western Canada by Scott Jess and co-authors [Jess et al. 2021](https://doi.org/10.1029/2021JF006286)
+ A description of the model background and two example case studies can be found in the journal Geoscientific Model Development ([Luijendijk 2019](https://doi.org/10.5194/gmd-12-4061-2019)). The model code was used to quantify episodic fluid flow in a fault zone in the Beowawe geyser field in the Basin and Range Province, which was published in a separate paper  in Geology ([Louis et al. 2019](https://pubs.geoscienceworld.org/gsa/geology/article/573168/Episodic-fluid-flow-in-an-active-fault)). In addition the code was used to quantify the history of a hydrothermal system in western Canada by Scott Jess and co-authors ([Jess et al. 2021](https://doi.org/10.1029/2021JF006286))
 
 
 ![Example model run showing modelled temperatures in a simple hydrothermal system with upward fluid flow along a single fault zone. The top panels show the resulting modelled AHe ages at the surface and at 500 m depth.](manual/fig/model_example_fig.png)
@@ -22,16 +22,16 @@ Beo is a model of heat flow in hot springs and hydrothermal systems. The model c
 
 # Getting started
 
-* Click the download link on the right for a zip file of the source code or clone the repository
+* Clone the repository or follow these linke to download a zip file of the [Python 2 version](https://github.com/ElcoLuijendijk/beo/archive/refs/heads/master.zip) or [Python 3 version](https://github.com/ElcoLuijendijk/beo/archive/refs/heads/py3.zip) of Beo
 
 * Note that there are two branches: 
-	- master. This branch contains the most stable and well tested version of beo.
-	- develop. This branch contains new and experimental, but potentially buggy features. 
+	- [master](https://github.com/ElcoLuijendijk/beo/tree/master). This branch contains the most stable and well tested version of beo.
+	- [py3](https://github.com/ElcoLuijendijk/beo/tree/py3). This branch contains a new Python 3 compatible version of Beo. This has however not been tested extensively yet. 
 
 * Install esys-escript
 
     - Get the code here: [https://github.com/esys-escript/esys-escript.github.io](https://github.com/esys-escript/esys-escript.github.io)
-    - An installation guide can be found here: http://esys.geocomp.uq.edu.au/docs
+    - An installation guide can be found here: https://github.com/esys-escript/esys-escript.github.io/blob/master/install.pdf
     - Note that the newer versions of escript support installation using Flatpak or Docker. These install sandboxed versions of esys-escript that currently do not include the Python modules Scipy or Pandas. However, Beo uses these modules for interpolating variables and model-data comparison. Therefore the recommended way to install esys-escript is to use the binary version in Debian/Ubuntu (``sudo apt-get install python-escript``), install it using anaconda, or to compile the source code.
 
 * Unzip the beo source code 
