@@ -22,7 +22,7 @@ Beo is a model of heat flow in hot springs and hydrothermal systems. The model c
 
 # Getting started
 
-* Clone the repository or follow these linke to download a zip file of the [Python 2 version](https://github.com/ElcoLuijendijk/beo/archive/refs/heads/master.zip) or [Python 3 version](https://github.com/ElcoLuijendijk/beo/archive/refs/heads/py3.zip) of Beo
+* Clone the repository or use the following links to download a zip file of the [Python 2 version](https://github.com/ElcoLuijendijk/beo/archive/refs/heads/master.zip) or [Python 3 version](https://github.com/ElcoLuijendijk/beo/archive/refs/heads/py3.zip) of Beo
 
 * Note that there are two branches: 
 	- [master](https://github.com/ElcoLuijendijk/beo/tree/master). This branch contains the most stable and well tested version of beo.
