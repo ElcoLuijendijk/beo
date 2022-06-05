@@ -216,9 +216,9 @@ def setup_mesh_with_exhumation_new(width, x_flt_surface, fault_width, fault_angl
 
     x_flt = (-z_flt) * np.tan(np.deg2rad(90 - fault_angle)) - 0.01 + x_flt_surface
 
-    print 'x, z coords of fault locations in mesh:'
+    print('x, z coords of fault locations in mesh:')
     for x, z in zip(x_flt, z_flt):
-        print x, z
+        print(x, z)
 
     x_left_bnd = np.min(x_flt) - width
     x_right_bnd = np.max(x_flt) + width
@@ -226,16 +226,16 @@ def setup_mesh_with_exhumation_new(width, x_flt_surface, fault_width, fault_angl
     check_x_bnds = False
     if check_x_bnds is True:
         if np.min(x_flt) <= x_left:
-            print 'warning the left hand side of the fault is at %0.2f, ' \
-                  'which is outside the model domain boundary at x=%0.2f' % (np.min(x_flt), x_left)
+            print('warning the left hand side of the fault is at %0.2f, ' \
+                  'which is outside the model domain boundary at x=%0.2f' % (np.min(x_flt), x_left))
             x_left = np.min(x_flt) - fault_width * 2
-            print 'relocating left hand boundary to %0.2f ' % x_left
+            print('relocating left hand boundary to %0.2f ' % x_left)
 
         if np.max(x_flt) >= width:
-            print 'warning the right hand side of the fault is at %0.2f, ' \
-                  'which is outside the model domain boundary at x=%0.2f' % (np.max(x_flt), width)
+            print('warning the right hand side of the fault is at %0.2f, ' \
+                  'which is outside the model domain boundary at x=%0.2f' % (np.max(x_flt), width))
             width = np.max(x_flt) + fault_width * 2
-            print 'relocating right hand boundary to %0.2f ' % width
+            print('relocating right hand boundary to %0.2f ' % width)
 
     xys = [[[x_left_bnd, z_air], [x_flt[0] -fault_width / 2.0, z_air],
             [x_flt[0] + fault_width / 2.0, z_air], [x_right_bnd, z_air]]]
@@ -247,9 +247,9 @@ def setup_mesh_with_exhumation_new(width, x_flt_surface, fault_width, fault_angl
                     [x_right_bnd, zf]])
     xys.append([[x_left_bnd, z_base], [x_right_bnd, z_base]])
 
-    print 'corner points in mesh: '
+    print('corner points in mesh: ')
     for xysi in xys:
-        print xysi
+        print(xysi)
 
     points = []
     for xyi in xys:
@@ -522,7 +522,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
     store_results_count = 0
 
     if specified_flux is not None:
-        print 'solving with specified heat flux bnd'
+        print('solving with specified heat flux bnd')
         specified_heat_flux = specified_flux * specified_flux_loc
         #specified_heat_flux = specified_flux
 
@@ -531,18 +531,18 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                         q=specified_T_loc,
                         y=specified_heat_flux)
     else:
-        print 'only fixed T bnd'
+        print('only fixed T bnd')
         hf_pde.setValue(A=A, D=D,
                         r=specified_temperature,
                         q=specified_T_loc)
 
-    print 'finding solution for steady state HF'
+    print('finding solution for steady state HF')
     T_steady = hf_pde.getSolution()
     T = T_steady
 
-    print 'modeled steady state temperatures ', T_steady
+    print('modeled steady state temperatures ', T_steady)
 
-    print 'starting transient heat flow calculations'
+    print('starting transient heat flow calculations')
     runtimes = [0.0]
     t_total = 0
     q_vectors = [es.Vector((0, 0), es.Function(mesh))]
@@ -575,7 +575,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         exceed_boiling_temps = [exceed_boiling_temp]
 
         if es.sup(vapour) >= 1:
-            print 'warning, vapour present at initial steady-state P-T conditions'
+            print('warning, vapour present at initial steady-state P-T conditions')
     else:
         boiling_temps = None
         exceed_boiling_temps = None
@@ -593,9 +593,9 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
     for time_period, fault_flux, duration in zip(itertools.count(), fault_fluxes, durations):
 
-        print 'time period %i of %i' % (time_period + 1, n_time_periods)
-        print 'duration of %i' % duration
-        print 'fluxes in faults: ', fault_flux
+        print('time period %i of %i' % (time_period + 1, n_time_periods))
+        print('duration of %i' % duration)
+        print('fluxes in faults: ', fault_flux)
 
         # set up advective flow field in faults and aquifers
         q_vector = es.Vector((0, 0), es.Function(mesh))
@@ -613,8 +613,8 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                     q_vector[0] += fault_zone_segment * qh_fault_zone
                     q_vector[1] += fault_zone_segment * qv_fault_zone
 
-                    print 'adding fault flux of %0.2e to fault segment %i of fault %i' \
-                          % (q_fault_zone_segment, n_segment, h)
+                    print('adding fault flux of %0.2e to fault segment %i of fault %i' \
+                          % (q_fault_zone_segment, n_segment, h))
             else:
                 # add heat advection in fault zone
                 qh_fault_zone = - q_fault_zone * np.cos(np.deg2rad(fault_angle))
@@ -626,16 +626,16 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         if aquifer_locs != []:
             for k, aquifer_loc, aquifer_flux, aquifer_angle in zip(itertools.count(), aquifer_locs,
                                                     aquifer_fluxes_m_per_sec[time_period], aquifer_angles):
-                print 'adding aquifer flux %0.2e to aquifer %i' % (aquifer_flux, k)
+                print('adding aquifer flux %0.2e to aquifer %i' % (aquifer_flux, k))
                 aquifer_flux_x = aquifer_flux * np.cos(np.deg2rad(aquifer_angle))
                 aquifer_flux_y = aquifer_flux * np.sin(np.deg2rad(aquifer_angle))
 
                 q_vector[0] += aquifer_loc * aquifer_flux_x
                 q_vector[1] += aquifer_loc * aquifer_flux_y
 
-        print 'modeled advective flux:'
-        print '\tqh = ', q_vector[0]
-        print '\tqz = ', q_vector[1]
+        print('modeled advective flux:')
+        print('\tqh = ', q_vector[0])
+        print('\tqz = ', q_vector[1])
 
         # make sure only flow in subsurface
         depth_ele = surface_level - xyze[1]
@@ -655,7 +655,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             Y = rho_var * c_var * T
 
         else:
-            print 'solving steady-state, with advective flux'
+            print('solving steady-state, with advective flux')
 
             # set PDE coefficients, steady-state flow equation
             A = K_var * kronecker_delta
@@ -666,7 +666,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         # update bnd cond if spec flux bnd
         if specified_flux is not None:
 
-            print '\tadding specified flux bnd'
+            print('\tadding specified flux bnd')
             if solve_as_steady_state is False:
                 specified_heat_flux = specified_flux * specified_flux_loc * dt
             else:
@@ -685,11 +685,11 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         # calculate courant number
         cfl_cond = q_vector * dt / mesh.getSize()
         cfl_cond_max = es.sup(cfl_cond)
-        print 'CFL number: ', cfl_cond
+        print('CFL number: ', cfl_cond)
 
         if cfl_cond_max > 1:
 
-            print 'warning, cfl condition not met, cfl number = %0.2f' % cfl_cond_max
+            print('warning, cfl condition not met, cfl number = %0.2f' % cfl_cond_max)
 
         nt = int(duration / dt)
 
@@ -697,27 +697,27 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
         screen_output_interval = int(np.ceil(nt / max_screen_output))
         if screen_output_interval < 1:
             screen_output_interval = 1
-        print 'screen output once every %i timesteps' % screen_output_interval
+        print('screen output once every %i timesteps' % screen_output_interval)
 
         # calculate grid Peclet number
         Pe = rho_f * c_f * q_vector * mesh.getSize() / K_var
-        print 'max. grid peclet number = ', es.Lsup(Pe)
+        print('max. grid peclet number = ', es.Lsup(Pe))
 
         #############################################
         # iterate heat flow eq.s
         #############################################
-        print 'x' * 10
-        print 'starting iterations, total timesteps = %i' % nt
+        print('x' * 10)
+        print('starting iterations, total timesteps = %i' % nt)
         start = time.time()
 
         if solve_as_steady_state is True:
 
             if variable_K_air is True or vapour_correction is True:
                 nt = steady_state_iterations
-                print 'running steady-state model with %i iterations for variable K air or vapour correction' % nt
+                print('running steady-state model with %i iterations for variable K air or vapour correction' % nt)
             else:
                 nt = 1
-                print 'running steady-state model without iterations'
+                print('running steady-state model without iterations')
 
         update_PDE = False
 
@@ -778,9 +778,9 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                                                               air_temperature)
 
                 if debug is True:
-                    print 'save as csv file?'
+                    print('save as csv file?')
 
-                    if raw_input() == 'y':
+                    if input() == 'y':
 
                         es.saveDataCSV('debug/interpolated_surface_T.csv', x=xyz[0], y=xyz[1],
                                        surface_T=surface_T_int)
@@ -956,38 +956,38 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
                 start = end
 
-                print 'step %i of %i' % (t + 1, nt)
+                print('step %i of %i' % (t + 1, nt))
 
-                print '\truntime = %0.2e yrs' % (t_total / year)
-                print '\tcomputational time for one timestep = %0.3f sec' \
-                      % (comptime / screen_output_interval)
-                print '\tcomputational time needed by solver = %0.3f sec' \
-                      % solver_time
-                print '\tactual surface level ', surface_level
+                print('\truntime = %0.2e yrs' % (t_total / year))
+                print('\tcomputational time for one timestep = %0.3f sec' \
+                      % (comptime / screen_output_interval))
+                print('\tcomputational time needed by solver = %0.3f sec' \
+                      % solver_time)
+                print('\tactual surface level ', surface_level)
                 if exhumation_rate > 0:
-                    print '\tclosest surface in mesh ', surface_level_mesh
-                print '\ttemperature: ', T
+                    print('\tclosest surface in mesh ', surface_level_mesh)
+                print('\ttemperature: ', T)
                 if es.sup(surface) > 0:
-                    print '\tmax. temperature at land surface: ', \
-                        es.sup(T * surface)
+                    print('\tmax. temperature at land surface: ', \
+                        es.sup(T * surface))
                 else:
-                    print '\tcould not find land surface nodes'
+                    print('\tcould not find land surface nodes')
 
                 if vapour_correction is True:
                     if es.sup(vapour) > 0:
-                        print '\tvapour present in: ', es.integrate(vapour), ' m^2'
-                        print '\t\tfrom x = ', xmin_vapour, ' to x = ', \
-                            xmax_vapour
-                        print '\t\tand from y = ', ymin_vapour, ' to y = ', \
-                            ymax_vapour
+                        print('\tvapour present in: ', es.integrate(vapour), ' m^2')
+                        print('\t\tfrom x = ', xmin_vapour, ' to x = ', \
+                            xmax_vapour)
+                        print('\t\tand from y = ', ymin_vapour, ' to y = ', \
+                            ymax_vapour)
                         # print '\tmax. liquid T at the surface = ', \
                         #    es.sup(boiling_temp * land_surface)
                     else:
-                        print '\tno vapour present'
+                        print('\tno vapour present')
 
                 if variable_K_air is True:
-                    print '\tinterpolated surface T ', surface_T_int
-                    print '\tcalculated K air ', K_air
+                    print('\tinterpolated surface T ', surface_T_int)
+                    print('\tcalculated K air ', K_air)
 
             # store output
             store_results_count += 1
@@ -1005,7 +1005,7 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
 
                 store_results_count = 0
 
-        print 'final T after advective heating ', T
+        print('final T after advective heating ', T)
 
     return (np.array(runtimes), T_steady, Ts, q_vectors,
             np.array(surface_levels), boiling_temps, exceed_boiling_temps)
@@ -1027,7 +1027,7 @@ def model_run(mp):
     ############################
     # construct rectangular mesh
     ############################
-    print 'constructing mesh (note, this may take a while....)'
+    print('constructing mesh (note, this may take a while....)')
 
     z_surface = 0
     z_base = -mp.total_depth
@@ -1044,10 +1044,10 @@ def model_run(mp):
 
         msg += 'lowering z_fine to %0.1f' % mp.z_fine
 
-        print msg
+        print(msg)
 
     if mp.add_exhumation is False:
-        print 'construct static mesh without exhumation'
+        print('construct static mesh without exhumation')
 
         # make sure to set exhumation rate to 0, will get errors in code otherwise...
         mp.exhumation_rate = 0.0
@@ -1082,18 +1082,18 @@ def model_run(mp):
         #elevation_top = z_surface + exhumed_thickness + mp.air_height
 
     else:
-        print 'construct dynamic mesh with exhumation'
+        print('construct dynamic mesh with exhumation')
         exhumed_thickness = mp.exhumation_rate * (np.sum(np.array(mp.durations)) / mp.year)
         exhumation_steps = mp.exhumation_steps
 
         min_layer_thickness = mp.min_layer_thickness
         if exhumed_thickness / exhumation_steps < min_layer_thickness:
-            print 'warning, exhumation levels would be smaller than %0.2f m' % min_layer_thickness
+            print('warning, exhumation levels would be smaller than %0.2f m' % min_layer_thickness)
             exhumation_steps = int(np.ceil(exhumed_thickness) / min_layer_thickness)
             if exhumation_steps < 1:
                 exhumation_steps = 1
 
-            print 'reducing exhumation steps to %i' % exhumation_steps
+            print('reducing exhumation steps to %i' % exhumation_steps)
 
         if exhumed_thickness != 0:
             # track AHe and temperature in each exhumed layer in the model domain:
@@ -1129,22 +1129,22 @@ def model_run(mp):
     # see here for more info:
     # https://answers.launchpad.net/escript-finley/+question/189076
     ###############################################################
-    print 'converting input data to Escript variables'
+    print('converting input data to Escript variables')
     xyz = mesh.getX()
 
     #######################################
     # set up PDE solver
     #######################################
-    print 'setting up PDE and boundary conditions'
+    print('setting up PDE and boundary conditions')
     hf_pde = linearPDEs.LinearPDE(mesh)
     adv_pde = None
 
     solver = mp.solver
     if solver == 'GMRES':
-        print 'using GMRES solver for heat transport PDE'
+        print('using GMRES solver for heat transport PDE')
         hf_pde.getSolverOptions().setSolverMethod(es.SolverOptions.GMRES)
     elif solver is 'DIRECT':
-        print 'using direct solver for heat transport PDE'
+        print('using direct solver for heat transport PDE')
         hf_pde.getSolverOptions().setSolverMethod(
             es.SolverOptions.DIRECT)
     elif solver is 'ROWSUM_LUMPING':
@@ -1216,8 +1216,8 @@ def model_run(mp):
         porosity = porosity * es.whereNonPositive(ind_layer_r * indr) \
                   + es.wherePositive(ind_layer_r * indr) * mp.porosities[i]
 
-    print 'matrix thermal conductivity: ', K_solid
-    print 'porosity: ', porosity
+    print('matrix thermal conductivity: ', K_solid)
+    print('porosity: ', porosity)
 
     # calculate bulk material parameters
     K_b = K_solid ** (1 - porosity) * mp.K_water ** porosity
@@ -1257,7 +1257,7 @@ def model_run(mp):
                       * (subsurface * es.whereNegative(xyz[0] - fault_right))
                       * (subsurface * es.wherePositive(xyz[1] - fault_bottom)))
 
-        print 'fault zone locs x ', fault_left, fault_right
+        print('fault zone locs x ', fault_left, fault_right)
 
         fault_zones.append(fault_zone)
 
@@ -1290,8 +1290,8 @@ def model_run(mp):
 
                 fault_segments_i.append(fault_zone_segment)
 
-                print 'adding segment from z=%0.2f to %0.2f for fault %i ' \
-                      % (segment_bottom, segment_top, h)
+                print('adding segment from z=%0.2f to %0.2f for fault %i ' \
+                      % (segment_bottom, segment_top, h))
             fault_segments_all.append(fault_segments_i)
 
     # add horizontal aquifers:
@@ -1304,7 +1304,7 @@ def model_run(mp):
 
             try:
                 assert aquifer_top > aquifer_bottom
-            except AssertionError, msg:
+            except AssertionError as msg:
                 new_msg = 'error, the aquifer bottom is higher than the top, check input file'
                 raise AssertionError(new_msg)
 
@@ -1337,13 +1337,13 @@ def model_run(mp):
             aquifer_center_x = es.integrate(aquifer_loc * xyz[0]) / es.integrate(xyz[0])
             aquifer_center_y = es.integrate(aquifer_loc * xyz[1]) / es.integrate(xyz[1])
 
-            print 'added aquifer centered on x= ', aquifer_center_x,' and z = ', aquifer_center_y
+            print('added aquifer centered on x= ', aquifer_center_x,' and z = ', aquifer_center_y)
 
             try:
                 assert(es.Lsup(aquifer_loc) >= 1.0)
-            except AssertionError, msg:
-                print 'error, something wrong with assigning the aquifer nodes. ' \
-                      'check the aquifer params in the input file and the grid cell size'
+            except AssertionError as msg:
+                print('error, something wrong with assigning the aquifer nodes. ' \
+                      'check the aquifer params in the input file and the grid cell size')
 
     # find intersections fault and aquifers
     fault_int_locs = []
@@ -1436,9 +1436,9 @@ def model_run(mp):
             steady_state_iterations=mp.n_iterations_steady_state,
             store_results_interval=store_results_interval)
 
-    print 'T after model runs: ', Ts[-1]
-    print 'number of saved temperature fields = %i' % (len(Ts))
-    print 'done modeling'
+    print('T after model runs: ', Ts[-1])
+    print('number of saved temperature fields = %i' % (len(Ts)))
+    print('done modeling')
 
     # convert modeled T field and vectors to arrays
     xyz_array, T0 = convert_to_array_with_coords(Ts[0])
@@ -1468,7 +1468,7 @@ def model_run(mp):
         boiling_temp_list = None
 
         if np.max(xyz_array_bt - xyz_array_bt) > 0:
-            print 'warning, node coords for boiling and T parameter are not the same'
+            print('warning, node coords for boiling and T parameter are not the same')
 
         xyz_array_exc, bte_last = convert_to_array_with_coords(exceed_boiling_temps[-1])
         bt_list = [convert_to_array(bt) for bt in exceed_boiling_temps]
@@ -1538,11 +1538,11 @@ def model_run(mp):
             dfhs = pd.read_csv(mp.AHe_data_file)
 
             if mp.profile_number in dfhs['profile'].values:
-                print 'selecting profile %i'
+                print('selecting profile %i')
                 locs = dfhs['profile'] == mp.profile_number
                 dfhs = dfhs.loc[locs]
             else:
-                print 'not selecting profile, keeping all AHe data'
+                print('not selecting profile, keeping all AHe data')
 
             AHe_sample_names = dfhs['sample']
             AHe_sample_distances = dfhs['distance'].values
@@ -1560,7 +1560,7 @@ def model_run(mp):
         t_prov = np.linspace(0, mp.t0, 31)
         T_prov = np.linspace(mp.T0, mp.T_surface, 31)
 
-        print 'calculating helium ages'
+        print('calculating helium ages')
 
         if mp.model_thermochron_surface is True:
 
@@ -1582,7 +1582,7 @@ def model_run(mp):
 
             for target_depth in mp.target_zs:
 
-                print 'modeling AHe for samples at surface level = %0.2f m' % target_depth
+                print('modeling AHe for samples at surface level = %0.2f m' % target_depth)
 
                 z_tolerance = 0.01
                 ind_surface = np.where(np.abs(xyz_array[:, 1] - target_depth) < z_tolerance)[0]
@@ -1654,7 +1654,7 @@ def model_run(mp):
                 # sort the data in order of increasing x
                 ind_surface2 = ind_surface[sort_order]
 
-                for i in xrange(nt):
+                for i in range(nt):
                     T_surf_mod[i, :] = T_array[i][ind_surface2]
                     he_ages_surface[i] = he_ages_surface[i][sort_order]
 
@@ -1666,7 +1666,7 @@ def model_run(mp):
                 # calculate ages of AHe samples
                 ###############################
                 if mp.model_AHe_samples is True:
-                    print 'modeling the ages for %i AHe samples' % (n_ahe_samples)
+                    print('modeling the ages for %i AHe samples' % (n_ahe_samples))
                     unique_dist = np.unique(AHe_relative_sample_distances)
 
                     #z_tolerance = 0.01
@@ -1726,19 +1726,19 @@ def model_run(mp):
                             T_hes.append(T_he)
 
                         if np.max(np.abs(t_hes[1] - t_hes[0])) > 0.0:
-                            print 'warning, something wrong with taking time ' \
-                                  'history of left and right nodes'
+                            print('warning, something wrong with taking time ' \
+                                  'history of left and right nodes')
 
                         T_he = x_factor * T_hes[1] + (1 - x_factor) * T_hes[0]
                         t_he = t_hes[0]
 
                         # find AHe grain data
                         grain_inds = np.where(AHe_relative_sample_distances == rel_distance)[0]
-                        print 'AHe grains: ', grain_inds
-                        print 'distance to fault (m): ', rel_distance
-                        print 'x coord of fault (m): ', x_flt_timestep
-                        print 'absolute distance for layer at z= %0.2f , x = %0.2f m' % (target_depth, distance)
-                        print 'total time = %0.2e yr' % (t_he[-1] / year)
+                        print('AHe grains: ', grain_inds)
+                        print('distance to fault (m): ', rel_distance)
+                        print('x coord of fault (m): ', x_flt_timestep)
+                        print('absolute distance for layer at z= %0.2f , x = %0.2f m' % (target_depth, distance))
+                        print('total time = %0.2e yr' % (t_he[-1] / year))
 
                         for grain_ind in grain_inds:
 
@@ -1777,11 +1777,11 @@ def model_run(mp):
 
                             My = 1e6 * 365 * 24 * 60 * 60.0
 
-                            print 'min, mean, max T = %0.2f, %0.2f, %0.2f C' % (T_he.min() - 273.15,
+                            print('min, mean, max T = %0.2f, %0.2f, %0.2f C' % (T_he.min() - 273.15,
                                                                                 T_he.mean() - 273.15,
-                                                                                T_he.max() - 273.15)
-                            print 'modeled AHe age uncorr = %0.2f Ma' % (he_age_i[-1] / My)
-                            print 'modeled AHe age corr = %0.2f Ma' % (he_age_i_corr[-1] / My)
+                                                                                T_he.max() - 273.15))
+                            print('modeled AHe age uncorr = %0.2f Ma' % (he_age_i[-1] / My))
+                            print('modeled AHe age corr = %0.2f Ma' % (he_age_i_corr[-1] / My))
 
                             # copy AHe ages back into array with same length as the
                             # runtime and temperature arrays
@@ -1823,8 +1823,8 @@ def model_run(mp):
             borehole_x = mp.borehole_xs[0]
             lowest_ahe_sample = -np.max(dfhs['depth'])
 
-            print 'modeling AHe for samples at borehole loc = %0.2f m up to a depth of %0.2f m' \
-                  % (borehole_x, lowest_ahe_sample)
+            print('modeling AHe for samples at borehole loc = %0.2f m up to a depth of %0.2f m' \
+                  % (borehole_x, lowest_ahe_sample))
             #ind_borehole_x = np.abs(xyz_array[:, 0] - borehole_x) < x_tolerance
 
             #ind_borehole_y = (xyz_array[:, 1] < 0) & (xyz_array[:, 1] > lowest_ahe_sample)
@@ -1992,8 +1992,8 @@ def model_run(mp):
                     try:
                         assert len(dfhs.loc[ind_grain]) == 1
                     except AssertionError:
-                        print 'error, either more than one or no grain with the name %s' % grain_name
-                        print dfhs.loc[ind_grain]
+                        print('error, either more than one or no grain with the name %s' % grain_name)
+                        print(dfhs.loc[ind_grain])
                         pdb.set_trace()
 
                     he_age_i = he.calculate_he_age_meesters_dunai_2002(
@@ -2034,33 +2034,33 @@ def model_run(mp):
         #if mp.report_corrected_AHe_ages is True:
         #    Ahe_ages_all_output = Ahe_ages_corr_all
 
-        print 'done calculating helium ages'
+        print('done calculating helium ages')
 
         My = 1e6 * 365 * 24 * 60 * 60.
 
         if mp.model_thermochron_surface is True:
 
-            print '\nAHe ages: '
+            print('\nAHe ages: ')
             for i, Ahe_ages in enumerate(Ahe_ages_surface_all):
                 try:
-                    print '\tlayer %i, min = %0.2f, mean = %0.2f, max = %0.2f My' \
+                    print('\tlayer %i, min = %0.2f, mean = %0.2f, max = %0.2f My' \
                       % (i, Ahe_ages.min() / My,
                          Ahe_ages.mean() / My,
-                         Ahe_ages.max() / My)
+                         Ahe_ages.max() / My))
                 except:
-                    print '\tlayer %i, no modeled AHe data available'
+                    print('\tlayer %i, no modeled AHe data available')
 
-            print '\nmodeled AHe ages samples'
+            print('\nmodeled AHe ages samples')
             if mp.model_AHe_samples is True:
-                print '\tname, distance, layer, modeled AHe age uncorr, corrected: '
+                print('\tname, distance, layer, modeled AHe age uncorr, corrected: ')
                 for i, age_i, age_i_corr in zip(itertools.count(), AHe_ages_surface_samples_all, AHe_ages_surface_samples_all_corr):
                     for sample_name, rel_distance, age, age_corr in \
                             zip(sample_names, AHe_relative_sample_distances,
                                 age_i[-1], age_i_corr[-1]):
-                        print '\t%s, %0.1f m, %i, %0.2f My, %0.2f My' \
-                              % (sample_name, rel_distance, i, age / My, age_corr / My)
+                        print('\t%s, %0.1f m, %i, %0.2f My, %0.2f My' \
+                              % (sample_name, rel_distance, i, age / My, age_corr / My))
 
-    print 'surface T: ', T * surface
+    print('surface T: ', T * surface)
 
     output = [runtimes, xyz_array, surface_levels, x_flt, z_flt,
               Ts, q_vectors, T_init_array, T_array, boiling_temp_array,

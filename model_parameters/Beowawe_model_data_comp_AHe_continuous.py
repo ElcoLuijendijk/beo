@@ -13,7 +13,7 @@ import numpy as np
 class ModelParams:
 
     # constants
-    degree_symbol = unichr(176)
+    degree_symbol = chr(176)
     day = 24.0 * 60.0 * 60.0
     year = 365.25 * day
     My = year * 1e6
