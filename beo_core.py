@@ -2060,8 +2060,6 @@ def model_run(mp):
                         print('\t%s, %0.1f m, %i, %0.2f My, %0.2f My' \
                               % (sample_name, rel_distance, i, age / My, age_corr / My))
 
-    print('surface T: ', T * surface)
-
     output = [runtimes, xyz_array, surface_levels, x_flt, z_flt,
               Ts, q_vectors, T_init_array, T_array, boiling_temp_array,
               xyz_array_exc, exceed_boiling_temp_array,
