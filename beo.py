@@ -26,9 +26,6 @@ import beo_core
 import esys.escript as es
 
 
-
-
-
 def coefficient_of_determination(y, f):
 
     """
@@ -799,10 +796,20 @@ for model_run, param_set in enumerate(param_list):
     fn_path = os.path.join(output_folder, fn)
 
     print('saving model results as %s' % fn_path)
-    fout = open(fn_path, 'w')
-    pickle.dump(output_selected, fout)
-    fout.close()
-
+    try:
+        fout = open(fn_path, 'wb')
+        pickle.dump(output_selected, fout)
+        fout.close()
+    except IOError as err:
+        print(f"{type(err)}:{err}")
+        print(f"check file path for file {fn_path}")
+    except TypeError as err:
+        print(f"{type(err)}:{err}")
+        print(f"could not save model results pickle file {fn_path}")    
+    except BaseException as err:
+        print(f"Unexpected {err=}, {type(err)=}")
+        raise
+    
     print('-' * 30)
     print('saving summary of parameters and model results as %s' % fn_path_csv)
     df.to_csv(fn_path_csv, index_label='row', encoding='utf-8')
@@ -828,8 +835,10 @@ for model_run, param_set in enumerate(param_list):
                                                                     today_str)
             print('saving modeled temperatures for surface slice to %s' % fnout)
             dfts.to_csv(os.path.join(output_folder, fnout), index_label='x')
-    except:
+
+    except BaseException as err:
         print('warning, failed to save temperature data')
+        print(err)
 
     # save borehole temperature history
     if mp.analyse_borehole_temp is True:
