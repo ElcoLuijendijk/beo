@@ -167,7 +167,7 @@ for fn in files:
 
     #fn = 'model_output/T_field_duration_500.pck'
     print('reading model output datafile %s' % fn)
-    fin = open(fn, 'r')
+    fin = open(fn, 'rb')
     output_data = pickle.load(fin)
     fin.close()
 
