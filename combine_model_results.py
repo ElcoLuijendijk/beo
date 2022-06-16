@@ -18,13 +18,13 @@ files = [os.path.join(result_dir, f) for f in files if f[-4:] == '.csv' and 'res
 files.sort(key=os.path.getmtime)
 files = files[::-1]
 
-print 'output files, from newest to oldest:'
+print('output files, from newest to oldest:')
 for i, fn in enumerate(files):
-    print i, fn
+    print(i, fn)
 
-print 'enter a number to select a file'
+print('enter a number to select a file')
 
-a = raw_input()
+a = input()
 fn = files[int(a)]
 
 # read model data
@@ -40,10 +40,10 @@ dfp = df.pivot_table(index=index, columns='model_run', values=parameters_to_keep
 
 # save as new file
 fn_new = fn.split('.')[0] + '_recombined.csv'
-print 'saving reorganized csv file as %s' % fn_new
+print('saving reorganized csv file as %s' % fn_new)
 dfp.to_csv(fn_new)
 
-print 'done'
+print('done')
 
 
 

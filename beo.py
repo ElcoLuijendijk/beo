@@ -26,9 +26,6 @@ import beo_core
 import esys.escript as es
 
 
-
-
-
 def coefficient_of_determination(y, f):
 
     """
@@ -75,7 +72,7 @@ if len(sys.argv) > 1 and 'beo.py' not in sys.argv[-1]:
 
     inp_file_loc = os.path.join(scriptdir, sys.argv[-1])
 
-    print 'model input files: ', inp_file_loc
+    print('model input files: ', inp_file_loc)
 
     try:
         model_parameters = imp.load_source('model_parameters', inp_file_loc)
@@ -88,8 +85,8 @@ if len(sys.argv) > 1 and 'beo.py' not in sys.argv[-1]:
 
 else:
 
-    print 'running model input data from file ' \
-          'model_input/model_parameters.py'
+    print('running model input data from file ' \
+          'model_parameters/model_parameters.py')
 
     from model_parameters.model_parameters import ModelParams
     from model_parameters.model_parameters import ParameterRanges as pr
@@ -100,7 +97,7 @@ output_folder = os.path.join(scriptdir, mp.output_folder)
 
 if os.path.exists(output_folder) is False:
     os.mkdir(output_folder)
-    print 'created new directory for model output: %s' % output_folder
+    print('created new directory for model output: %s' % output_folder)
 
 # create list with param values for each model run
 scenario_param_names_raw = dir(pr)
@@ -156,7 +153,7 @@ columns += ['surface_elevation',
 df = pd.DataFrame(index=ind, columns=columns)
 
 if mp.analyse_borehole_temp is True:
-    print 'loading temperature data'
+    print('loading temperature data')
     dft = pd.read_csv(mp.temperature_file)
 
 today = datetime.datetime.now()
@@ -178,7 +175,12 @@ if mp.model_AHe_samples is True:
 
 for model_run, param_set in enumerate(param_list):
 
-    print '-' * 20
+    print('-' * 20)
+
+    print(f"model run {model_run}")
+
+    if pr.initial_base_run is True and model_run == 0:
+        print("using base-case parameter values for the first run")
 
     # reload default params
     Parameters = mp()
@@ -191,15 +193,15 @@ for model_run, param_set in enumerate(param_list):
             # find model parameter name to adjust
             model_param_name = scenario_param_name[:-2]
 
-            print 'updating parameter %s from %s to %s' \
+            print('updating parameter %s from %s to %s' \
                   % (model_param_name,
                      str(getattr(Parameters, model_param_name)),
-                     str(scenario_parameter))
+                     str(scenario_parameter)))
 
             # update model parameter
             setattr(Parameters, model_param_name, scenario_parameter)
 
-    print '-' * 20
+    print('-' * 20)
 
     # store input parameters in dataframe
     attributes = inspect.getmembers(
@@ -208,7 +210,7 @@ for model_run, param_set in enumerate(param_list):
                       if not (attribute[0].startswith('__') and
                               attribute[0].endswith('__'))]
 
-    print 'running single model'
+    print('running single model')
 
     if mp.steady_state is True and mp.add_exhumation is True:
         msg = 'Error, both steady-state and exhumation are set to True. Please change your model parameters file'
@@ -256,11 +258,11 @@ for model_run, param_set in enumerate(param_list):
                 output_number = model_run * n_ts + j
                 df.loc[output_number, 'computational_time'] = comp_time_model_run
 
-        except Exception, msg:
-            print '!' * 10
-            print 'error running model run %i' % model_run
-            print msg
-            print '!' * 10
+        except Exception as msg:
+            print('!' * 10)
+            print('error running model run %i' % model_run)
+            print(msg)
+            print('!' * 10)
 
             for j in range(n_ts):
 
@@ -292,7 +294,7 @@ for model_run, param_set in enumerate(param_list):
 
     for duration, N_output in zip(mp.durations, mp.N_outputs):
         nt = int(duration / mp.dt_stored)
-        print 'timesteps = %i' % nt
+        print('timesteps = %i' % nt)
 
         output_steps_i = list(np.linspace(0, nt, N_output + 1).astype(int) + output_steps[-1])[1:]
         output_steps += output_steps_i
@@ -300,12 +302,12 @@ for model_run, param_set in enumerate(param_list):
     # select data for output steps only
     output_steps = np.array(output_steps)
 
-    print 'selecting output steps: ', output_steps
+    print('selecting output steps: ', output_steps)
 
     times_test = np.arange(0, np.sum(mp.durations) + mp.dt_stored, mp.dt_stored)
 
-    print 'generating time output at steps: '
-    print times_test[output_steps] / year
+    print('generating time output at steps: ')
+    print(times_test[output_steps] / year)
 
     if mp.steady_state is False:
         n_ts = len(output_steps)
@@ -340,7 +342,7 @@ for model_run, param_set in enumerate(param_list):
         VTK_dir = 'VTK_files_model_run_%i_%s_%s_%s' \
                   % (model_run, str(param_set), mp.output_fn_adj, today_str)
         VTK_dir_full = os.path.join(output_folder, VTK_dir)
-        print 'saving VTK file of temperatures and flux in directory %s' % VTK_dir_full
+        print('saving VTK file of temperatures and flux in directory %s' % VTK_dir_full)
 
         if os.path.exists(VTK_dir_full) is False:
             os.mkdir(VTK_dir_full)
@@ -354,7 +356,7 @@ for model_run, param_set in enumerate(param_list):
             VTK_data.export()
 
     else:
-        print 'no output to VTK file. add save_VTK_file=True to input file to change this'
+        print('no output to VTK file. add save_VTK_file=True to input file to change this')
 
     #
     T_surface = []
@@ -385,7 +387,7 @@ for model_run, param_set in enumerate(param_list):
 
     if mp.analyse_borehole_temp is True:
 
-        print 'extracting borehole temperature data'
+        print('extracting borehole temperature data')
 
         borehole_xlocs = np.zeros((len(mp.borehole_names), n_ts))
         borehole_zlocs = np.zeros_like(borehole_xlocs)
@@ -614,10 +616,10 @@ for model_run, param_set in enumerate(param_list):
             x_coords_int = np.arange(x_coords.min(), x_coords.max() + x_step, x_step)
 
             if len(ages_raw) != len(x_coords):
-                print 'warning, lenght of AHe ages array and x coordinates ' \
+                print('warning, lenght of AHe ages array and x coordinates ' \
                       'array are not equal. Skipping calculating partial/full ' \
                       'reset zone for surface layer at timestep %i of %i' \
-                      % (j, n_ts)
+                      % (j, n_ts))
                 continue
 
             ages = np.interp(x_coords_int, x_coords, ages_raw)
@@ -700,7 +702,7 @@ for model_run, param_set in enumerate(param_list):
     # analyze model-data fit of AHe surface samples
     if Ahe_ages_surface_all is not None and mp.model_AHe_samples is True:
 
-        print 'analyzing fit of modeled and measured AHe ages'
+        print('analyzing fit of modeled and measured AHe ages')
 
         n_grains = len(AHe_ages_samples_surface[0])
 
@@ -723,8 +725,8 @@ for model_run, param_set in enumerate(param_list):
             else:
                 profiles = np.unique(dfhs['profile'])
 
-            print 'available profiles in AHe data file: ',  np.unique(dfhs['profile'])
-            print 'selected profiles: ', profiles
+            print('available profiles in AHe data file: ',  np.unique(dfhs['profile']))
+            print('selected profiles: ', profiles)
 
             for profile in profiles:
                 profile_loc = dfhs['profile'] == profile
@@ -798,13 +800,23 @@ for model_run, param_set in enumerate(param_list):
          % (model_run, str(param_set), mp.output_fn_adj, today_str)
     fn_path = os.path.join(output_folder, fn)
 
-    print 'saving model results as %s' % fn_path
-    fout = open(fn_path, 'w')
-    pickle.dump(output_selected, fout)
-    fout.close()
-
-    print '-' * 30
-    print 'saving summary of parameters and model results as %s' % fn_path_csv
+    print('saving model results as %s' % fn_path)
+    try:
+        fout = open(fn_path, 'wb')
+        pickle.dump(output_selected, fout)
+        fout.close()
+    except IOError as err:
+        print(f"{type(err)}:{err}")
+        print(f"check file path for file {fn_path}")
+    except TypeError as err:
+        print(f"{type(err)}:{err}")
+        print(f"could not save model results pickle file {fn_path}")    
+    except BaseException as err:
+        print(f"Unexpected {err}, {type(err)}")
+        raise
+    
+    print('-' * 30)
+    print('saving summary of parameters and model results as %s' % fn_path_csv)
     df.to_csv(fn_path_csv, index_label='row', encoding='utf-8')
 
     try:
@@ -826,10 +838,12 @@ for model_run, param_set in enumerate(param_list):
                                                                   len(param_list),
                                                                    mp.output_fn_adj,
                                                                     today_str)
-            print 'saving modeled temperatures for surface slice to %s' % fnout
+            print('saving modeled temperatures for surface slice to %s' % fnout)
             dfts.to_csv(os.path.join(output_folder, fnout), index_label='x')
-    except:
+
+    except BaseException as err:
         print('warning, failed to save temperature data')
+        print(err)
 
     # save borehole temperature history
     if mp.analyse_borehole_temp is True:
@@ -838,7 +852,7 @@ for model_run, param_set in enumerate(param_list):
         fn_new += '_modeled_%i_runs_%s_%s.csv' % (len(param_list),
                                                   mp.output_fn_adj,
                                                   today_str)
-        print 'saving modeled temperatures for boreholes to %s' % fn_new
+        print('saving modeled temperatures for boreholes to %s' % fn_new)
         dft.to_csv(os.path.join(output_folder, fn_new))
 
     # save AHe ages to file
@@ -871,18 +885,18 @@ for model_run, param_set in enumerate(param_list):
                         AHe_ages_surface_all[j][i][:n_ahe_data] / My
                     dfh.loc[:n_ahe_data-1, 'AHe_age_corrected_run_%i_ts%i' % (j, i)] = \
                         AHe_ages_surface_corr_all[j][i][:n_ahe_data] / My
-                except Exception, msg:
-                    print 'error, something went wrong with saving AHe data ' \
+                except Exception as msg:
+                    print('error, something went wrong with saving AHe data ' \
                           'to a .csv file for model run %i and timestep %i' \
-                          % (j, i)
-                    print msg
-                    print 'continuing with next timestep'
+                          % (j, i))
+                    print(msg)
+                    print('continuing with next timestep')
 
         fnh = 'AHe_surface_modeled_%i_runs_%s_%s.csv' % (n_model_runs,
                                                          mp.output_fn_adj,
                                                          today_str)
 
-        print 'saving modeled AHe ages at the surface to %s' % fnh
+        print('saving modeled AHe ages at the surface to %s' % fnh)
         dfh.to_csv(os.path.join(output_folder, fnh), index_label='row')
 
     if Ahe_ages_surface_all is not None and mp.model_AHe_samples is True:
@@ -906,12 +920,12 @@ for model_run, param_set in enumerate(param_list):
                     try:
                         dfhs.loc[profile_loc, col_name] = AHe_ages_samples_surface[timestep] / My
                         dfhs.loc[profile_loc, col_name_corr] = AHe_ages_samples_surface_corr[timestep] / My
-                    except Exception, msg:
-                        print 'error, something went wrong with saving AHe ' \
+                    except Exception as msg:
+                        print('error, something went wrong with saving AHe ' \
                               'sample data to a .csv file for model run %i ' \
-                              'and timestep %i' % (model_run, timestep)
-                        print msg
-                        print 'continuing with next timestep'
+                              'and timestep %i' % (model_run, timestep))
+                        print(msg)
+                        print('continuing with next timestep')
 
         output_fn1 = os.path.split(mp.AHe_data_file)[-1]
         output_fn2 = output_fn1[:-4] + '_modeled_%i_runs_%s_%s.csv' \
@@ -919,8 +933,8 @@ for model_run, param_set in enumerate(param_list):
                                           mp.output_fn_adj,
                                           today_str)
         output_fn = os.path.join(output_folder, output_fn2)
-        print 'saving modeled AHe ages samples to %s' % output_fn
+        print('saving modeled AHe ages samples to %s' % output_fn)
         dfhs.to_csv(output_fn, index=False)
 
-print '-' * 30
-print 'done with all model runs'
+print('-' * 30)
+print('done with all model runs')
