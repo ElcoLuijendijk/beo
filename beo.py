@@ -807,7 +807,7 @@ for model_run, param_set in enumerate(param_list):
         print(f"{type(err)}:{err}")
         print(f"could not save model results pickle file {fn_path}")    
     except BaseException as err:
-        print(f"Unexpected {err=}, {type(err)=}")
+        print(f"Unexpected {err}, {type(err)}")
         raise
     
     print('-' * 30)
