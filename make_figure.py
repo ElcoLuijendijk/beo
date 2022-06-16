@@ -53,8 +53,9 @@ def interpolate_data(xyz_array, Ti, dx, dy, limit_number_of_nodes=True, max_node
     if (len(xi) * len(yi)) > max_nodes:
         print('warning, interpolating data on raster with >1e6 nodes')
         if limit_number_of_nodes is True:
-            xi = np.linspace(xyz_array[:, 0].min(), xyz_array[:, 0].max(), np.sqrt(max_nodes))
-            yi = np.linspace(xyz_array[:, 1].min(), xyz_array[:, 1].max(), np.sqrt(max_nodes))
+            max_nodes_x = int(np.sqrt(max_nodes))
+            xi = np.linspace(xyz_array[:, 0].min(), xyz_array[:, 0].max(), max_nodes_x)
+            yi = np.linspace(xyz_array[:, 1].min(), xyz_array[:, 1].max(), max_nodes_x)
 
     xg, yg = np.meshgrid(xi, yi)
     xgf, ygf = xg.flatten(), yg.flatten()
