@@ -22,20 +22,16 @@ Beo is a model of heat flow in hot springs and hydrothermal systems. The model c
 
 # Getting started
 
-* Clone the repository or use the following links to download a zip file of the [Python 2 version](https://github.com/ElcoLuijendijk/beo/archive/refs/heads/master.zip) or [Python 3 version](https://github.com/ElcoLuijendijk/beo/archive/refs/heads/py3.zip) of Beo
-
-* Note that there are two branches: 
-	- [master](https://github.com/ElcoLuijendijk/beo/tree/master). This branch contains the most stable and well tested version of beo.
-	- [py3](https://github.com/ElcoLuijendijk/beo/tree/py3). This branch contains a new Python 3 compatible version of Beo. This has however not been tested extensively yet. 
+* Clone the repository or use the following links to download a zip file of the [model code](https://github.com/ElcoLuijendijk/beo/archive/refs/heads/master.zip).
 
 * Install esys-escript
 
     - Get the code here: [https://github.com/esys-escript/esys-escript.github.io](https://github.com/esys-escript/esys-escript.github.io)
     - An installation guide can be found here: https://github.com/esys-escript/esys-escript.github.io/blob/master/install.pdf
-    - Note that the newer versions of escript support installation using Flatpak or Docker. These install sandboxed versions of esys-escript that currently do not include the Python modules Scipy or Pandas. However, Beo uses these modules for interpolating variables and model-data comparison. Therefore the recommended way to install esys-escript is to use the binary version in Debian/Ubuntu (``sudo apt-get install python-escript``), install it using anaconda, or to compile the source code.
+    - Note that the newer versions of escript support installation using Flatpak or Docker. These install sandboxed versions of esys-escript that currently do not include the Python modules Scipy or Pandas. However, Beo uses these modules for interpolating variables and model-data comparison. Therefore the recommended way to install esys-escript is to use the binary version in Debian/Ubuntu (``sudo apt-get install python-escript``) or to compile the source code.
 
 * Unzip the beo source code 
-* Navigate to the directory where you have installed esys-escript and go to the subdirectory bin. If you used apt-get to install esys-escript you can normally find esys-escript in ``/usr/bin/``. Then run Beo by executing the following command from the command line:
+* Navigate to the directory where you have installed esys-escript and go to the subdirectory ``bin``. If you used apt-get to install esys-escript you can normally find esys-escript in ``/usr/bin/``. Then run Beo by executing the following command from the command line:
 	
 ````bash
 ./run-escript beo_dir/beo.py
@@ -60,7 +56,7 @@ where ``model_parameters/model_parameters.py`` is a file containing all model pa
 
 # Required modules
 
-Apart from esys-escript Beo requires the Python modules [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), [Scipy](http://scipy.org/scipylib/index.html) and [Matplotlib](http://matplotlib.org/downloads.html). Note that this branch (master) of Beo still runs on Python2.x. Please check the [py3 branch](https://github.com/ElcoLuijendijk/beo/tree/py3) for a Python 3 compatible version of Beo.
+Apart from esys-escript Beo requires the Python modules [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), [Scipy](http://scipy.org/scipylib/index.html) and [Matplotlib](http://matplotlib.org/downloads.html).
 
 An easy way to get a working version of python and these modules is to install a full Python environment like [Anaconda](https://www.anaconda.com/), [Canopy](https://www.enthought.com/products/canopy) or [pythonxy](https://code.google.com/p/pythonxy/wiki/Welcome).
 
@@ -86,7 +82,7 @@ The paper shows model results for two example case studies: the Baden & Schinzna
 
 ## Model input:
 
-All model input parameters are contained in a single Python file. An example file can be found in [model_parameters.py](model_parameters/model_parameters.py) located in the directory [model_parameters](model_parameters). The class ``ModelParameters`` contains all parameters needed for a single model run. See the [manual](manual\beo_manual.pdf) for an explanation of the model parameters.
+All model input parameters are contained in a single Python file. An example file can be found in [model_parameters.py](model_parameters/model_parameters.py) located in the directory [model_parameters](model_parameters). The class ``ModelParameters`` contains all parameters needed for a single model run. See the [manual](manual\beo_manual.pdf) for an explanation of the model parameters. There are a number of example input files that can be used to reproduce the results shown in the [GMD paper](https://doi.org/10.5194/gmd-12-4061-2019) in the directory [example_input_files](example_input_files).
 
 
 ## Multiple model runs
