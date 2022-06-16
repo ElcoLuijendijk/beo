@@ -86,7 +86,7 @@ if len(sys.argv) > 1 and 'beo.py' not in sys.argv[-1]:
 else:
 
     print('running model input data from file ' \
-          'model_input/model_parameters.py')
+          'model_parameters/model_parameters.py')
 
     from model_parameters.model_parameters import ModelParams
     from model_parameters.model_parameters import ParameterRanges as pr
@@ -176,6 +176,11 @@ if mp.model_AHe_samples is True:
 for model_run, param_set in enumerate(param_list):
 
     print('-' * 20)
+
+    print(f"model run {model_run}")
+
+    if pr.initial_base_run is True and model_run == 0:
+        print("using base-case parameter values for the first run")
 
     # reload default params
     Parameters = mp()
