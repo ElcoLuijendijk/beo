@@ -12,7 +12,7 @@ import itertools
 import inspect
 import datetime
 import time
-import imp
+#import imp
 
 import pdb
 
@@ -75,7 +75,11 @@ if len(sys.argv) > 1 and 'beo.py' not in sys.argv[-1]:
     print('model input files: ', inp_file_loc)
 
     try:
-        model_parameters = imp.load_source('model_parameters', inp_file_loc)
+        #model_parameters = imp.load_source('model_parameters', inp_file_loc)
+
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('model_parameters', inp_file_loc)
+        model_parameters = importlib.util.module_from_spec(spec)
     except IOError:
         msg = 'cannot find parameter file %s' % inp_file_loc
         raise IOError(msg)
