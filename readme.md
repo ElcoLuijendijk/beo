@@ -12,7 +12,7 @@
 
 Beo is a model of heat flow in hot springs and hydrothermal systems. The model code uses the generic finite element code [esys-escript](https://github.com/esys-escript/esys-escript.github.io) to solve the advective and conductive heat flow equations in a 2D cross-section of the subsurface. The resulting temperature history is used to calculate the apatite (U-Th)/He (AHe) thermochronometer and can be compared to measured AHe ages. Beo supports automated model runs to explore which parameter values like fluid fluxes, fault geometry, age and duration of the hydrothermal activity best match thermochronometer data, spring temperature data or temperature records in nearby boreholes. 
 
- A description of the model background and two example case studies can be found in the journal Geoscientific Model Development ([Luijendijk 2019](https://doi.org/10.5194/gmd-12-4061-2019)). The model code was used to quantify episodic fluid flow in a fault zone in the Beowawe geyser field in the Basin and Range Province, which was published in a separate paper  in Geology ([Louis et al. 2019](https://pubs.geoscienceworld.org/gsa/geology/article/573168/Episodic-fluid-flow-in-an-active-fault)). In addition the code was used to quantify the history of a hydrothermal system in western Canada by Scott Jess and co-authors ([Jess et al. 2021](https://doi.org/10.1029/2021JF006286))
+ A description of the model background and two example case studies can be found in the journal Geoscientific Model Development ([Luijendijk 2019](https://doi.org/10.5194/gmd-12-4061-2019)). The model code was used to quantify episodic fluid flow in a fault zone in the Beowawe geyser field in the Basin and Range Province, which was published in a separate paper  in Geology ([Louis et al. 2019](https://pubs.geoscienceworld.org/gsa/geology/article/573168/Episodic-fluid-flow-in-an-active-fault)). In addition the code was used to quantify the history of a hydrothermal system in western Canada ([Jess et al. 2021](https://doi.org/10.1029/2021JF006286))
 
 
 ![Example model run showing modelled temperatures in a simple hydrothermal system with upward fluid flow along a single fault zone. The top panels show the resulting modelled AHe ages at the surface and at 500 m depth.](manual/fig/model_example_fig.png)
@@ -28,7 +28,7 @@ Beo is a model of heat flow in hot springs and hydrothermal systems. The model c
 
     - Get the code here: [https://github.com/esys-escript/esys-escript.github.io](https://github.com/esys-escript/esys-escript.github.io)
     - An installation guide can be found here: https://github.com/esys-escript/esys-escript.github.io/blob/master/install.pdf
-    - Note that the newer versions of escript support installation using Flatpak or Docker. These install sandboxed versions of esys-escript that currently do not include the Python modules Scipy or Pandas. However, Beo uses these modules for interpolating variables and model-data comparison. Therefore the recommended way to install esys-escript is to use the binary version in Debian/Ubuntu (``sudo apt-get install python-escript``) or to compile the source code.
+    - Note that the newer versions of escript support installation using Flatpak or Docker. These install sandboxed versions of esys-escript that currently do not include the Python modules Scipy or Pandas. However, Beo uses these modules for interpolating variables and model-data comparison. Therefore the recommended way to install esys-escript is to use the binary version in Debian/Ubuntu (``sudo apt install python-escript``) or to compile the source code following the intructions in the installation manual.
 
 * Unzip the beo source code 
 * Navigate to the directory where you have installed esys-escript and go to the subdirectory ``bin``. If you used apt-get to install esys-escript you can normally find esys-escript in ``/usr/bin/``. Then run Beo by executing the following command from the command line:
@@ -58,8 +58,6 @@ where ``model_parameters/model_parameters.py`` is a file containing all model pa
 
 Apart from esys-escript Beo requires the Python modules [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), [Scipy](http://scipy.org/scipylib/index.html) and [Matplotlib](http://matplotlib.org/downloads.html).
 
-An easy way to get a working version of python and these modules is to install a full Python environment like [Anaconda](https://www.anaconda.com/), [Canopy](https://www.enthought.com/products/canopy) or [pythonxy](https://code.google.com/p/pythonxy/wiki/Welcome).
-
 Note that Beo includes an option to calculate apatite (U-Th)/He ages using the RDAAM model ([Flowers et al. 2009](https://www.sciencedirect.com/science/article/abs/pii/S001670370900043X)). The implementation of the RDAAM model uses a piece of Fortran code to speed up the model. To enable the RDAAM model you first need to compile the Fortran code using f2py, which is normally included with Numpy. See this [link](https://docs.scipy.org/doc/numpy/f2py/) for more information on f2py. To install the Fortran RDAAM module, navigate to the subdirectory lib and run the following command:
 
 ``f2py -c calculate_reduced_AFT_lengths.f90 -m calculate_reduced_AFT_lengths``
@@ -68,7 +66,7 @@ If all goes well there should now be a file called ``calculate_reduced_AFT_lengt
 
 Note that there are plans to port the fortran code to cPython to avoid this extra compilation step. Feel free to bug me if you have trouble compiling this or if you are interested in a Python only version. 
 
-Beo was tested on Ubuntu 14.04, 16.04 and 18.04 
+Beo was tested on Ubuntu 14.04, 16.04, 18.04 and 22.04, with escript versions up to 5.10 
 
 
 # Manual and publication
