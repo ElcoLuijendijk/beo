@@ -406,7 +406,14 @@ def kinetic_modifier_reduced_lengths(rc, rmr0, kappa):
     rc_corrected        corrected reduced track length
     """
 
-    rc_mod = ((rc - rmr0) / (1.0-rmr0)) ** kappa
+    base = (rc - rmr0) / (1.0 - rmr0)
+
+    # tracks annealed below the kinetic resistance threshold rmr0 are
+    # fully annealed, clip to zero to avoid raising a negative base to
+    # a fractional power (kappa is not an integer in general)
+    base = np.where(base < 0.0, 0.0, base)
+
+    rc_mod = base ** kappa
 
     return rc_mod
 
