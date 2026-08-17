@@ -2,4 +2,9 @@
 *.pyc
 *.pck
 model_output
-mesh*.*
+
+# generated mesh files
+mesh.*
+beowawe_mesh*
+*.msh
+*.geo
