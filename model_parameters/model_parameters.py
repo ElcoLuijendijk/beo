@@ -29,6 +29,17 @@ class ModelParams:
     #
     save_VTK_file = True
 
+    # numerical backend used to solve the heat flow equation
+    # available choices: 'escript' and 'fipy'
+    # the escript backend uses the finite element method, the fipy backend
+    # uses the finite volume method and does not require escript to be
+    # installed. install the fipy backend with pip install fipy gmsh
+    backend = 'escript'
+
+    # discretization of the advection term for the fipy backend
+    # available choices: 'powerlaw', 'exponential', 'upwind' and 'central'
+    fipy_convection_scheme = 'powerlaw'
+
     # solver, see escript documentation for details
     # available choices: 'PCG', 'DIRECT', 'GMRES', 'ROWSUM_LUMPING'
     solver = 'GMRES'
