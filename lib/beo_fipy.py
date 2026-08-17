@@ -30,8 +30,10 @@ horizontal lines but not as cell centers.
 
 import time
 import itertools
+import hashlib
 
 import numpy as np
+from scipy.sparse.linalg import splu
 
 import lib.mesh_functions_fipy as mesh_functions_fipy
 
@@ -105,6 +107,155 @@ def get_solver():
     except (TypeError, ValueError):
         # older versions of fipy do not have a criterion argument
         return fipy.DefaultSolver()
+
+
+class TransientLUCache:
+
+    """
+    Reuse the sparse LU factorization of the heat flow equation.
+
+    For a transient model without exhumation, a variable thermal conductivity
+    of the air layer or a vapour correction, the coefficients of the heat flow
+    equation do not change during a time period. The matrix of the linear
+    system is then the same at every timestep, while the right hand side is a
+    linear function of the temperature of the previous timestep,
+
+        b = b_const + a * T_old
+
+    The matrix is assembled and factorized once and the factorization is reused
+    for the following timesteps. The coefficient a is found by assembling the
+    right hand side for two different temperatures, see the docstring of
+    _measure_rhs_coefficient. The matrix is assembled and factorized again
+    whenever any of the coefficients of the equation changes, so that models in
+    which the equation changes over time give the same result as before.
+    """
+
+    def __init__(self, validate=False):
+
+        self.validate = validate
+
+        self.factor = None
+        self.b_const = None
+        self.diagonal = None
+        self.key = None
+
+        self.n_factorizations = 0
+        self.n_reused = 0
+        self.max_rhs_error = 0.0
+
+    def _key(self, coefficient_vars, dt):
+
+        parts = []
+
+        for var in coefficient_vars:
+            values = np.ascontiguousarray(np.array(var), dtype=float)
+            parts.append(hashlib.blake2b(values.view(np.uint8),
+                                         digest_size=16).digest())
+
+        parts.append(repr(dt).encode())
+
+        return tuple(parts)
+
+    def _assemble(self, equation, T, dt):
+
+        equation.cacheMatrix()
+        equation.cacheRHSvector()
+
+        solver = equation._prepareLinearSystem(var=T, solver=get_solver(),
+                                               boundaryConditions=(), dt=dt)
+
+        matrix = solver.matrix.matrix.asformat('csc')
+        rhs = np.array(solver.RHSvector, dtype=float)
+
+        return matrix, rhs
+
+    def _assemble_with_temperature(self, equation, T, dt, values):
+
+        """
+        Assemble the right hand side for a given temperature field and restore
+        the temperature afterwards
+        """
+
+        T_current = np.array(T, dtype=float)
+        T_old = np.array(T.old, dtype=float)
+
+        T.setValue(values)
+        T.updateOld()
+
+        rhs = self._assemble(equation, T, dt)[1]
+
+        T.setValue(T_old)
+        T.updateOld()
+        T.setValue(T_current)
+
+        return rhs
+
+    def _measure_rhs_coefficient(self, equation, T, dt, T_old):
+
+        """
+        Find the coefficient of the temperature of the previous timestep in the
+        right hand side of the equation and return the right hand side for the
+        current temperature.
+
+        The right hand side is a linear function of the temperature of the
+        previous timestep. The transient term contributes rho c V / dt, and
+        fipy adds a second contribution for the cells where the coefficient of
+        the implicit source term has the sign that would destabilize the
+        matrix, see ImplicitSourceTerm._getWeight in fipy. Instead of
+        reproducing that split here, the coefficient is measured by assembling
+        the right hand side twice with temperatures that differ by one degree.
+        """
+
+        rhs = self._assemble(equation, T, dt)[1]
+        rhs_probe = self._assemble_with_temperature(equation, T, dt, T_old + 1.0)
+
+        self.diagonal = rhs_probe - rhs
+        self.b_const = rhs - self.diagonal * T_old
+
+        return rhs
+
+    def solve(self, equation, T, dt, matrix_vars, rhs_vars):
+
+        key = self._key(list(matrix_vars) + list(rhs_vars), dt)
+        T_old = np.array(T.old, dtype=float)
+
+        if self.factor is not None and key == self.key:
+
+            if self.diagonal is None:
+                # the coefficients of the equation have not changed since the
+                # last timestep, so from here on the right hand side can be
+                # reconstructed. the coefficient of the temperature of the
+                # previous timestep is measured once, see the docstring of
+                # _measure_rhs_coefficient
+                rhs = self._measure_rhs_coefficient(equation, T, dt, T_old)
+            else:
+                rhs = self.b_const + self.diagonal * T_old
+
+                if self.validate is True:
+                    rhs_check = self._assemble(equation, T, dt)[1]
+                    scale = np.max(np.abs(rhs_check))
+                    error = np.max(np.abs(rhs - rhs_check)) / scale
+                    self.max_rhs_error = max(self.max_rhs_error, error)
+
+            T.setValue(self.factor.solve(rhs))
+            self.n_reused += 1
+
+            return
+
+        matrix, rhs = self._assemble(equation, T, dt)
+
+        # the coefficient of the right hand side is only measured once the
+        # coefficients of the equation turn out to stay the same, so that a
+        # model in which the equation changes at every timestep, for instance
+        # a model with exhumation, does not do any extra work
+        self.diagonal = None
+        self.b_const = None
+
+        self.factor = splu(matrix)
+        self.key = key
+        self.n_factorizations += 1
+
+        T.setValue(self.factor.solve(rhs))
 
 
 def calculate_vapour_pressure(T, c1=8e-8, c2=-7e-5, c3=0.028, c4=-3.1597):
@@ -1092,6 +1243,15 @@ def model_hydrothermal_temperatures_fipy(mesh, mp, xc, yc, xf, yf,
                                         penalty_coeff, penalty_source,
                                         solve_as_steady_state, dt)
 
+    # reuse the LU factorization of the heat flow equation as long as the
+    # coefficients of the equation stay the same
+    if solve_as_steady_state is False and getattr(mp, 'cache_lu', True) is True:
+        lu_cache = TransientLUCache(
+            validate=getattr(mp, 'validate_lu_cache', False))
+        print('reusing the LU factorization of the heat flow equation')
+    else:
+        lu_cache = None
+
     print('starting transient heat flow calculations')
 
     runtimes = [0.0]
@@ -1297,7 +1457,12 @@ def model_hydrothermal_temperatures_fipy(mesh, mp, xc, yc, xf, yf,
             solve_time_start = time.time()
             if solve_as_steady_state is False:
                 T.updateOld()
-                equation.solve(var=T, dt=dt, solver=get_solver())
+                if lu_cache is not None:
+                    lu_cache.solve(equation, T, dt,
+                                   [K_cell, rho_c_cell, q_face, penalty_coeff],
+                                   [source, penalty_source])
+                else:
+                    equation.solve(var=T, dt=dt, solver=get_solver())
             else:
                 equation.solve(var=T, solver=get_solver())
             solver_time = time.time() - solve_time_start
@@ -1361,6 +1526,13 @@ def model_hydrothermal_temperatures_fipy(mesh, mp, xc, yc, xf, yf,
 
         print('final T after advective heating, min = %0.1f, max = %0.1f degrees C'
               % (np.array(T).min(), np.array(T).max()))
+
+        if lu_cache is not None:
+            print('LU cache: %i factorizations, %i reused solves'
+                  % (lu_cache.n_factorizations, lu_cache.n_reused))
+            if lu_cache.validate is True:
+                print('LU cache: max relative error in reconstructed rhs = %0.3e'
+                      % lu_cache.max_rhs_error)
 
     return (runtimes, T_steady, Ts, qh_stored, qv_stored, surface_levels,
             surface_levels_mesh, boiling_temps, exceed_boiling_temps)

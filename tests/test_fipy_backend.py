@@ -245,6 +245,105 @@ def test_radial_conduction_log_profile():
     assert np.max(np.abs(np.array(T_cartesian) - T_analytical)) > 10.0
 
 
+def run_transient_steps(use_cache, n_steps=6, step_with_new_K=3):
+
+    """
+    Run a number of timesteps of the heat flow equation with a divergent flux
+    field, either with or without reuse of the LU factorization, and change the
+    thermal conductivity partway through the run.
+
+    Returns the temperature after each timestep and the cache that was used.
+    """
+
+    mesh = build_test_mesh(nx=20, ny=20, dx=10.0, dy=10.0)
+
+    rho_f_c_f = 1000.0 * 4180.0
+    dt = 1e10
+
+    yf = np.array(mesh.faceCenters)[1]
+    xf = np.array(mesh.faceCenters)[0]
+    exterior = np.array(mesh.exteriorFaces, dtype=bool)
+    top_faces = exterior & (yf > yf.max() - 1e-6)
+
+    # a flux that is switched on abruptly inside the model domain, as in the
+    # fault zones of Beo. the divergence of this flux field is what makes fipy
+    # move part of the implicit source term to the right hand side
+    q_values = np.zeros((2, mesh.numberOfFaces))
+    fault = (xf > 50.0) & (xf < 100.0)
+    q_values[1][fault] = 1e-8
+    q_values[:, exterior] = 0.0
+
+    q_face = FaceVariable(mesh=mesh, rank=1, value=0.0)
+    q_face.setValue(q_values)
+
+    assert np.max(np.abs(np.array(q_face.divergence))) > 0
+
+    K_cell = CellVariable(mesh=mesh, value=2.5)
+    rho_c_cell = CellVariable(mesh=mesh, value=2500.0 * 900.0)
+    source = CellVariable(mesh=mesh, value=0.0)
+    penalty_coeff = CellVariable(mesh=mesh, value=0.0)
+    penalty_source = CellVariable(mesh=mesh, value=0.0)
+
+    T = CellVariable(mesh=mesh, value=50.0, hasOld=True)
+    T.constrain(10.0, where=FaceVariable(mesh=mesh, value=top_faces))
+
+    equation = beo_fipy.build_heat_flow_equation(
+        mesh, K_cell.harmonicFaceValue, rho_c_cell, q_face, rho_f_c_f,
+        PowerLawConvectionTerm, source, penalty_coeff, penalty_source,
+        False, dt)
+
+    if use_cache is True:
+        lu_cache = beo_fipy.TransientLUCache()
+    else:
+        lu_cache = None
+
+    temperatures = []
+
+    for step in range(n_steps):
+
+        # change one of the coefficients of the equation partway through the
+        # run, which should force a new factorization
+        if step == step_with_new_K:
+            K_cell.setValue(5.0)
+
+        T.updateOld()
+
+        if lu_cache is not None:
+            lu_cache.solve(equation, T, dt,
+                           [K_cell, rho_c_cell, q_face, penalty_coeff],
+                           [source, penalty_source])
+        else:
+            equation.solve(var=T, dt=dt, solver=beo_fipy.get_solver())
+
+        temperatures.append(np.array(T).copy())
+
+    return np.array(temperatures), lu_cache
+
+
+def test_lu_cache_gives_same_temperatures():
+
+    """
+    Reusing the LU factorization of the heat flow equation should give the same
+    temperatures as solving the equation from scratch at every timestep, and
+    the factorization should be redone when one of the coefficients of the
+    equation changes.
+    """
+
+    T_plain, _ = run_transient_steps(use_cache=False)
+    T_cached, lu_cache = run_transient_steps(use_cache=True)
+
+    # the temperatures have to change over time, otherwise the comparison is
+    # meaningless
+    assert np.max(np.abs(T_plain[-1] - T_plain[0])) > 1.0
+
+    assert np.max(np.abs(T_cached - T_plain)) < 1e-10
+
+    # one factorization at the start and one after the thermal conductivity was
+    # changed, with the other timesteps reusing the factorization
+    assert lu_cache.n_factorizations == 2
+    assert lu_cache.n_reused == 4
+
+
 def test_radial_solver_actually_solves():
 
     """
