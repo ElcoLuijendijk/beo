@@ -16,12 +16,30 @@ import numpy as np
 import pandas as pd
 import scipy.interpolate
 
-# escript/Finley modules:
-import esys.escript as es
-import esys.finley as fl
-import esys.pycad as pc
-import esys.pycad.gmsh as gmsh
-import esys.escript.linearPDEs as linearPDEs
+# escript/Finley modules, these are optional. Beo can also be run with the
+# fipy backend, which does not need escript
+ESCRIPT_AVAILABLE = False
+try:
+    import esys.escript as es
+    import esys.finley as fl
+    import esys.pycad as pc
+    import esys.pycad.gmsh as gmsh
+    import esys.escript.linearPDEs as linearPDEs
+    ESCRIPT_AVAILABLE = True
+except ImportError:
+    es = None
+    fl = None
+    pc = None
+    gmsh = None
+    linearPDEs = None
+
+# fipy backend, this is also optional
+FIPY_AVAILABLE = False
+try:
+    import lib.beo_fipy as beo_fipy
+    FIPY_AVAILABLE = beo_fipy.check_fipy_available()
+except ImportError:
+    beo_fipy = None
 
 # import esys.weipa
 
@@ -1011,14 +1029,20 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
             np.array(surface_levels), boiling_temps, exceed_boiling_temps)
 
 
-def model_run(mp):
+def run_model_escript(mp):
 
     """
-    setup mesh and parameters, and run a single model experiment
+    Set up the mesh, model parameters and boundary conditions and run a single
+    model experiment with the escript backend.
 
-    :param mp:
-    :return:
+    Returns a dictionary with the modeled temperature and advective flux
+    fields converted to numpy arrays, along with the node coordinates.
     """
+
+    if ESCRIPT_AVAILABLE is False:
+        msg = 'error, the escript backend was selected but esys.escript could not be imported.\n'
+        msg += 'either install escript or set backend = \'fipy\' in the model parameter file'
+        raise ImportError(msg)
 
     #
     year = 365.25 * 24 * 60 * 60
@@ -1479,6 +1503,69 @@ def model_run(mp):
         boiling_temp_array = None
         xyz_array_exc = None
         exceed_boiling_temp_array = None
+
+    return {'runtimes': runtimes,
+            'xyz_array': xyz_array,
+            'surface_levels': surface_levels,
+            'x_flt': x_flt,
+            'z_flt': z_flt,
+            'Ts': Ts,
+            'q_vectors': q_vectors,
+            'T_init_array': T_init_array,
+            'T_array': T_array,
+            'boiling_temp_array': boiling_temp_array,
+            'xyz_array_exc': xyz_array_exc,
+            'exceed_boiling_temp_array': exceed_boiling_temp_array,
+            'xyz_element_array': xyz_element_array,
+            'qh_array': qh_array,
+            'qv_array': qv_array,
+            'fault_fluxes_m_per_sec': fault_fluxes_m_per_sec}
+
+
+def model_run(mp):
+
+    """
+    Set up the mesh and parameters, run a single model experiment and
+    calculate thermochronometer ages.
+
+    The heat flow model itself is run by either the escript or the fipy
+    backend, depending on the backend parameter in the model parameter file.
+
+    :param mp:
+    :return:
+    """
+
+    year = 365.25 * 24 * 60 * 60
+
+    backend = getattr(mp, 'backend', 'escript')
+
+    if backend == 'fipy':
+        if beo_fipy is None:
+            msg = 'error, the fipy backend was selected but the fipy backend module '
+            msg += 'could not be imported. install fipy and gmsh with pip install fipy gmsh'
+            raise ImportError(msg)
+        print('running the heat flow model with the fipy backend')
+        model_results = beo_fipy.run_model_fipy(mp)
+    else:
+        print('running the heat flow model with the escript backend')
+        model_results = run_model_escript(mp)
+
+    runtimes = model_results['runtimes']
+    xyz_array = model_results['xyz_array']
+    surface_levels = model_results['surface_levels']
+    x_flt = model_results['x_flt']
+    z_flt = model_results['z_flt']
+    Ts = model_results['Ts']
+    q_vectors = model_results['q_vectors']
+    T_init_array = model_results['T_init_array']
+    T_array = model_results['T_array']
+    boiling_temp_array = model_results['boiling_temp_array']
+    xyz_array_exc = model_results['xyz_array_exc']
+    exceed_boiling_temp_array = model_results['exceed_boiling_temp_array']
+    xyz_element_array = model_results['xyz_element_array']
+    qh_array = model_results['qh_array']
+    qv_array = model_results['qv_array']
+    fault_fluxes_m_per_sec = model_results['fault_fluxes_m_per_sec']
 
     ##############################################################
     # calculate temperature at depth slices (surface or otherwise)

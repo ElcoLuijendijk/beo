@@ -23,7 +23,11 @@ import pandas as pd
 
 import beo_core
 
-import esys.escript as es
+# escript is optional, Beo can also be run with the fipy backend
+try:
+    import esys.escript as es
+except ImportError:
+    es = None
 
 
 def coefficient_of_determination(y, f):
@@ -80,6 +84,7 @@ if len(sys.argv) > 1 and 'beo.py' not in sys.argv[-1]:
         import importlib.util
         spec = importlib.util.spec_from_file_location('model_parameters', inp_file_loc)
         model_parameters = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(model_parameters)
     except IOError:
         msg = 'cannot find parameter file %s' % inp_file_loc
         raise IOError(msg)
@@ -342,7 +347,13 @@ for model_run, param_set in enumerate(param_list):
 
     T_array = T_array[output_steps]
 
-    if hasattr(mp, "save_VTK_file") is True and mp.save_VTK_file is True:
+    save_VTK_file = hasattr(mp, "save_VTK_file") is True and mp.save_VTK_file is True
+    backend = getattr(mp, 'backend', 'escript')
+
+    if save_VTK_file is True and (es is None or backend == 'fipy'):
+        print('no output to VTK file, saving VTK files is only supported for the escript backend')
+
+    elif save_VTK_file is True:
         VTK_dir = 'VTK_files_model_run_%i_%s_%s_%s' \
                   % (model_run, str(param_set), mp.output_fn_adj, today_str)
         VTK_dir_full = os.path.join(output_folder, VTK_dir)
