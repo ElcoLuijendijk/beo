@@ -1,0 +1,23 @@
+# python modules needed to run Beo with the fipy backend
+#
+# install with:
+#     pip install -r requirements.txt
+#
+# python 3.10 or higher is needed. on python 3.8 and 3.9 fipy fails to import
+# because it does not install the importlib_metadata module that it needs on
+# these older versions of python.
+#
+# note that esys-escript is not available on PyPI. use this file if you want to
+# run Beo with the fipy backend. see the readme for instructions on installing
+# esys-escript.
+#
+# the gmsh package provides both the gmsh python module and the gmsh
+# executable, which fipy calls to read mesh files.
+
+numpy
+scipy
+pandas
+matplotlib
+fipy>=4.0
+gmsh
+pytest

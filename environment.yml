@@ -1,0 +1,27 @@
+# conda environment for Beo with the fipy backend
+#
+# create the environment with:
+#     conda env create -f environment.yml
+#     conda activate beo
+#
+# note that esys-escript is not available on conda-forge. use this environment
+# if you want to run Beo with the fipy backend. see the readme for instructions
+# on installing esys-escript.
+#
+# python-gmsh provides the gmsh python module and also installs the gmsh
+# executable, which fipy calls to read mesh files.
+
+name: beo
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python >=3.10
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - fipy >=4.0
+  - python-gmsh
+  - pytest
