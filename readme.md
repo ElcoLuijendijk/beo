@@ -39,11 +39,11 @@ where ``model_parameters/model_parameters.py`` is a file containing all model pa
 
 # Installation
 
-Beo can solve the heat flow equation with two different numerical backends, esys-escript and fipy. Which modules you need depends on which backend you want to use. See the section on numerical backends below for the differences between the two.
+Beo can solve the heat flow equation with two different numerical backends, esys-escript and fipy. In most cases the Fipy backend is easier to install. It also provides additional solvers for advection that make the model more stable at high flow rates. However escript has better numerical accuracy overall and is a bit faster. See the section on numerical backends below for the differences between the two.
 
-The fipy backend can be installed with conda or pip and works on Linux, macOS and Windows. esys-escript is not available on conda-forge or PyPI and needs to be installed separately, see below.
+The fipy backend can be installed with conda or pip and works on Linux, macOS and Windows. esys-escript is available on conda-forge for linux and windows, but for macOS it needs to be installed separately, see below.
 
-Python 3.10 or higher is required for the fipy backend. On Python 3.8 and 3.9 fipy installs but fails to import, because it does not pull in the ``importlib_metadata`` module that it needs on those versions of Python.
+Note that Python 3.10 or higher is required for the fipy backend. On Python 3.8 and 3.9 fipy installs but fails to import, because it does not pull in the ``importlib_metadata`` module that it needs on those versions of Python.
 
 
 ## Installing Beo with the FiPy backend:
@@ -68,7 +68,7 @@ Note that the conda package that contains the gmsh Python module is called ``pyt
 
 ### Installation with pip
 
-The file ``requirements.txt`` contains the same set of modules. You can install them using `pip` following:
+Alternatively you can install the required modules using `pip` following:
 
 ````bash
 pip install -r requirements.txt
@@ -106,13 +106,15 @@ python beo.py model_parameters/model_parameters.py
 
 with ``backend = 'fipy'`` set in the model parameter file.
 
+
 ## Installing esys-escript
 
-esys-escript is only needed if you want to use the escript backend, which is the default. It is not available on conda-forge or PyPI.
+esys-escript is only needed if you want to use the escript backend, which is the default.
 
 - Get the code here: [https://github.com/esys-escript/esys-escript.github.io](https://github.com/esys-escript/esys-escript.github.io)
 - An installation guide can be found here: https://github.com/esys-escript/esys-escript.github.io/blob/master/install.pdf
-- Note that the newer versions of escript support installation using Flatpak or Docker. These install sandboxed versions of esys-escript that currently do not include the Python modules Scipy or Pandas. However, Beo uses these modules for interpolating variables and model-data comparison. Therefore the recommended way to install esys-escript is to use the binary version in Debian/Ubuntu (``sudo apt install python-escript``) or to compile the source code following the intructions in the installation manual.
+- Note that the newer versions of escript support installation using Flatpak or Docker. These install sandboxed versions of esys-escript that currently do not include the Python modules Scipy or Pandas. However, Beo uses these modules for interpolating variables and model-data comparison. Therefore the recommended way to install esys-escript is to use the binary version in Debian/Ubuntu (``sudo apt install python-escript``), use the Anaconda installation option or to compile the source code following the intructions in the installation manual.
+- Note that recent versions of escript may have removed the pycad module that Beo uses to make numerical grids. Therefore it may be better to install an older version of escript. Beo was tested with escript versions up to 5.10.
 
 After installing esys-escript, navigate to the directory where you have installed it and go to the subdirectory ``bin``. If you used apt-get to install esys-escript you can normally find esys-escript in ``/usr/bin/``. Then run Beo by executing the following command from the command line:
 
