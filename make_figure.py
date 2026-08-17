@@ -478,9 +478,17 @@ for fn in files:
             #p.scatter(xyz_array[:, 0], xyz_array[:, 1], s=0.1, color='gray')
             #c=Ta, **kwargs)
 
-            # raterize contours
-            for c in leg_cn.collections:
-                c.set_rasterized(True)
+            # rasterize contours
+            # matplotlib 3.8 and higher store the filled contours in a single
+            # artist, older versions store a list of collections
+            # matplotlib 3.10 warns that the rasterization will be ignored,
+            # this warning is incorrect, the contours are rasterized by the
+            # draw method of the parent class
+            if hasattr(leg_cn, 'set_rasterized'):
+                leg_cn.set_rasterized(True)
+            else:
+                for c in leg_cn.collections:
+                    c.set_rasterized(True)
             #pdb.set_trace()
 
         if fp.show_vapour is True and exceed_boiling_temp_array is not None:
