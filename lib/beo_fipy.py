@@ -258,6 +258,94 @@ class TransientLUCache:
         T.setValue(self.factor.solve(rhs))
 
 
+class OutputTimeSelector:
+
+    """
+    Decide during the timestep loop whether to store the model results of the
+    current timestep.
+
+    By default results are stored at a regular interval, once every dt_stored
+    seconds of model time. Instead, results can be stored at a list of
+    specific times, given by the stored_timesteps parameter. This is useful
+    to resolve a part of the model run in more detail than the rest, for
+    instance the first few timesteps after a fault zone starts discharging
+    water, without having to run the entire model at a correspondingly small
+    value of dt_stored.
+
+    stored_timesteps is a single list of times in seconds, covering the
+    entire model run, not one list per timeslice. Results are stored the
+    first time the cumulative model time reaches or passes each value in the
+    list, so a requested time that falls between two timesteps is rounded up
+    to the next timestep, in the same way that dt_stored is already rounded
+    to the nearest multiple of dt. Requested times that are closer together
+    than dt cannot be resolved and are skipped, so that at most one result is
+    stored per timestep.
+    """
+
+    def __init__(self, dt, dt_stored, stored_timesteps):
+
+        self.stored_timesteps = stored_timesteps
+
+        if stored_timesteps is not None:
+            self.targets = sorted(set(stored_timesteps))
+            self.target_index = 0
+        else:
+            self.interval = int(round(dt_stored / dt))
+            if self.interval < 1:
+                self.interval = 1
+            self.count = 0
+
+    def should_store(self, t_total):
+
+        """
+        Return True if the results of the current timestep, with cumulative
+        model time t_total, should be stored
+        """
+
+        if self.stored_timesteps is not None:
+
+            store = False
+
+            while (self.target_index < len(self.targets)
+                   and t_total >= self.targets[self.target_index]):
+                store = True
+                self.target_index += 1
+
+            return store
+
+        else:
+            self.count += 1
+            if self.count >= self.interval:
+                self.count = 0
+                return True
+
+            return False
+
+    def report_actual_times(self, dt):
+
+        """
+        Print the times that were actually requested in stored_timesteps next
+        to the time they will actually be stored at, so that a difference
+        caused by snapping to a reachable timestep is not mistaken for an
+        error.
+
+        should_store only stores results once t_total has reached or passed a
+        requested time, so the time actually stored at is always the closest
+        multiple of dt that is greater than or equal to the requested time,
+        not the closest multiple of dt overall.
+        """
+
+        if self.stored_timesteps is None:
+            return
+
+        print('storing results at the following times, snapped to the next '
+              'reachable multiple of dt:')
+
+        for target in self.targets:
+            actual = dt * np.ceil(target / dt)
+            print('\trequested %0.3e s, stored at %0.3e s' % (target, actual))
+
+
 def calculate_vapour_pressure(T, c1=8e-8, c2=-7e-5, c3=0.028, c4=-3.1597):
 
     """
@@ -975,9 +1063,9 @@ def run_model_fipy(mp):
     ###############################
     # run the heat flow model
     ###############################
-    store_results_interval = int(round(mp.dt_stored / mp.dt))
-    if store_results_interval < 1:
-        store_results_interval = 1
+    output_time_selector = OutputTimeSelector(
+        mp.dt, mp.dt_stored, getattr(mp, 'stored_timesteps', None))
+    output_time_selector.report_actual_times(mp.dt)
 
     convection_scheme = getattr(mp, 'fipy_convection_scheme', 'powerlaw')
     convection_term = get_convection_term(convection_scheme)
@@ -991,7 +1079,7 @@ def run_model_fipy(mp):
         K_b, rho_b, c_b, K_air, K_var, rho_var, c_var,
         top_faces, bottom_faces, bottom_temperature, basal_flux_source,
         surface_level, vertex_weights, convection_term,
-        store_results_interval)
+        output_time_selector)
 
     (runtimes, T_steady, Ts_cell, qh_cell, qv_cell, surface_levels,
      surface_levels_mesh, boiling_temps, exceed_boiling_temps) = results
@@ -1126,7 +1214,7 @@ def model_hydrothermal_temperatures_fipy(mesh, mp, xc, yc, xf, yf,
                                          top_faces, bottom_faces, bottom_temperature,
                                          basal_flux_source, surface_level_init,
                                          vertex_weights, convection_term,
-                                         store_results_interval,
+                                         output_time_selector,
                                          surface_buffer=0.1,
                                          max_screen_output=500):
 
@@ -1293,7 +1381,6 @@ def model_hydrothermal_temperatures_fipy(mesh, mp, xc, yc, xf, yf,
         raise ValueError(msg)
 
     n_time_periods = len(mp.durations)
-    store_results_count = 0
 
     for time_period, fault_flux, duration in zip(itertools.count(), fault_fluxes,
                                                  mp.durations):
@@ -1508,8 +1595,7 @@ def model_hydrothermal_temperatures_fipy(mesh, mp, xc, yc, xf, yf,
                           % (np.min(K_air), np.max(K_air)))
 
             # store output
-            store_results_count += 1
-            if store_results_count >= store_results_interval:
+            if output_time_selector.should_store(t_total):
                 Ts.append(np.array(T).copy())
                 qh_stored.append(qh_c.copy())
                 qv_stored.append(qv_c.copy())
@@ -1521,8 +1607,6 @@ def model_hydrothermal_temperatures_fipy(mesh, mp, xc, yc, xf, yf,
                     exceed_boiling_temps.append(exceed_boiling_temp.copy())
 
                 runtimes.append(t_total)
-
-                store_results_count = 0
 
         print('final T after advective heating, min = %0.1f, max = %0.1f degrees C'
               % (np.array(T).min(), np.array(T).max()))

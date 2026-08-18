@@ -215,7 +215,19 @@ warn_about_possible_parameter_typos(attribute_names, scriptdir)
 
 # set up pandas dataframe to store model input params
 n_model_runs = len(param_list)
-n_ts = np.sum(np.array(mp.N_outputs))
+
+if getattr(mp, 'stored_timesteps', None) is not None:
+    # a requested time that is closer to the previous one than dt is stored
+    # at the same timestep as the previous one, see OutputTimeSelector in
+    # lib/beo_fipy.py. snapping every requested time up to the nearest
+    # multiple of dt the same way here gives the exact number of distinct
+    # timesteps that will be stored, so that the dataframe is preallocated
+    # with exactly the right number of rows
+    snapped_times = mp.dt * np.ceil(np.array(mp.stored_timesteps) / mp.dt)
+    n_ts = len(np.unique(snapped_times))
+else:
+    n_ts = np.sum(np.array(mp.N_outputs))
+
 n_rows = n_model_runs * n_ts
 
 ind = np.arange(n_rows)
@@ -287,6 +299,13 @@ for model_run, param_set in enumerate(param_list):
 
     if mp.steady_state is True and mp.add_exhumation is True:
         msg = 'Error, both steady-state and exhumation are set to True. Please change your model parameters file'
+        raise ValueError(msg)
+
+    if (getattr(mp, 'stored_timesteps', None) is not None
+            and mp.repeat_timeslices is not None and mp.repeat_timeslices > 1):
+        msg = 'error, stored_timesteps and repeat_timeslices cannot be used together. '
+        msg += 'stored_timesteps is a single list of absolute times covering the entire '
+        msg += 'model run, which cannot be repeated in the same way as dt_stored'
         raise ValueError(msg)
 
     # check if timeslices should be repeated and if yes, extend durations, fault fluxes
@@ -363,24 +382,34 @@ for model_run, param_set in enumerate(param_list):
      AHe_ages_surface_samples_all, AHe_ages_surface_samples_all_corr,
      z_borehole, AHe_ages_borehole, AHe_ages_borehole_corrected) = output
 
-    output_steps = [0]
+    if getattr(mp, 'stored_timesteps', None) is not None:
+        # all stored timesteps are already exactly the times requested in
+        # stored_timesteps, so none of the further selection below is needed
+        output_steps = np.arange(len(runtimes))
 
-    for duration, N_output in zip(mp.durations, mp.N_outputs):
-        nt = int(duration / mp.dt_stored)
-        print('timesteps = %i' % nt)
+        print('selecting output steps: ', output_steps)
+        print('generating time output at steps: ')
+        print(np.array(runtimes)[output_steps] / year)
 
-        output_steps_i = list(np.linspace(0, nt, N_output + 1).astype(int) + output_steps[-1])[1:]
-        output_steps += output_steps_i
+    else:
+        output_steps = [0]
 
-    # select data for output steps only
-    output_steps = np.array(output_steps)
+        for duration, N_output in zip(mp.durations, mp.N_outputs):
+            nt = int(duration / mp.dt_stored)
+            print('timesteps = %i' % nt)
 
-    print('selecting output steps: ', output_steps)
+            output_steps_i = list(np.linspace(0, nt, N_output + 1).astype(int) + output_steps[-1])[1:]
+            output_steps += output_steps_i
 
-    times_test = np.arange(0, np.sum(mp.durations) + mp.dt_stored, mp.dt_stored)
+        # select data for output steps only
+        output_steps = np.array(output_steps)
 
-    print('generating time output at steps: ')
-    print(times_test[output_steps] / year)
+        print('selecting output steps: ', output_steps)
+
+        times_test = np.arange(0, np.sum(mp.durations) + mp.dt_stored, mp.dt_stored)
+
+        print('generating time output at steps: ')
+        print(times_test[output_steps] / year)
 
     if mp.steady_state is False:
         n_ts = len(output_steps)

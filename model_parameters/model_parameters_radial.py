@@ -218,6 +218,22 @@ class ModelParams:
     # calculate_he_ages is switched on
     dt_stored = 1000.0 * year
 
+    # alternative to dt_stored: store results at an explicit list of times
+    # instead of a regular interval, useful to resolve a part of the model
+    # run in more detail than the rest, for instance the first few timesteps
+    # after a fault zone starts discharging water. this is a single list of
+    # times in seconds covering the entire model run, not one list per
+    # timeslice, and overrides dt_stored and N_outputs when set. only
+    # supported by the fipy backend. leave at None to use dt_stored instead.
+    # the initial condition at t=0 is always stored regardless of this list,
+    # so there is no need to include 0 here
+    # stored_timesteps = [10 * year, 50 * year, 100 * year, 500 * year,
+    #                     1000 * year, 5000 * year, 15e3 * year]
+    
+    stored_timesteps = [0.1 * year, 0.5 * year, 1 * year, 5 * year, 
+                        10 * year, 50 * year, 100 * year, 500 * year,
+                        1000 * year, 5000 * year, 10e3 * year, 15e3 * year]
+
     # duration of each timestep_slice
     durations = [15e3 * year]
 
