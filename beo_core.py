@@ -150,7 +150,9 @@ def Magnus_eq(T):
 
     try:
         P = 0.61094 * np.exp(17.625 * T / (T + 243.04))
-    except:
+    except (TypeError, AttributeError, ValueError):
+        # T is an escript Data object, numpy does not know how to take its
+        # exponential
         P = 0.61094 * es.exp(17.625 * T / (T + 243.04))
 
     return P * 1000.0
@@ -757,9 +759,9 @@ def model_hydrothermal_temperatures(mesh, hf_pde,
                 try:
                     surface_level_mesh_id = np.where(target_depths <= surface_level)[0][-1]
                     surface_level_mesh = target_depths[surface_level_mesh_id]
-                except:
+                except IndexError:
+                    # no target depth is at or below the current surface level
                     surface_level_mesh = surface_level
-                    # print '\twarning could not find land surface nodes'
 
             # calculate effective thermal conductivity air layer based on latent and sensible heat flux
             # eqs.
@@ -1167,15 +1169,15 @@ def run_model_escript(mp):
     if solver == 'GMRES':
         print('using GMRES solver for heat transport PDE')
         hf_pde.getSolverOptions().setSolverMethod(es.SolverOptions.GMRES)
-    elif solver is 'DIRECT':
+    elif solver == 'DIRECT':
         print('using direct solver for heat transport PDE')
         hf_pde.getSolverOptions().setSolverMethod(
             es.SolverOptions.DIRECT)
-    elif solver is 'ROWSUM_LUMPING':
+    elif solver == 'ROWSUM_LUMPING':
         adv_pde = linearPDEs.LinearPDE(mesh)
         adv_pde.getSolverOptions().setSolverMethod(es.SolverOptions.ROWSUM_LUMPING)
         hf_pde.getSolverOptions().setSolverMethod(es.SolverOptions.GMRES)
-    elif solver is 'PCG':
+    elif solver == 'PCG':
         #hf_pde.getSolverOptions().setSolverMethod(es.SolverOptions.ROWSUM_LUMPING)
         hf_pde.getSolverOptions().setSolverMethod(es.SolverOptions.PCG)
         hf_pde.getSolverOptions().setPreconditioner(es.SolverOptions.AMG)
