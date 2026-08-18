@@ -74,7 +74,7 @@ print('-' * 50)
 
 parser = argparse.ArgumentParser(description='make figures of model temperatures and AHe ages for model runs Beo')
 
-parser.add_argument(dest='output_files', metavar='output files', default=None, nargs='?',
+parser.add_argument(dest='output_files', metavar='output files', default=None, nargs='*',
                     help='one or more Beo output files (.pck)')
 
 parser.add_argument('-t', dest='timeslices', default=None, help='one or more timeslices (years) to display in '
@@ -123,7 +123,7 @@ My = year * 1e6
 
 result_dir = 'model_output'
 
-if args.output_files is not None:
+if args.output_files:
 
     files = args.output_files
 
