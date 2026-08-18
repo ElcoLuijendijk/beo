@@ -67,6 +67,44 @@ def check_fipy_available():
     return FIPY_AVAILABLE and mesh_functions_fipy.GMSH_AVAILABLE
 
 
+def build_growing_dt_schedule(dt_initial, growth_factor, dt_max, duration):
+
+    """
+    Build a list of timestep sizes covering a single time period of length
+    duration.
+
+    The first timestep is dt_initial, and each following timestep is
+    growth_factor times larger than the previous one, until the timestep
+    reaches dt_max. From that point on the timestep stays constant at
+    dt_max. The last timestep is shortened so that all the timesteps in the
+    returned list add up to exactly duration.
+
+    This is a plain numerical helper, with no dependency on fipy, so that it
+    can also be used to precompute the exact number of stored timesteps in
+    beo.py without needing the fipy backend to be installed.
+    """
+
+    if growth_factor <= 1.0:
+        raise ValueError('error, dt_growth_factor should be larger than 1.0')
+    if dt_max <= dt_initial:
+        raise ValueError('error, dt_max should be larger than dt')
+
+    dts = []
+    t_total = 0.0
+    dt = dt_initial
+
+    while t_total < duration:
+        dt = min(dt, dt_max)
+        remaining = duration - t_total
+        if dt > remaining:
+            dt = remaining
+        dts.append(dt)
+        t_total += dt
+        dt = dt * growth_factor
+
+    return dts
+
+
 def get_convection_term(scheme):
 
     """
@@ -280,26 +318,41 @@ class OutputTimeSelector:
     to the nearest multiple of dt. Requested times that are closer together
     than dt cannot be resolved and are skipped, so that at most one result is
     stored per timestep.
+
+    If the timestep dt grows during the run, the regular dt_stored interval
+    is recomputed whenever dt changes, so that results keep being stored at
+    roughly every dt_stored seconds of simulated time once dt has reached
+    its final, constant value. No results are stored at the regular interval
+    while dt is still growing, since the interval in timesteps would be
+    different for every value of dt. Use stored_timesteps instead of
+    dt_stored to resolve part of a run with a growing timestep in detail.
     """
 
     def __init__(self, dt, dt_stored, stored_timesteps):
 
         self.stored_timesteps = stored_timesteps
+        self.dt_stored = dt_stored
 
         if stored_timesteps is not None:
             self.targets = sorted(set(stored_timesteps))
             self.target_index = 0
         else:
-            self.interval = int(round(dt_stored / dt))
-            if self.interval < 1:
-                self.interval = 1
-            self.count = 0
+            self._interval_dt = None
+            self._set_interval(dt)
 
-    def should_store(self, t_total):
+    def _set_interval(self, dt):
+
+        self.interval = int(round(self.dt_stored / dt))
+        if self.interval < 1:
+            self.interval = 1
+        self.count = 0
+        self._interval_dt = dt
+
+    def should_store(self, t_total, dt):
 
         """
         Return True if the results of the current timestep, with cumulative
-        model time t_total, should be stored
+        model time t_total and timestep size dt, should be stored
         """
 
         if self.stored_timesteps is not None:
@@ -314,6 +367,9 @@ class OutputTimeSelector:
             return store
 
         else:
+            if dt != self._interval_dt:
+                self._set_interval(dt)
+
             self.count += 1
             if self.count >= self.interval:
                 self.count = 0
@@ -865,6 +921,13 @@ def run_model_fipy(mp):
         raise ImportError('error, the fipy backend requires fipy and the gmsh '
                           'python module. install these with pip install fipy gmsh')
 
+    dt_growth_factor = getattr(mp, 'dt_growth_factor', None)
+    dt_max = getattr(mp, 'dt_max', None)
+    if (dt_growth_factor is None) != (dt_max is None):
+        msg = 'error, dt_growth_factor and dt_max should either both be set '
+        msg += 'to grow the timestep, or both left at None to use a constant dt'
+        raise ValueError(msg)
+
     ############################
     # construct the mesh
     ############################
@@ -1065,7 +1128,13 @@ def run_model_fipy(mp):
     ###############################
     output_time_selector = OutputTimeSelector(
         mp.dt, mp.dt_stored, getattr(mp, 'stored_timesteps', None))
-    output_time_selector.report_actual_times(mp.dt)
+    if dt_growth_factor is not None:
+        print('the timestep dt starts at %0.3e s and grows by a factor %0.3f '
+              'per timestep up to a maximum of %0.3e s' % (mp.dt, dt_growth_factor, dt_max))
+        print('the exact times at which results are stored depend on this '
+              'growing timestep, so are not reported in advance')
+    else:
+        output_time_selector.report_actual_times(mp.dt)
 
     convection_scheme = getattr(mp, 'fipy_convection_scheme', 'powerlaw')
     convection_term = get_convection_term(convection_scheme)
@@ -1242,6 +1311,9 @@ def model_hydrothermal_temperatures_fipy(mesh, mp, xc, yc, xf, yf,
 
     solve_as_steady_state = mp.steady_state
     dt = mp.dt
+    dt_initial = mp.dt
+    dt_growth_factor = getattr(mp, 'dt_growth_factor', None)
+    dt_max = getattr(mp, 'dt_max', None)
     vapour_correction = mp.vapour_correction
     variable_K_air = mp.variable_K_air
     exhumation_rate = mp.exhumation_rate
@@ -1418,17 +1490,31 @@ def model_hydrothermal_temperatures_fipy(mesh, mp, xc, yc, xf, yf,
         q_face.setValue(np.vstack((qh_f * radial_weight_face,
                                    qv_f * radial_weight_face)))
 
-        # calculate the courant number and the grid peclet number
+        if solve_as_steady_state is False and dt_growth_factor is not None:
+            # the timestep ramps up again at the start of every time period,
+            # so that a period with an abrupt change in fault flux also gets
+            # a well resolved start, and not just the very first period
+            dt_schedule = build_growing_dt_schedule(dt_initial, dt_growth_factor, dt_max, duration)
+            nt = len(dt_schedule)
+            print('timestep grows from %0.3e s to a maximum of %0.3e s over %i timesteps'
+                  % (dt_schedule[0], max(dt_schedule), nt))
+        else:
+            dt_schedule = None
+            nt = int(duration / dt)
+
+        # calculate the courant number and the grid peclet number. if the
+        # timestep is growing, use the largest timestep actually reached in
+        # this time period, since the courant number and peclet number
+        # increase with dt
+        dt_cfl = max(dt_schedule) if dt_schedule is not None else dt
         q_abs = np.sqrt(qh_c**2 + qv_c**2)
-        cfl_cond_max = np.max(q_abs * dt / cell_size)
+        cfl_cond_max = np.max(q_abs * dt_cfl / cell_size)
         print('max. CFL number: %0.2f' % cfl_cond_max)
         if cfl_cond_max > 1:
             print('warning, cfl condition not met, cfl number = %0.2f' % cfl_cond_max)
 
         Pe = rho_f_c_f * q_abs * cell_size / K_var
         print('max. grid peclet number = %0.2f' % np.max(Pe))
-
-        nt = int(duration / dt)
 
         if solve_as_steady_state is True:
             if variable_K_air is True or vapour_correction is True:
@@ -1449,6 +1535,9 @@ def model_hydrothermal_temperatures_fipy(mesh, mp, xc, yc, xf, yf,
         start = time.time()
 
         for t in range(nt):
+
+            if dt_schedule is not None:
+                dt = dt_schedule[t]
 
             # exhumation, calculate the new surface level and snap this to the
             # closest horizontal line of nodes in the mesh
@@ -1595,7 +1684,7 @@ def model_hydrothermal_temperatures_fipy(mesh, mp, xc, yc, xf, yf,
                           % (np.min(K_air), np.max(K_air)))
 
             # store output
-            if output_time_selector.should_store(t_total):
+            if output_time_selector.should_store(t_total, dt):
                 Ts.append(np.array(T).copy())
                 qh_stored.append(qh_c.copy())
                 qv_stored.append(qv_c.copy())

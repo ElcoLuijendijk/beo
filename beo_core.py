@@ -1051,6 +1051,12 @@ def run_model_escript(mp):
         msg += 'set backend = \'fipy\', or use dt_stored instead to select the escript backend'
         raise ValueError(msg)
 
+    if getattr(mp, 'dt_growth_factor', None) is not None:
+        msg = 'error, dt_growth_factor is only supported by the fipy backend.\n'
+        msg += 'set backend = \'fipy\', or leave dt_growth_factor at None to select the '
+        msg += 'escript backend'
+        raise ValueError(msg)
+
     #
     year = 365.25 * 24 * 60 * 60
     Myr = year * 1e6

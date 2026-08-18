@@ -203,8 +203,24 @@ class ModelParams:
     # number of output steps for each timeslice
     N_outputs = [15]
 
-    # size of a single timestep
-    dt = 50.0 * year
+    # size of a single timestep. if dt_growth_factor is set below, this is
+    # instead the size of the first timestep of each timeslice
+    dt = 0.1 * year
+
+    # optionally grow the timestep dt geometrically, by a factor of
+    # dt_growth_factor each timestep, until it reaches dt_max, after which
+    # dt stays constant at dt_max. this is useful to resolve a fast initial
+    # transient, for instance right after a fault zone starts discharging
+    # water, with a small timestep, without having to run the entire
+    # timeslice at that small timestep. the timestep starts growing again at
+    # the start of every timeslice. only supported by the fipy backend, and
+    # only in combination with stored_timesteps, since the regular dt_stored
+    # output interval assumes a constant dt. leave dt_growth_factor at None
+    # to use a constant timestep dt instead
+    # dt_growth_factor = 1.1
+    # dt_max = 250.0 * year
+    dt_growth_factor = 1.2
+    dt_max = 250 * year
 
     # size of timestep to store model results. make this higher than dt if you want to conserve memory,
     # otherwise make this the same as dt
@@ -229,7 +245,7 @@ class ModelParams:
     # so there is no need to include 0 here
     # stored_timesteps = [10 * year, 50 * year, 100 * year, 500 * year,
     #                     1000 * year, 5000 * year, 15e3 * year]
-    
+
     stored_timesteps = [0.1 * year, 0.5 * year, 1 * year, 5 * year, 
                         10 * year, 50 * year, 100 * year, 500 * year,
                         1000 * year, 5000 * year, 10e3 * year, 15e3 * year]

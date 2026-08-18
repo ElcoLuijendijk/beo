@@ -216,14 +216,47 @@ warn_about_possible_parameter_typos(attribute_names, scriptdir)
 # set up pandas dataframe to store model input params
 n_model_runs = len(param_list)
 
+if getattr(mp, 'dt_growth_factor', None) is not None and getattr(mp, 'stored_timesteps', None) is None:
+    msg = 'error, stored_timesteps must be set when dt_growth_factor is used.\n'
+    msg += 'the regular dt_stored output interval assumes a constant dt, which does\n'
+    msg += 'not hold while the timestep is still growing, so an explicit list of\n'
+    msg += 'output times is required instead'
+    raise ValueError(msg)
+
 if getattr(mp, 'stored_timesteps', None) is not None:
-    # a requested time that is closer to the previous one than dt is stored
-    # at the same timestep as the previous one, see OutputTimeSelector in
-    # lib/beo_fipy.py. snapping every requested time up to the nearest
-    # multiple of dt the same way here gives the exact number of distinct
-    # timesteps that will be stored, so that the dataframe is preallocated
-    # with exactly the right number of rows
-    snapped_times = mp.dt * np.ceil(np.array(mp.stored_timesteps) / mp.dt)
+    if getattr(mp, 'dt_growth_factor', None) is not None:
+        if beo_core.beo_fipy is None:
+            msg = 'error, dt_growth_factor requires the fipy backend, but fipy and the '
+            msg += 'gmsh python module could not be imported.\n'
+            msg += 'install these with pip install fipy gmsh'
+            raise ImportError(msg)
+
+        # replay the same growing, then constant, timestep schedule that
+        # the fipy backend will use, see build_growing_dt_schedule and
+        # OutputTimeSelector in lib/beo_fipy.py, so that the exact
+        # cumulative model time at every solve timestep is known here as
+        # well, without having to run the model first
+        all_dts = []
+        for duration in mp.durations:
+            all_dts += beo_core.beo_fipy.build_growing_dt_schedule(
+                mp.dt, mp.dt_growth_factor, mp.dt_max, duration)
+        time_grid = np.cumsum(np.array(all_dts))
+    else:
+        # a requested time that is closer to the previous one than dt is
+        # stored at the same timestep as the previous one, see
+        # OutputTimeSelector in lib/beo_fipy.py. snapping every requested
+        # time up to the nearest multiple of dt the same way here gives the
+        # exact number of distinct timesteps that will be stored, so that
+        # the dataframe is preallocated with exactly the right number of
+        # rows
+        nt_total = int(np.sum(mp.durations) / mp.dt) + 1
+        time_grid = mp.dt * np.arange(1, nt_total + 1)
+
+    snapped_times = []
+    for target in mp.stored_timesteps:
+        reachable = time_grid[time_grid >= target]
+        if len(reachable) > 0:
+            snapped_times.append(reachable[0])
     n_ts = len(np.unique(snapped_times))
 else:
     n_ts = np.sum(np.array(mp.N_outputs))
