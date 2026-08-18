@@ -7,7 +7,10 @@ __author__ = 'Elco Luijendijk'
 
 import sys
 import os
+import re
+import glob
 import pickle
+import difflib
 import itertools
 import inspect
 import datetime
@@ -66,13 +69,72 @@ def coefficient_of_determination(y, f):
     return R2
 
 
+def find_referenced_parameter_names(source_dir):
+
+    """
+    Scan the Beo source code for every parameter name that is read from the
+    model parameter object, either directly (mp.name) or through getattr
+    (getattr(mp, 'name', default)).
+
+    Used by warn_about_possible_parameter_typos to check the parameter names
+    defined in a model parameter file against the names that the code
+    actually reads.
+    """
+
+    pattern = re.compile(r"\bmp\.(\w+)\b|getattr\(\s*mp\s*,\s*['\"](\w+)['\"]")
+
+    source_files = glob.glob(os.path.join(source_dir, '*.py'))
+    source_files += glob.glob(os.path.join(source_dir, 'lib', '*.py'))
+
+    referenced = set()
+    for source_file in source_files:
+        with open(source_file) as fin:
+            text = fin.read()
+        for match in pattern.finditer(text):
+            referenced.add(match.group(1) or match.group(2))
+
+    return referenced
+
+
+def warn_about_possible_parameter_typos(parameter_names, source_dir):
+
+    """
+    Warn about parameter names that are defined in the model parameter file
+    but are not read anywhere in the Beo source code, if the name is close to
+    one that is read.
+
+    A required parameter that is misspelled in the model parameter file
+    raises an AttributeError as soon as the code tries to read it, which is
+    easy to notice. A parameter that is only read with
+    getattr(mp, name, default) instead silently falls back to the default
+    value if the name is misspelled, without the model run failing or
+    printing anything. This check is meant to catch that case, and cannot
+    catch a misspelled parameter name for which no closely named parameter
+    exists.
+    """
+
+    referenced = find_referenced_parameter_names(source_dir)
+
+    for name in parameter_names:
+
+        if name in referenced:
+            continue
+
+        matches = difflib.get_close_matches(name, referenced, n=1, cutoff=0.8)
+
+        if matches:
+            print('warning, the model parameter file defines "%s", which is '
+                  'not read anywhere in the Beo source code. did you mean '
+                  '"%s"?' % (name, matches[0]))
+
+
 day = 24.0 * 60.0 * 60.0
 year = 365.25 * day
 My = year * 1e6
 
 scriptdir = os.path.realpath(sys.path[0])
 
-if len(sys.argv) > 1 and 'beo.py' not in sys.argv[-1]:
+if len(sys.argv) > 1:
 
     inp_file_loc = os.path.join(scriptdir, sys.argv[-1])
 
@@ -148,6 +210,8 @@ attributes = inspect.getmembers(
 attribute_names = [attribute[0] for attribute in attributes
                    if not (attribute[0].startswith('__') and
                            attribute[0].endswith('__'))]
+
+warn_about_possible_parameter_typos(attribute_names, scriptdir)
 
 # set up pandas dataframe to store model input params
 n_model_runs = len(param_list)
