@@ -8,3 +8,5 @@ mesh.*
 beowawe_mesh*
 *.msh
 *.geo
+
+.DS*
